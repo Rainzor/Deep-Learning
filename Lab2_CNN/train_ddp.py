@@ -7,6 +7,7 @@ from tqdm import tqdm
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data.distributed import DistributedSampler
+from torch.utils.tensorboard import SummaryWriter
 
 import numpy as np
 import random
@@ -93,10 +94,6 @@ def train(model, iterator, optimizer, criterion, device, rank=0):
     epoch_loss = 0
     epoch_acc = 0
     model.train()
-    if rank == 0:
-        pbar = tqdm(total=len(iterator), desc='Train', leave=False)
-    else:
-        pbar = None
     for i, (x,label) in enumerate(iterator):
         x = x.to(device)
         y = label.to(device)
@@ -109,12 +106,6 @@ def train(model, iterator, optimizer, criterion, device, rank=0):
 
         epoch_loss += loss.item()
         epoch_acc += acc.item()
-        if rank == 0:
-            pbar.set_postfix(loss=epoch_loss / (i + 1), acc=epoch_acc / (i + 1)*100)
-            pbar.update(1)
-
-    if pbar is not None:
-        pbar.close()
 
     # 在分布式环境下，需要对loss和acc进行reduce求平均
     avg_loss = torch.tensor(epoch_loss / len(iterator), device=device)
@@ -131,10 +122,6 @@ def evaluate(model, iterator, criterion, device, rank=0):
     epoch_loss = 0
     epoch_acc = 0
     model.eval()
-    if rank == 0:
-        pbar = tqdm(total=len(iterator), desc='Eval', leave=False)
-    else:
-        pbar = None
     with torch.no_grad():
         for i, (x, label) in enumerate(iterator):
             x = x.to(device)
@@ -144,12 +131,6 @@ def evaluate(model, iterator, criterion, device, rank=0):
             acc = calculate_accuracy(y_pred, y)
             epoch_loss += loss.item()
             epoch_acc += acc.item()
-            if rank == 0:
-                pbar.set_postfix(loss=epoch_loss / (i + 1), acc=epoch_acc / (i + 1))
-                pbar.update(1)
-
-    if pbar is not None:
-        pbar.close()
 
     # 分布式求平均
     avg_loss = torch.tensor(epoch_loss / len(iterator), device=device)
@@ -161,10 +142,9 @@ def evaluate(model, iterator, criterion, device, rank=0):
 
     return avg_loss.item(), avg_acc.item()
 
-def train_model(model, num_epochs, train_loader, val_loader, optimizer, criterion, scheduler=None, save_path=None, device='cpu', rank=0):
+def train_model(model, num_epochs, train_loader, val_loader, optimizer, criterion, scheduler=None, device='cpu', rank=0):
     log_history = {'train_loss': [], 'val_loss': [], 'train_acc': [], 'val_acc': [], 'lr': []}
 
-    best_val_acc = 0.0
     if rank == 0:
         pbar = tqdm(total=num_epochs)
     else:
@@ -183,13 +163,7 @@ def train_model(model, num_epochs, train_loader, val_loader, optimizer, criterio
         valid_loss, valid_acc = evaluate(model, val_loader, criterion, device, rank)
 
         if rank == 0:
-            pbar.set_postfix(train_loss=train_loss, valid_loss=valid_loss)
-
-            # Save the best model
-            if valid_acc > best_val_acc:
-                best_val_acc = valid_acc
-                best_parms = {k:v.cpu() for k,v in model.module.state_dict().items()} if isinstance(model, DDP) else model.state_dict()
-
+            pbar.set_postfix(train_loss=train_loss, valid_loss=valid_loss, train_acc=train_acc, valid_acc=valid_acc)
             log_history['train_loss'].append(train_loss)
             log_history['val_loss'].append(valid_loss)
             log_history['train_acc'].append(train_acc)
@@ -198,15 +172,7 @@ def train_model(model, num_epochs, train_loader, val_loader, optimizer, criterio
             pbar.update(1)
     if pbar is not None:
         pbar.close()
-
-    if save_path is not None and rank == 0:
-        timestamp = time.strftime("%Y_%m_%d_%H_%M", time.localtime())
-        save_path = os.path.join(save_path, f"{timestamp}_ddp_model.pth")
-        torch.save(best_parms, save_path)
-        print('Best model saved as {}'.format(save_path))
-        log_history['model'] = save_path
-
-    return model, log_history
+    return log_history
 
 def get_args_parser():
     parser = argparse.ArgumentParser(description="PyTorch Classification Training on Tiny ImageNet", add_help=True)
@@ -241,6 +207,8 @@ def get_args_parser():
     parser.add_argument("--lr-gamma", default=0.1, type=float, help="decrease lr by a factor of lr-gamma")
     parser.add_argument("--lr-min", default=0.0, type=float, help="minimum lr of lr schedule (default: 0.0)")
 
+    parser.add_argument("--writer", action="store_true", help="Enable Tensorboard logging")
+
     return parser
 
 def main(args):
@@ -260,7 +228,6 @@ def main(args):
     workers = args.workers
     force_reload = args.force_reload
 
-    # 只在rank=0打印
     if rank == 0:
         print("Running distributed training on {} GPUs.".format(world_size))
 
@@ -339,32 +306,51 @@ def main(args):
     # 使用DDP包装模型
     model = DDP(model, device_ids=[local_rank], output_device=local_rank, find_unused_parameters=True)
 
-    # rank=0的进程才进行输出目录和日志记录
-    if rank == 0 and not os.path.exists(save_dir):
-        os.makedirs(save_dir, exist_ok=True)
-    save_dir = os.path.join(save_dir, args.model)
-    if rank == 0 and not os.path.exists(save_dir):
-        os.makedirs(save_dir, exist_ok=True)
-
     # Train the model
-    model, log_history = train_model(model, num_epochs, train_loader, val_loader, optimizer, criterion, scheduler=lr_scheduler, save_path=save_dir, device=device, rank=rank)
+    log_history = train_model(model, num_epochs, train_loader, val_loader, optimizer, criterion, scheduler=lr_scheduler, device=device, rank=rank)
+    dist.barrier()
 
-    # Evaluate the model on the test set (在evaluate中会自动all_reduce)
-    test_loss, test_acc = evaluate(model, test_loader, criterion, device, rank=rank)
     if rank == 0:
+        # Evaluate the model on the test set
+        test_loss, test_acc = evaluate(model, test_loader, criterion, device, rank=rank)
+        save_dir = os.path.join(save_dir, args.model)
+        os.makedirs(save_dir, exist_ok=True)
+        torch.save(model.module.state_dict(), os.path.join(save_dir, "model.pth"))
+
         print(f"Test Loss: {test_loss:.4f}, Test Acc: {test_acc:.4f}")
 
         # Save the log history
         timestamp = time.strftime("%Y_%m_%d_%H_%M", time.localtime())
-        log_save_path = os.path.join(save_dir, f"{timestamp}_ddp_log.json")
         log_history['test_loss'] = test_loss
         log_history['test_acc'] = test_acc
         log_history['args'] = vars(args)
 
-        with open(log_save_path, 'w') as f:
-            json.dump(log_history, f)
+        if args.writer:
+            writer_log_dir = os.path.join("./logs", f"{args.model}_{timestamp}")
+            writer = SummaryWriter(log_dir=writer_log_dir)
+            for epoch, (t_loss, v_loss, t_acc, v_acc, lr_) in enumerate(zip(
+                log_history['train_loss'],
+                log_history['val_loss'],
+                log_history['train_acc'],
+                log_history['val_acc'],
+                log_history['lr']
+            )):
+                writer.add_scalar('Loss/train', t_loss, epoch)
+                writer.add_scalar('Loss/val', v_loss, epoch)
+                writer.add_scalar('Accuracy/train', t_acc, epoch)
+                writer.add_scalar('Accuracy/val', v_acc, epoch)
+                writer.add_scalar('LearningRate', lr_, epoch)
 
-        print(f"Log history saved as {log_save_path}")
+            # Record test loss and accuracy
+            writer.add_scalar('Test/Loss', log_history['test_loss'], args.num_epochs)
+            writer.add_scalar('Test/Accuracy', log_history['test_acc'], args.num_epochs)
+
+            # Close the writer
+            writer.close()
+        json_log_path = os.path.join(save_dir, f"{timestamp}_log.json")
+        with open(json_log_path, 'w') as f:
+            json.dump(log_history, f)
+        print(f"Log history saved as {json_log_path}")
 
     dist.barrier()
     dist.destroy_process_group()

@@ -158,7 +158,7 @@ def train_model(model, num_epochs, train_loader, val_loader, optimizer, criterio
         print('Best model saved as {}'.format(save_path))
         log_history['model'] = save_path
 
-    return model, log_history
+    return log_history
 
 def get_args_parser():
     parser = argparse.ArgumentParser(description="PyTorch Classification Training on Tiny ImageNet", add_help=True)
@@ -194,9 +194,6 @@ def get_args_parser():
     parser.add_argument("--lr-min", default=0.0, type=float, help="minimum lr of lr schedule (default: 0.0)")
     
     parser.add_argument('--writer', action='store_true', help='write the log to tensorboard')
-
-    parser.add_argument("--device", default=0, type=int, help="index of GPU to use (default: 0)")
-    return parser
 
 def main(args):
 
@@ -286,7 +283,7 @@ def main(args):
     criterion = nn.CrossEntropyLoss()
     
     # Train the model
-    model, log_history = train_model(model, num_epochs, train_loader, val_loader, optimizer, criterion, scheduler=lr_scheduler, save_path=save_dir, device=device)
+    log_history = train_model(model, num_epochs, train_loader, val_loader, optimizer, criterion, scheduler=lr_scheduler, save_path=save_dir, device=device)
 
     # Evaluate the model on test set
     test_loss, test_acc = evaluate(model, test_loader, criterion, device)
