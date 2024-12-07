@@ -17,7 +17,7 @@ import sys
 import argparse
 import json
 import logging
-logging.basicConfig(level=logging.ERROR)
+logging.basicConfig(level=logging.WARNING)
 
 from models.VGG import *
 from models.ResNet import *
