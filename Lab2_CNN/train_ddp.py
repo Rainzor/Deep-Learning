@@ -94,6 +94,9 @@ def train(model, iterator, optimizer, criterion, device, rank=0):
     epoch_loss = 0
     epoch_acc = 0
     model.train()
+    if rank == 0:
+        tqdm = tqdm(enumerate(iterator), total=len(iterator), desc='Training')
+
     for i, (x,label) in enumerate(iterator):
         x = x.to(device)
         y = label.to(device)
@@ -103,9 +106,15 @@ def train(model, iterator, optimizer, criterion, device, rank=0):
         acc = calculate_accuracy(y_pred, y)
         loss.backward()
         optimizer.step()
+        if rank == 0:
+            tqdm.set_postfix(loss=loss.item(), acc=acc.item())
+            tqdm.update(1)
 
         epoch_loss += loss.item()
         epoch_acc += acc.item()
+    
+    if rank == 0:
+        tqdm.close()
 
     # 在分布式环境下，需要对loss和acc进行reduce求平均
     avg_loss = torch.tensor(epoch_loss / len(iterator), device=device)
@@ -122,6 +131,9 @@ def evaluate(model, iterator, criterion, device, rank=0):
     epoch_loss = 0
     epoch_acc = 0
     model.eval()
+    if rank == 0:
+        tqdm = tqdm(enumerate(iterator), total=len(iterator), desc='Evaluation')
+
     with torch.no_grad():
         for i, (x, label) in enumerate(iterator):
             x = x.to(device)
@@ -129,6 +141,9 @@ def evaluate(model, iterator, criterion, device, rank=0):
             y_pred, h = model(x)
             loss = criterion(y_pred, y)
             acc = calculate_accuracy(y_pred, y)
+            if rank == 0:
+                tqdm.set_postfix(loss=loss.item(), acc=acc.item())
+                tqdm.update(1)
             epoch_loss += loss.item()
             epoch_acc += acc.item()
 
