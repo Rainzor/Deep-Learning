@@ -130,7 +130,7 @@ def evaluate(model, iterator, criterion, device, writer=None):
 
     return epoch_loss / len(iterator), epoch_acc / len(iterator)
 
-def train_model(model, num_epochs, train_loader, val_loader, optimizer, criterion, scheduler=None, save_path=None, device='cpu', writer=None):
+def train_model(model, num_epochs, train_loader, val_loader, optimizer, criterion, scheduler=None, save_dir=None, device='cpu', writer=None):
     model = model.to(device)
     print("Training model on device: ", device)
     best_val_acc = 0.0
@@ -157,9 +157,9 @@ def train_model(model, num_epochs, train_loader, val_loader, optimizer, criterio
             #     writer.add_scalar('LearningRate', optimizer.param_groups[0]['lr'], epoch)
             pbar.update(1)
     log_history = {}
-    if save_path is not None:
+    if save_dir is not None:
         timestamp = time.strftime("%Y_%m_%d_%H_%M", time.localtime())
-        save_path = os.path.join(save_path, f"{timestamp}_model.pth")
+        save_path = os.path.join(save_dir, f"{timestamp}_model.pth")
         torch.save(best_parms, save_path)
         print('Best model saved as {}'.format(save_path))
         log_history['model'] = save_path
@@ -300,7 +300,7 @@ def main(args):
     # Train the model
     save_dir = os.path.join(save_dir, args.model)
     os.makedirs(save_dir, exist_ok=True)
-    log_history = train_model(model, num_epochs, train_loader, val_loader, optimizer, criterion, scheduler=lr_scheduler, save_path=save_dir, device=device, writer=writer)
+    log_history = train_model(model, num_epochs, train_loader, val_loader, optimizer, criterion, scheduler=lr_scheduler, save_dir=save_dir, device=device, writer=writer)
 
     # Evaluate the model on test set
     test_loss, test_acc = evaluate(model, test_loader, criterion, device)

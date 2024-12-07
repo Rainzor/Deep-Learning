@@ -176,7 +176,7 @@ def train_model(model, num_epochs, train_loader, val_loader, optimizer, criterio
 
 def get_args_parser():
     parser = argparse.ArgumentParser(description="PyTorch Classification Training on Tiny ImageNet", add_help=True)
-    parser.add_argument('-i',"--data-path", type=str, default="./data/tiny-imagenet-200", help="Path to the Tiny ImageNet data")
+    parser.add_argument('-d',"--data-path", type=str, default="./data/tiny-imagenet-200", help="Path to the Tiny ImageNet data")
     parser.add_argument("--force-reload", action="store_true", help="Force reload of data")
     parser.add_argument('-m',"--model", type=str, default="resnet18", help="Model to use for training")
     parser.add_argument('-b',"--batch-size", type=int, default=32, help="Batch size for training")
@@ -260,8 +260,8 @@ def main(args):
         model = VGG19(vgg19_config, num_classes)
     else:
         raise ValueError(f"Model {args.model} not recognized.")
-
-    model.to(device)
+    if rank == 0:
+        print(f"Model: {args.model}")
 
     # Set up the optimizer
     if args.optimizer == "sgd":
@@ -280,6 +280,8 @@ def main(args):
         main_lr_scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=args.lr_gamma)
     else:
         main_lr_scheduler = None
+    if rank == 0:
+        print(f"Optimizer: {args.optimizer}")
 
     # Set up the learning rate warmup
     if args.lr_warmup_epochs > 0:
@@ -300,9 +302,12 @@ def main(args):
         )
     else:
         lr_scheduler = main_lr_scheduler
+    if rank == 0:
+        print(f"Learning rate scheduler: {args.lr_scheduler}")
 
     criterion = nn.CrossEntropyLoss()
 
+    model = model.to(device)
     # 使用DDP包装模型
     model = DDP(model, device_ids=[local_rank], output_device=local_rank, find_unused_parameters=True)
 
