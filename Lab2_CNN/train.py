@@ -209,7 +209,7 @@ def main(args):
     force_reload = args.force_reload
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print("Cuda available device: ", torch.cuda.device_count())
+    print("Cuda available device counts = ", torch.cuda.device_count())
     if not torch.cuda.is_available():
         print("Eror: GPU is not available")
         sys.exit(1)
