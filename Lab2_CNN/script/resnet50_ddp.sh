@@ -1,0 +1,1 @@
+torchrun --nproc_per_node=4  ./train_ddp.py -m 'resnet50' -d '/data2/wrz/Datasets/tiny-imagenet-200' -b 256 -n 100 -opt 'sgd' -lr 0.2 -o 'out' --momentum 0.9 --weight-decay 1e-4 --lr-scheduler 'cosine' --lr-warmup-epochs 5 --lr-warmup-method 'linear' --lr-warmup-decay 0.01 --writer
