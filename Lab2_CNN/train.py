@@ -160,29 +160,6 @@ def train_model(model, num_epochs, train_loader, val_loader, optimizer, criterio
 
     return model, log_history
 
-def smooth_curve(values, smoothing_factor=0.9):
-    smoothed_values = []
-    last = values[0]
-    for value in values:
-        smoothed_value = last * smoothing_factor + (1 - smoothing_factor) * value
-        smoothed_values.append(smoothed_value)
-        last = smoothed_value
-    return smoothed_values
-
-def plot_losses(train_losses, val_losses):
-    train_losses_smoothed = smooth_curve(train_losses)
-    val_losses_smoothed = smooth_curve(val_losses)
-    
-    plt.figure(figsize=(10, 6))
-    plt.plot(train_losses_smoothed, label="Training Loss (Smoothed)", color="blue")
-    plt.plot(val_losses_smoothed, label="Validation Loss (Smoothed)", color="red")
-    plt.yscale("log")  # Log scale for the y-axis
-    plt.xlabel("Epoch")
-    plt.ylabel("Loss (Log Scale)")
-    plt.title("Training and Validation Loss (Log Scale with Smoothing)")
-    plt.legend()
-    plt.show()
-
 def get_args_parser():
     parser = argparse.ArgumentParser(description="PyTorch Classification Training on Tiny ImageNet", add_help=True)
     parser.add_argument('-d',"--data-path", type=str, default="./data/tiny-imagenet-200", help="Path to the Tiny ImageNet data")
@@ -218,7 +195,7 @@ def get_args_parser():
     
     parser.add_argument('--writer', action='store_true', help='write the log to tensorboard')
     return parser
-    
+
 def main(args):
 
     # Set up the device
