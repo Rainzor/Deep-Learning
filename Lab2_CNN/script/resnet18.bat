@@ -2,7 +2,7 @@ python .\train.py ^
     -m "resnet18" ^
     -d "..\data\tiny-imagenet-200" ^
     -b 256 ^
-    -n 50 ^
+    -n 100 ^
     -opt "sgd" ^
     -lr 0.2 ^
     -o "out" ^

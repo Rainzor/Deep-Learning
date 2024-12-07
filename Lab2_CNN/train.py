@@ -196,6 +196,8 @@ def get_args_parser():
     parser.add_argument('--writer', action='store_true', help='write the log to tensorboard')
     return parser
 
+    parser.add_argument("--cuda", default=0, type=int, help="index of GPU to use (default: 0)")
+
 def main(args):
 
     # Set up the device
@@ -205,10 +207,14 @@ def main(args):
     save_dir = args.save_dir
     workers = args.workers
     force_reload = args.force_reload
+
+    torch.cuda.set_device(args.cuda)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print("Using device: ", device)
-    print("CUDA available: ", torch.cuda.is_available())
-    print("Device Count: ", torch.cuda.device_count())  # Count of GPUs
+    if (torch.cuda.is_available()):
+        print("GPU: ", torch.cuda.get_device_name(0))
+    else:
+        print("Eror: GPU is not available")
+        sys.exit(1)
     # Load raw data
     raw_data = RawData(data_path)
     num_classes = len(raw_data.labels_t())
