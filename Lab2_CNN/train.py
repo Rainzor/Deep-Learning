@@ -208,8 +208,7 @@ def main(args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("Using device: ", device)
     print("CUDA available: ", torch.cuda.is_available())
-    print("Device Count: ", torch.cuda.device_count())  # 查看可用的 GPU 数量
-    print("Current Device: ", torch.cuda.current_device())  # 查看当前设备索引号
+    print("Device Count: ", torch.cuda.device_count())  # Count of GPUs
     # Load raw data
     raw_data = RawData(data_path)
     num_classes = len(raw_data.labels_t())
