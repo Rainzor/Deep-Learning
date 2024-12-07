@@ -206,7 +206,7 @@ def main(args):
     workers = args.workers
     force_reload = args.force_reload
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
+    print("Using device: ", device)
     # Load raw data
     raw_data = RawData(data_path)
     num_classes = len(raw_data.labels_t())
@@ -216,23 +216,23 @@ def main(args):
 
     # Create the model
     if args.model == "resnet18":
-        model = ResNet(resnet18_config, num_classes).to(device)
+        model = ResNet(resnet18_config, num_classes)
     elif args.model == "resnet34":
-        model = ResNet(resnet34_config, num_classes).to(device)
+        model = ResNet(resnet34_config, num_classes)
     elif args.model == "resnet50":
-        model = ResNet(resnet50_config, num_classes).to(device)
+        model = ResNet(resnet50_config, num_classes)
     elif args.model == "resnet101":
-        model = ResNet(resnet101_config, num_classes).to(device)
+        model = ResNet(resnet101_config, num_classes)
     elif args.model == "resnet152":
-        model = ResNet(resnet152_config, num_classes).to(device)
+        model = ResNet(resnet152_config, num_classes)
     elif args.model == "vgg11":
-        model = VGG11(vgg11_config, num_classes).to(device)
+        model = VGG11(vgg11_config, num_classes)
     elif args.model == "vgg13":
-        model = VGG13(vgg13_config, num_classes).to(device)
+        model = VGG13(vgg13_config, num_classes)
     elif args.model == "vgg16":
-        model = VGG16(vgg16_config, num_classes).to(device)
+        model = VGG16(vgg16_config, num_classes)
     elif args.model == "vgg19":
-        model = VGG19(vgg19_config, num_classes).to(device)
+        model = VGG19(vgg19_config, num_classes)
     else:
         raise ValueError(f"Model {args.model} not recognized.")
     
