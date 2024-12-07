@@ -201,7 +201,7 @@ def train_model(model, num_epochs, train_loader, val_loader, optimizer, criterio
 
     if save_path is not None and rank == 0:
         timestamp = time.strftime("%Y_%m_%d_%H_%M", time.localtime())
-        save_path = os.path.join(save_path, f"{timestamp}_best_model.pth")
+        save_path = os.path.join(save_path, f"{timestamp}_ddp_model.pth")
         torch.save(best_parms, save_path)
         print('Best model saved as {}'.format(save_path))
         log_history['model'] = save_path
@@ -356,7 +356,7 @@ def main(args):
 
         # Save the log history
         timestamp = time.strftime("%Y_%m_%d_%H_%M", time.localtime())
-        log_save_path = os.path.join(save_dir, f"{timestamp}_log.json")
+        log_save_path = os.path.join(save_dir, f"{timestamp}_ddp_log.json")
         log_history['test_loss'] = test_loss
         log_history['test_acc'] = test_acc
         log_history['args'] = vars(args)

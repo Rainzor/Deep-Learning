@@ -12,6 +12,7 @@ import sys
 import argparse
 import json
 
+from torch.utils.tensorboard import SummaryWriter
 
 from models.VGG import *
 from models.ResNet import *
@@ -130,12 +131,11 @@ def train_model(model, num_epochs, train_loader, val_loader, optimizer, criterio
     best_val_acc = 0.0
     with tqdm(total=num_epochs) as pbar:
         for epoch in range(num_epochs):
-            # Train the model
-            model.train()
+            # Train
             train_loss, train_acc = train(model, train_loader, optimizer, criterion, device)
             if scheduler is not None:
                 scheduler.step()
-            # Evaluate the model
+            # Validate
             valid_loss, valid_acc = evaluate(model, val_loader, criterion, device)
 
             pbar.set_postfix(train_loss=train_loss, valid_loss=valid_loss)
@@ -153,14 +153,13 @@ def train_model(model, num_epochs, train_loader, val_loader, optimizer, criterio
             
     if save_path is not None:
         timestamp = time.strftime("%Y_%m_%d_%H_%M", time.localtime())
-        save_path = os.path.join(save_path, f"{timestamp}_best_model.pth")
+        save_path = os.path.join(save_path, f"{timestamp}_model.pth")
         torch.save(best_parms, save_path)
         print('Best model saved as {}'.format(save_path))
         log_history['model'] = save_path
 
     return model, log_history
 
-# Plot function for smoothed losses
 def smooth_curve(values, smoothing_factor=0.9):
     smoothed_values = []
     last = values[0]
@@ -186,7 +185,7 @@ def plot_losses(train_losses, val_losses):
 
 def get_args_parser():
     parser = argparse.ArgumentParser(description="PyTorch Classification Training on Tiny ImageNet", add_help=True)
-    parser.add_argument('-i',"--data-path", type=str, default="./data/tiny-imagenet-200", help="Path to the Tiny ImageNet data")
+    parser.add_argument('-d',"--data-path", type=str, default="./data/tiny-imagenet-200", help="Path to the Tiny ImageNet data")
     parser.add_argument("--force-reload", action="store_true", help="Force reload of data")
     parser.add_argument('-m',"--model", type=str, default="resnet18", help="Model to use for training")
     parser.add_argument('-b',"--batch-size", type=int, default=32, help="Batch size for training")
@@ -216,9 +215,10 @@ def get_args_parser():
     parser.add_argument("--lr-step-size", default=30, type=int, help="decrease lr every step-size epochs")
     parser.add_argument("--lr-gamma", default=0.1, type=float, help="decrease lr by a factor of lr-gamma")
     parser.add_argument("--lr-min", default=0.0, type=float, help="minimum lr of lr schedule (default: 0.0)")
-
-
+    
+    parser.add_argument('--writer', action='store_true', help='write the log to tensorboard')
     return parser
+    
 def main(args):
 
     # Set up the device
@@ -305,22 +305,46 @@ def main(args):
     # Train the model
     model, log_history = train_model(model, num_epochs, train_loader, val_loader, optimizer, criterion, scheduler=lr_scheduler, save_path=save_dir, device=device)
 
-    # Evaluate the model
+    # Evaluate the model on test set
     test_loss, test_acc = evaluate(model, test_loader, criterion, device)
     print(f"Test Loss: {test_loss:.4f}, Test Acc: {test_acc:.4f}")
 
-
     # Save the log history
     timestamp = time.strftime("%Y_%m_%d_%H_%M", time.localtime())
-    log_save_path = os.path.join(save_dir, f"{timestamp}_log.json")
+
     log_history['test_loss'] = test_loss
     log_history['test_acc'] = test_acc
     log_history['args'] = vars(args)
-    
-    with open(log_save_path, 'w') as f:
+
+    # Create TensorBoard writer
+    if args.writer:
+        writer_log_dir = os.path.join("./logs", f"{args.model}_{timestamp}")
+        writer = SummaryWriter(log_dir=writer_log_dir)
+        for epoch, (t_loss, v_loss, t_acc, v_acc, lr_) in enumerate(zip(
+            log_history['train_loss'],
+            log_history['val_loss'],
+            log_history['train_acc'],
+            log_history['val_acc'],
+            log_history['lr']
+        )):
+            writer.add_scalar('Loss/train', t_loss, epoch)
+            writer.add_scalar('Loss/val', v_loss, epoch)
+            writer.add_scalar('Accuracy/train', t_acc, epoch)
+            writer.add_scalar('Accuracy/val', v_acc, epoch)
+            writer.add_scalar('LearningRate', lr_, epoch)
+
+        # 记录测试集结果
+        writer.add_scalar('Test/Loss', log_history['test_loss'], args.num_epochs)
+        writer.add_scalar('Test/Accuracy', log_history['test_acc'], args.num_epochs)
+
+        # 关闭writer
+        writer.close()
+
+    # 将log_history保存到json文件
+    json_log_path = os.path.join(save_dir, f"{timestamp}_log.json")
+    with open(json_log_path, 'w') as f:
         json.dump(log_history, f)
-    
-    print(f"Log history saved as {log_save_path}")
+    print(f"Log history saved as {json_log_path}")
 
 if __name__ == "__main__":
     args = get_args_parser().parse_args()
