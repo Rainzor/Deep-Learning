@@ -194,10 +194,10 @@ def get_args_parser():
     parser.add_argument("--lr-min", default=0.0, type=float, help="minimum lr of lr schedule (default: 0.0)")
     
     parser.add_argument('--writer', action='store_true', help='write the log to tensorboard')
-    return parser
 
     parser.add_argument("--device", default=0, type=int, help="index of GPU to use (default: 0)")
-
+    return parser
+    
 def main(args):
 
     # Set up the device
