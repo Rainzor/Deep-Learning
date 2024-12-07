@@ -208,7 +208,6 @@ def main(args):
     workers = args.workers
     force_reload = args.force_reload
 
-    torch.cuda.set_device(args.device)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("Cuda available device: ", torch.cuda.device_count())
     if not torch.cuda.is_available():
