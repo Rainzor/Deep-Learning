@@ -132,6 +132,7 @@ class Bottleneck(nn.Module):
     
     def __init__(self, in_channels, out_channels, stride = 1, use_skip = False):
         super().__init__()
+        self.expansion = 4
 
         # Reduce the number of input channels, the same as pooling in channel dimension
         self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size = 1, 
