@@ -16,8 +16,6 @@ import os
 import sys
 import argparse
 import json
-import logging
-logging.basicConfig(level=logging.WARNING)
 
 from models.VGG import *
 from models.ResNet import *
@@ -328,7 +326,7 @@ def main(args):
 
     model = model.to(device)
     # 使用DDP包装模型
-    model = DDP(model, device_ids=[local_rank], output_device=local_rank, find_unused_parameters=True)
+    model = DDP(model, device_ids=[local_rank], output_device=local_rank, find_unused_parameters=False)
 
     # Train the model
     log_history = train_model(model, num_epochs, train_loader, val_loader, optimizer, criterion, scheduler=lr_scheduler, device=device, rank=rank)
