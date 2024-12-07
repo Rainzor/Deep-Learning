@@ -196,7 +196,7 @@ def get_args_parser():
     parser.add_argument('--writer', action='store_true', help='write the log to tensorboard')
     return parser
 
-    parser.add_argument("--cuda", default=0, type=int, help="index of GPU to use (default: 0)")
+    parser.add_argument("--device", default=0, type=int, help="index of GPU to use (default: 0)")
 
 def main(args):
 
@@ -208,7 +208,7 @@ def main(args):
     workers = args.workers
     force_reload = args.force_reload
 
-    torch.cuda.set_device(args.cuda)
+    torch.cuda.set_device(args.device)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if (torch.cuda.is_available()):
         print("GPU: ", torch.cuda.get_device_name(0))
