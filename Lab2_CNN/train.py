@@ -194,6 +194,7 @@ def get_args_parser():
     parser.add_argument("--lr-min", default=0.0, type=float, help="minimum lr of lr schedule (default: 0.0)")
     
     parser.add_argument('--writer', action='store_true', help='write the log to tensorboard')
+    return parser
 
 def main(args):
 
@@ -248,6 +249,7 @@ def main(args):
         optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
     else:
         raise ValueError(f"Optimizer {args.optimizer} not recognized.")
+    print("Optimizer: ", optimizer)
 
     # Set up the learning rate scheduler
     if args.lr_scheduler == "step":
@@ -259,6 +261,7 @@ def main(args):
     else:
         print("No scheduler")
         main_lr_scheduler = None
+    print("LR Scheduler: ", main_lr_scheduler)
 
     # Set up the learning rate warmup
     if args.lr_warmup_epochs > 0:
