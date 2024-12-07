@@ -197,7 +197,7 @@ def get_args_parser():
 
     parser.add_argument("--device", default=0, type=int, help="index of GPU to use (default: 0)")
     return parser
-    
+
 def main(args):
 
     # Set up the device
@@ -210,9 +210,8 @@ def main(args):
 
     torch.cuda.set_device(args.device)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    if (torch.cuda.is_available()):
-        print("GPU: ", torch.cuda.get_device_name(0))
-    else:
+    print("Cuda available device: ", torch.cuda.device_count())
+    if not torch.cuda.is_available():
         print("Eror: GPU is not available")
         sys.exit(1)
     # Load raw data
