@@ -85,7 +85,7 @@ def DataLoaderSplit(raw_data, batch_size, val_ratio=0.2, force_reload=False,work
 
     return train_loader, val_loader, test_loader
 
-def train(model, iterator, optimizer, criterion, device):
+def train(model, iterator, optimizer, criterion, device, writer=None):
     epoch_loss = 0
     epoch_acc = 0
     model.train()
@@ -102,10 +102,13 @@ def train(model, iterator, optimizer, criterion, device):
             epoch_loss += loss.item()
             epoch_acc += acc.item()
             t.set_postfix(loss=epoch_loss / (i + 1), acc=epoch_acc / (i + 1)*100)
+            if writer is not None:
+                writer.add_scalar('Loss/train', loss.item(), i)
+                writer.add_scalar('Accuracy/train', acc.item(), i)
             t.update(1)
     return epoch_loss / len(iterator), epoch_acc / len(iterator)
 
-def evaluate(model, iterator, criterion, device):
+def evaluate(model, iterator, criterion, device, writer=None):
     epoch_loss = 0
     epoch_acc = 0
     model.eval()
@@ -120,6 +123,9 @@ def evaluate(model, iterator, criterion, device):
                 epoch_loss += loss.item()
                 epoch_acc += acc.item()
                 t.set_postfix(loss=epoch_loss / (i + 1), acc=epoch_acc / (i + 1))
+                if writer is not None:
+                    writer.add_scalar('Loss/val', loss.item(), i)
+                    writer.add_scalar('Accuracy/val', acc.item(), i)
                 t.update(1)
 
     return epoch_loss / len(iterator), epoch_acc / len(iterator)
@@ -131,11 +137,11 @@ def train_model(model, num_epochs, train_loader, val_loader, optimizer, criterio
     with tqdm(total=num_epochs) as pbar:
         for epoch in range(num_epochs):
             # Train
-            train_loss, train_acc = train(model, train_loader, optimizer, criterion, device)
+            train_loss, train_acc = train(model, train_loader, optimizer, criterion, device, writer)
             if scheduler is not None:
                 scheduler.step()
             # Validate
-            valid_loss, valid_acc = evaluate(model, val_loader, criterion, device)
+            valid_loss, valid_acc = evaluate(model, val_loader, criterion, device, writer)
 
             pbar.set_postfix(train_loss=train_loss, valid_loss=valid_loss)
 
@@ -143,12 +149,12 @@ def train_model(model, num_epochs, train_loader, val_loader, optimizer, criterio
             if valid_acc > best_val_acc:
                 best_val_acc = valid_acc
                 best_parms = model.state_dict()
-            if writer is not None:
-                writer.add_scalar('Loss/train', train_loss, epoch)
-                writer.add_scalar('Loss/val', valid_loss, epoch)
-                writer.add_scalar('Accuracy/train', train_acc, epoch)
-                writer.add_scalar('Accuracy/val', valid_acc, epoch)
-                writer.add_scalar('LearningRate', optimizer.param_groups[0]['lr'], epoch)
+            # if writer is not None:
+            #     writer.add_scalar('Loss/train', train_loss, epoch)
+            #     writer.add_scalar('Loss/val', valid_loss, epoch)
+            #     writer.add_scalar('Accuracy/train', train_acc, epoch)
+            #     writer.add_scalar('Accuracy/val', valid_acc, epoch)
+            #     writer.add_scalar('LearningRate', optimizer.param_groups[0]['lr'], epoch)
             pbar.update(1)
     log_history = {}
     if save_path is not None:
@@ -240,8 +246,6 @@ def main(args):
     else:
         raise ValueError(f"Model {args.model} not recognized.")
     
-    save_dir = os.path.join(save_dir, args.model)
-
     # Set up the optimizer
     if args.optimizer == "sgd":
         optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
@@ -294,6 +298,8 @@ def main(args):
         writer = None
 
     # Train the model
+    save_dir = os.path.join(save_dir, args.model)
+    os.makedirs(save_dir, exist_ok=True)
     log_history = train_model(model, num_epochs, train_loader, val_loader, optimizer, criterion, scheduler=lr_scheduler, save_path=save_dir, device=device, writer=writer)
 
     # Evaluate the model on test set

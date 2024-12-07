@@ -308,6 +308,8 @@ def main(args):
 
     # Train the model
     log_history = train_model(model, num_epochs, train_loader, val_loader, optimizer, criterion, scheduler=lr_scheduler, device=device, rank=rank)
+    
+    # Wait for all processes to finish
     dist.barrier()
 
     if rank == 0:
