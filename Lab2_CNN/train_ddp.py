@@ -95,7 +95,7 @@ def train(model, iterator, optimizer, criterion, device, rank=0):
     epoch_acc = 0
     model.train()
     if rank == 0:
-        pbar = tqdm(enumerate(iterator), total=len(iterator), desc='Training')
+        pbar = tqdm(enumerate(iterator), total=len(iterator), desc='Training', leave=False)
 
     for i, (x,label) in enumerate(iterator):
         x = x.to(device)
@@ -132,7 +132,7 @@ def evaluate(model, iterator, criterion, device, rank=0):
     epoch_acc = 0
     model.eval()
     if rank == 0:
-        pbar = tqdm(enumerate(iterator), total=len(iterator), desc='Evaluation')
+        pbar = tqdm(enumerate(iterator), total=len(iterator), desc='Evaluation', leave=False)
 
     with torch.no_grad():
         for i, (x, label) in enumerate(iterator):
@@ -330,21 +330,24 @@ def main(args):
 
     # Train the model
     log_history = train_model(model, num_epochs, train_loader, val_loader, optimizer, criterion, scheduler=lr_scheduler, device=device, rank=rank)
-    
+    if rank == 0:
+        print("Training complete.")
+
+    # Evaluate the model on the test set
+    test_loss, test_acc = evaluate(model, test_loader, criterion, device, rank=rank)
+    print(f"Test Loss: {test_loss:.4f}, Test Acc: {test_acc:.4f}")
     # Wait for all processes to finish
     dist.barrier()
 
     if rank == 0:
-        # Evaluate the model on the test set
-        test_loss, test_acc = evaluate(model, test_loader, criterion, device, rank=rank)
+        timestamp = time.strftime("%Y_%m_%d_%H_%M", time.localtime())
         save_dir = os.path.join(save_dir, args.model)
         os.makedirs(save_dir, exist_ok=True)
-        torch.save(model.module.state_dict(), os.path.join(save_dir, "model.pth"))
-
-        print(f"Test Loss: {test_loss:.4f}, Test Acc: {test_acc:.4f}")
+        torch_save_path = os.path.join(save_dir, f"{timestamp}_ddp_model.pth")
+        torch.save(model.module.state_dict(), torch_save_path)
+        print(f"Model saved as {torch_save_path}")
 
         # Save the log history
-        timestamp = time.strftime("%Y_%m_%d_%H_%M", time.localtime())
         log_history['test_loss'] = test_loss
         log_history['test_acc'] = test_acc
         log_history['args'] = vars(args)
@@ -371,6 +374,7 @@ def main(args):
 
             # Close the writer
             writer.close()
+
         json_log_path = os.path.join(save_dir, f"{timestamp}_log.json")
         with open(json_log_path, 'w') as f:
             json.dump(log_history, f)
