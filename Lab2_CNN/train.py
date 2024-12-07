@@ -124,8 +124,7 @@ def evaluate(model, iterator, criterion, device):
 
     return epoch_loss / len(iterator), epoch_acc / len(iterator)
 
-def train_model(model, num_epochs, train_loader, val_loader, optimizer, criterion, scheduler=None, save_path=None, device='cpu'):
-    log_history = {'train_loss': [], 'val_loss': [], 'train_acc': [], 'val_acc': [], 'lr': []}
+def train_model(model, num_epochs, train_loader, val_loader, optimizer, criterion, scheduler=None, save_path=None, device='cpu', writer=None):
     model = model.to(device)
     print("Training model on device: ", device)
     best_val_acc = 0.0
@@ -144,13 +143,14 @@ def train_model(model, num_epochs, train_loader, val_loader, optimizer, criterio
             if valid_acc > best_val_acc:
                 best_val_acc = valid_acc
                 best_parms = model.state_dict()
-            log_history['train_loss'].append(train_loss)
-            log_history['val_loss'].append(valid_loss)
-            log_history['train_acc'].append(train_acc)
-            log_history['val_acc'].append(valid_acc)
-            log_history['lr'].append(optimizer.param_groups[0]['lr'])
+            if writer is not None:
+                writer.add_scalar('Loss/train', train_loss, epoch)
+                writer.add_scalar('Loss/val', valid_loss, epoch)
+                writer.add_scalar('Accuracy/train', train_acc, epoch)
+                writer.add_scalar('Accuracy/val', valid_acc, epoch)
+                writer.add_scalar('LearningRate', optimizer.param_groups[0]['lr'], epoch)
             pbar.update(1)
-            
+    log_history = {}
     if save_path is not None:
         timestamp = time.strftime("%Y_%m_%d_%H_%M", time.localtime())
         save_path = os.path.join(save_path, f"{timestamp}_model.pth")
@@ -285,42 +285,28 @@ def main(args):
 
     criterion = nn.CrossEntropyLoss()
     
+    
+    timestamp = time.strftime("%Y_%m_%d_%H_%M", time.localtime())
+    if args.writer:
+        writer_log_dir = os.path.join("./logs", f"{args.model}_{timestamp}")
+        writer = SummaryWriter(log_dir=writer_log_dir)
+    else:
+        writer = None
+
     # Train the model
-    log_history = train_model(model, num_epochs, train_loader, val_loader, optimizer, criterion, scheduler=lr_scheduler, save_path=save_dir, device=device)
+    log_history = train_model(model, num_epochs, train_loader, val_loader, optimizer, criterion, scheduler=lr_scheduler, save_path=save_dir, device=device, writer=writer)
 
     # Evaluate the model on test set
     test_loss, test_acc = evaluate(model, test_loader, criterion, device)
     print(f"Test Loss: {test_loss:.4f}, Test Acc: {test_acc:.4f}")
 
     # Save the log history
-    timestamp = time.strftime("%Y_%m_%d_%H_%M", time.localtime())
-
+    log_history['writer'] = writer_log_dir
     log_history['test_loss'] = test_loss
     log_history['test_acc'] = test_acc
     log_history['args'] = vars(args)
-
     # Create TensorBoard writer
-    if args.writer:
-        writer_log_dir = os.path.join("./logs", f"{args.model}_{timestamp}")
-        writer = SummaryWriter(log_dir=writer_log_dir)
-        for epoch, (t_loss, v_loss, t_acc, v_acc, lr_) in enumerate(zip(
-            log_history['train_loss'],
-            log_history['val_loss'],
-            log_history['train_acc'],
-            log_history['val_acc'],
-            log_history['lr']
-        )):
-            writer.add_scalar('Loss/train', t_loss, epoch)
-            writer.add_scalar('Loss/val', v_loss, epoch)
-            writer.add_scalar('Accuracy/train', t_acc, epoch)
-            writer.add_scalar('Accuracy/val', v_acc, epoch)
-            writer.add_scalar('LearningRate', lr_, epoch)
-
-        # 记录测试集结果
-        writer.add_scalar('Test/Loss', log_history['test_loss'], args.num_epochs)
-        writer.add_scalar('Test/Accuracy', log_history['test_acc'], args.num_epochs)
-
-        # 关闭writer
+    if writer is not None:
         writer.close()
 
     # 将log_history保存到json文件
