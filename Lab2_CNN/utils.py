@@ -197,3 +197,22 @@ def calculate_accuracy(y_pred: torch.Tensor, y: torch.Tensor):
     correct = top_pred.eq(y.view_as(top_pred)).sum()
     acc = correct.float() / y.shape[0]
     return acc
+
+def print_gpu_memory():
+    if not torch.cuda.is_available():
+        print("CUDA is not available.")
+        return
+    
+    for i in range(torch.cuda.device_count()):
+        device = torch.device(f'cuda:{i}')
+        torch.cuda.set_device(device)
+        allocated = torch.cuda.memory_allocated(device) / (1024 ** 2)  # MiB
+        reserved = torch.cuda.memory_reserved(device) / (1024 ** 2)    # MiB
+        total = torch.cuda.get_device_properties(device).total_memory / (1024 ** 2)  # MiB
+        free = total - reserved
+        gpu_name = torch.cuda.get_device_name(device)
+        print(f"GPU {i}: {gpu_name}")
+        print(f"  Total Memory: {total:.2f} MiB")
+        print(f"  Allocated Memory: {allocated:.2f} MiB")
+        print(f"  Reserved Memory : {reserved:.2f} MiB")
+        print(f"  Free Memory : {free:.2f} MiB\n")
