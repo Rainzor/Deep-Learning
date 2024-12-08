@@ -19,7 +19,7 @@ import json
 
 from models.VGG import *
 from models.ResNet import *
-from models.T2T_ViT import *
+from models.ViT import *
 from utils import *
 from config import *
 
