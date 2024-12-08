@@ -220,8 +220,8 @@ def main(args):
     if not torch.cuda.is_available():
         print("Eror: GPU is not available")
         sys.exit(1)
-    else:
-        print_gpu_memory()
+    # else:
+    #     print_gpu_memory()
     # Load raw data
     raw_data = RawData(data_path)
     num_classes = len(raw_data.labels_t())
