@@ -268,17 +268,18 @@ def main(args):
     elif args.model == "resnet152":
         model = ResNet(resnet152_config, num_classes)
     elif args.model == "vgg11":
-        model = VGG11(vgg11_config, num_classes)
+        model = VGG(vgg11_config, num_classes)
     elif args.model == "vgg13":
-        model = VGG13(vgg13_config, num_classes)
+        model = VGG(vgg13_config, num_classes)
     elif args.model == "vgg16":
-        model = VGG16(vgg16_config, num_classes)
+        model = VGG(vgg16_config, num_classes)
     elif args.model == "vgg19":
-        model = VGG19(vgg19_config, num_classes)
+        model = VGG(vgg19_config, num_classes)
     else:
         raise ValueError(f"Model {args.model} not recognized.")
     if rank == 0:
         print(f"Model: {args.model}")
+        print(f"Number of parameters: {sum(p.numel() for p in model.parameters())}")
 
     # Set up the optimizer
     if args.optimizer == "sgd":
