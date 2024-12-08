@@ -18,3 +18,7 @@ data/
 */.env.local
 */.envrc
 */.venv
+*/out/
+*out*
+*/logs/
+*logs*
