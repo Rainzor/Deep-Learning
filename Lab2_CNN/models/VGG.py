@@ -24,7 +24,7 @@ class VGG(nn.Module):
     def forward(self, x):
         x = self.features(x)
         x = self.avgpool(x)
-        h = x.view(x.shape[0], -1)
+        h = x.view(x.shape[0], -1) # flatten
         x = self.classifier(h)
         return x, h
 
