@@ -277,6 +277,7 @@ def main(args):
         model = VGG(vgg16_config, num_classes)
     elif args.model == "vgg19":
         model = VGG(vgg19_config, num_classes)
+    else:
         raise ValueError(f"Model {args.model} not recognized.")
     if rank == 0:
         print(f"Model: {args.model}")
