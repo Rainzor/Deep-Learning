@@ -101,7 +101,7 @@ def train(model, iterator, optimizer, criterion, device, writer=None):
             optimizer.step()                
             epoch_loss += loss.item()
             epoch_acc += acc.item()
-            t.set_postfix(loss=epoch_loss / (i + 1), acc=epoch_acc / (i + 1)*100)
+            t.set_postfix(loss=epoch_loss / (i + 1), acc=epoch_acc / (i + 1))
             if writer is not None:
                 writer.add_scalar('Loss/train', loss.item(), i)
                 writer.add_scalar('Accuracy/train', acc.item(), i)
@@ -233,8 +233,10 @@ def main(args):
         model = ResNet(resnet50_config, num_classes)
     elif args.model == "resnet101":
         model = ResNet(resnet101_config, num_classes)
-    elif args.model == "resnet152":
-        model = ResNet(resnet152_config, num_classes)
+    elif args.model == "resnext50":
+        model = ResNet(resnext50_32x4d_config, num_classes)
+    elif args.model == "resnext101":
+        model = ResNet(resnext101_32x4d_config, num_classes)
     elif args.model == "vgg11":
         model = VGG(vgg11_config, num_classes)
     elif args.model == "vgg13":

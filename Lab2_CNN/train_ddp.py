@@ -265,8 +265,10 @@ def main(args):
         model = ResNet(resnet50_config, num_classes)
     elif args.model == "resnet101":
         model = ResNet(resnet101_config, num_classes)
-    elif args.model == "resnet152":
-        model = ResNet(resnet152_config, num_classes)
+    elif args.model == "resnext50":
+        model = ResNet(resnext50_32x4d_config, num_classes)
+    elif args.model == "resnext101":
+        model = ResNet(resnext101_32x4d_config, num_classes)
     elif args.model == "vgg11":
         model = VGG(vgg11_config, num_classes)
     elif args.model == "vgg13":
@@ -275,7 +277,6 @@ def main(args):
         model = VGG(vgg16_config, num_classes)
     elif args.model == "vgg19":
         model = VGG(vgg19_config, num_classes)
-    else:
         raise ValueError(f"Model {args.model} not recognized.")
     if rank == 0:
         print(f"Model: {args.model}")
