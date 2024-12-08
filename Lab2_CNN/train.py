@@ -217,6 +217,8 @@ def main(args):
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("Cuda available device counts = ", torch.cuda.device_count())
+    for i in range(torch.cuda.device_count()):
+        print(f"GPU {i}: {torch.cuda.get_device_name(i)}")
     if not torch.cuda.is_available():
         print("Eror: GPU is not available")
         sys.exit(1)
