@@ -19,6 +19,7 @@ import json
 
 from models.VGG import *
 from models.ResNet import *
+from models.T2T_ViT import *
 from utils import *
 from config import *
 
@@ -89,7 +90,6 @@ def DataLoaderSplit(raw_data, batch_size, val_ratio=0.2, force_reload=False, wor
 
     return train_loader, val_loader, test_loader
 
-
 def train(model, iterator, optimizer, criterion, device, rank=0):
     epoch_loss = 0
     epoch_acc = 0
@@ -125,7 +125,6 @@ def train(model, iterator, optimizer, criterion, device, rank=0):
     avg_acc = avg_acc / dist.get_world_size()
 
     return avg_loss.item(), avg_acc.item()
-
 
 def evaluate(model, iterator, criterion, device, rank=0):
     epoch_loss = 0
@@ -203,7 +202,7 @@ def get_args_parser():
     )
     parser.add_argument('-o',"--save-dir", default="./out", type=str, help="path to save outputs (default: ./out)")
 
-    parser.add_argument('-opt',"--optimizer", default="sgd", type=str, help="optimizer", choices=["sgd", "adam"])
+    parser.add_argument('-opt',"--optimizer", default="sgd", type=str, help="optimizer", choices=["sgd", "adam", "adamw"])
     parser.add_argument('-lr',"--learning-rate", default=0.1, type=float, help="initial learning rate")
     parser.add_argument(
         "-wd",
@@ -224,7 +223,10 @@ def get_args_parser():
     parser.add_argument("--lr-gamma", default=0.1, type=float, help="decrease lr by a factor of lr-gamma")
     parser.add_argument("--lr-min", default=0.0, type=float, help="minimum lr of lr schedule (default: 0.0)")
 
+    parser.add_argument("--smoothing", default=0.0, type=float, help="label smoothing (default: 0.0)")
+
     parser.add_argument("--writer", action="store_true", help="Enable Tensorboard logging")
+    
 
     return parser
 
@@ -257,7 +259,15 @@ def main(args):
     train_loader, val_loader, test_loader = DataLoaderSplit(raw_data, batch_size, val_ratio=0.2, force_reload=force_reload, workers=workers, distributed=True, rank=rank, world_size=world_size)
 
     # Create the model
-    if args.model == "resnet18":
+    if args.model == "vgg11":
+        model = VGG(vgg11_config, num_classes)
+    elif args.model == "vgg13":
+        model = VGG(vgg13_config, num_classes)
+    elif args.model == "vgg16":
+        model = VGG(vgg16_config, num_classes)
+    elif args.model == "vgg19":
+        model = VGG(vgg19_config, num_classes)
+    elif args.model == "resnet18":
         model = ResNet(resnet18_config, num_classes)
     elif args.model == "resnet34":
         model = ResNet(resnet34_config, num_classes)
@@ -269,16 +279,13 @@ def main(args):
         model = ResNet(resnext50_32x4d_config, num_classes)
     elif args.model == "resnext101":
         model = ResNet(resnext101_32x4d_config, num_classes)
-    elif args.model == "vgg11":
-        model = VGG(vgg11_config, num_classes)
-    elif args.model == "vgg13":
-        model = VGG(vgg13_config, num_classes)
-    elif args.model == "vgg16":
-        model = VGG(vgg16_config, num_classes)
-    elif args.model == "vgg19":
-        model = VGG(vgg19_config, num_classes)
+    elif args.model == "t2t_vit_14":
+        model = T2T_ViT(t2t_vit_14_config, num_classes)
+    elif args.model == "t2t_vit_t_14":
+        model = T2T_ViT(t2t_vit_t_14_config, num_classes)
     else:
         raise ValueError(f"Model {args.model} not recognized.")
+    
     if rank == 0:
         print(f"Model: {args.model}")
         print(f"Number of parameters: {sum(p.numel() for p in model.parameters())}")
@@ -288,6 +295,8 @@ def main(args):
         optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
     elif args.optimizer == "adam":
         optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
+    elif args.optimizer == "adamw":
+        optimizer = optim.AdamW(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
     else:
         raise ValueError(f"Optimizer {args.optimizer} not recognized.")
 
@@ -325,7 +334,7 @@ def main(args):
     if rank == 0:
         print(f"Learning rate scheduler: {args.lr_scheduler}")
 
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.CrossEntropyLoss(label_smoothing=args.smoothing)
 
     model = model.to(device)
     # 使用DDP包装模型

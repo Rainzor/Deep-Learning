@@ -1,5 +1,5 @@
 python .\train.py ^
-    -m "t2t_vit_t_14" ^
+    -m "t2t_vit_14" ^
     -d "..\data\tiny-imagenet-200" ^
     -b 256 ^
     -n 200 ^

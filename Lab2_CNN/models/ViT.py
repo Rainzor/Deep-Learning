@@ -1,14 +1,10 @@
-# Copyright (c) [2012]-[2021] Shanghai Yitu Technology Co., Ltd.
-#
-# This source code is licensed under the Clear BSD License
-# LICENSE file in the root directory of this file
-# All rights reserved.
 """
 T2T-ViT
 """
 import torch
 import torch.nn as nn
 import numpy as np
+import math
 from .utils import get_sinusoid_encoding, trunc_normal
 
 
@@ -93,22 +89,84 @@ class Token_transformer(nn.Module):
         x = self.attn(self.norm1(x))
         x = x + self.dropout(self.mlp(self.norm2(x)))
         return x
+class Token_performer(nn.Module):
+    def __init__(self, dim, in_dim, head_cnt=1, kernel_ratio=0.5, dp1=0.1, dp2 = 0.1):
+        super().__init__()
+        self.emb = in_dim * head_cnt # we use 1, so it is no need here
+        self.kqv = nn.Linear(dim, 3 * self.emb)
+        self.dp = nn.Dropout(dp1)
+        self.proj = nn.Linear(self.emb, self.emb)
+        self.head_cnt = head_cnt
+        self.norm1 = nn.LayerNorm(dim)
+        self.norm2 = nn.LayerNorm(self.emb)
+        self.epsilon = 1e-8  # for stable in division
 
+        self.mlp = nn.Sequential(
+            nn.Linear(self.emb, 1 * self.emb),
+            nn.GELU(),
+            nn.Linear(1 * self.emb, self.emb),
+            nn.Dropout(dp2),
+        )
+
+        self.m = int(self.emb * kernel_ratio)
+        self.w = torch.randn(self.m, self.emb)
+        self.w = nn.Parameter(nn.init.orthogonal_(self.w) * math.sqrt(self.m), requires_grad=False)
+
+    def prm_exp(self, x):
+        # part of the function is borrow from https://github.com/lucidrains/performer-pytorch 
+        # and Simo Ryu (https://github.com/cloneofsimo)
+        # ==== positive random features for gaussian kernels ====
+        # x = (B, T, hs)
+        # w = (m, hs)
+        # return : x : B, T, m
+        # SM(x, y) = E_w[exp(w^T x - |x|/2) exp(w^T y - |y|/2)]
+        # therefore return exp(w^Tx - |x|/2)/sqrt(m)
+        xd = ((x * x).sum(dim=-1, keepdim=True)).repeat(1, 1, self.m) / 2
+        wtx = torch.einsum('bti,mi->btm', x.float(), self.w)
+
+        return torch.exp(wtx - xd) / math.sqrt(self.m)
+
+    def single_attn(self, x):
+        k, q, v = torch.split(self.kqv(x), self.emb, dim=-1)
+        kp, qp = self.prm_exp(k), self.prm_exp(q)  # (B, T, m), (B, T, m)
+        D = torch.einsum('bti,bi->bt', qp, kp.sum(dim=1)).unsqueeze(dim=2)  # (B, T, m) * (B, m) -> (B, T, 1)
+        kptv = torch.einsum('bin,bim->bnm', v.float(), kp)  # (B, emb, m)
+        y = torch.einsum('bti,bni->btn', qp, kptv) / (D.repeat(1, 1, self.emb) + self.epsilon)  # (B, T, emb)/Diag
+        # skip connection
+        y = v + self.dp(self.proj(y))  # same as token_transformer in T2T layer, use v as skip connection
+
+        return y
+
+    def forward(self, x):
+        x = self.single_attn(self.norm1(x))
+        x = x + self.mlp(self.norm2(x))
+        return x
 class T2T_module(nn.Module):
     """
     Tokens-to-Token encoding module
     """
-    def __init__(self, img_size=64, in_chans=3, embed_dim=768, token_dim=64):
+    def __init__(self, img_size=64, in_chans=3,tokens_type='performer', embed_dim=768, token_dim=64):
         super().__init__()
 
-        print('adopt transformer encoder for tokens-to-token')
-        self.soft_split0 = nn.Unfold(kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
-        self.soft_split1 = nn.Unfold(kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
-        self.soft_split2 = nn.Unfold(kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
-        self.attention1 = Token_transformer(in_dim=in_chans * 3 * 3, out_dim=token_dim,num_heads=1, mlp_ratio=1.0)
-        self.attention2 = Token_transformer(in_dim=token_dim * 3 * 3, out_dim=token_dim,num_heads=1, mlp_ratio=1.0)
-        self.project = nn.Linear(token_dim * 3 * 3, embed_dim)
+        if tokens_type == 'transformer':
+            print('adopt transformer encoder for tokens-to-token')
+            self.soft_split0 = nn.Unfold(kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+            self.soft_split1 = nn.Unfold(kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+            self.soft_split2 = nn.Unfold(kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+            self.attention1 = Token_transformer(in_dim=in_chans * 3 * 3, out_dim=token_dim,num_heads=1, mlp_ratio=1.0)
+            self.attention2 = Token_transformer(in_dim=token_dim * 3 * 3, out_dim=token_dim,num_heads=1, mlp_ratio=1.0)
+            self.project = nn.Linear(token_dim * 3 * 3, embed_dim)
 
+        elif tokens_type == 'performer':
+            print('adopt performer encoder for tokens-to-token')
+            self.soft_split0 = nn.Unfold(kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+            self.soft_split1 = nn.Unfold(kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+            self.soft_split2 = nn.Unfold(kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+            self.attention1 = Token_performer(dim=in_chans * 3 * 3, in_dim=token_dim, head_cnt=1, kernel_ratio=0.5, dp1=0.1, dp2=0.1)
+            self.attention2 = Token_performer(dim=token_dim * 3 * 3, in_dim=token_dim, head_cnt=1, kernel_ratio=0.5, dp1=0.1, dp2=0.1)
+            self.project = nn.Linear(token_dim * 3 * 3, embed_dim)
+        else:
+            raise NotImplementedError(f"Unkown tokens_type: {tokens_type}")
 
         self.num_patches = (img_size // (2 * 2 * 1)) * (img_size // (2 * 2 * 1))  # there are 3 sfot split, stride are 2, 2, 1 respectively
 
@@ -147,7 +205,9 @@ class T2T_ViT(nn.Module):
         self.num_features = self.embed_dim = embed_dim  # num_features for consistency with other models
 
         self.tokens_to_token = T2T_module(
-                img_size=img_size, in_chans=in_chans, embed_dim=embed_dim, token_dim=token_dim)
+                img_size=img_size, in_chans=in_chans, 
+                tokens_type=tokens_type,
+                embed_dim=embed_dim, token_dim=token_dim)
         num_patches = self.tokens_to_token.num_patches
 
         self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))

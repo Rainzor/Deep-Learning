@@ -248,6 +248,8 @@ def main(args):
         model = ResNet(resnext50_32x4d_config, num_classes)
     elif args.model == "resnext101":
         model = ResNet(resnext101_32x4d_config, num_classes)
+    elif args.model == "t2t_vit_14":
+        model = T2T_ViT(t2t_vit_14_config, num_classes)
     elif args.model == "t2t_vit_t_14":
         model = T2T_ViT(t2t_vit_t_14_config, num_classes)
     else:

@@ -57,3 +57,8 @@ t2t_vit_t_14_config = ViTConfig(tokens_type = 'transformer',
                                 depth = 14,
                                 num_heads = 6,
                                 mlp_ratio = 3.0)
+t2t_vit_14_config = ViTConfig(tokens_type = 'performer',
+                                embed_dim = 384,
+                                depth = 14,
+                                num_heads = 6,
+                                mlp_ratio = 3.0)        
