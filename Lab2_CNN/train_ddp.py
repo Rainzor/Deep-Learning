@@ -249,6 +249,9 @@ def main(args):
 
     if rank == 0:
         print("Running distributed training on {} GPUs.".format(world_size))
+        print("Cuda available device counts = ", torch.cuda.device_count())
+        for i in range(torch.cuda.device_count()):
+            print(f"GPU {i}: {torch.cuda.get_device_name(i)}")
 
     # Load raw data
     raw_data = RawData(data_path)
