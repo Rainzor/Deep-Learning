@@ -14,11 +14,12 @@ import json
 
 from torch.utils.tensorboard import SummaryWriter
 
-from models.VGG import *
-from models.ResNet import *
-from models.ViT import *
-from utils import *
+from models.VGG import VGG
+from models.ResNet import ResNet
+from models.ViT import T2T_ViT
+from dataset import TinyImageNetDataset, RawData
 from config import *
+from utils import *
 
 SEED = 1234
 

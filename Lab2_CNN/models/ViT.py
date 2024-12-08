@@ -192,7 +192,6 @@ class T2T_module(nn.Module):
         x = self.project(x)
 
         return x
-
 class T2T_ViT(nn.Module):
     def __init__(self, config, num_classes, img_size=64, in_chans=3, qkv_bias=False, qk_scale=None, drop_rate=0., attn_drop_rate=0.,
                  drop_path_rate=0., 
