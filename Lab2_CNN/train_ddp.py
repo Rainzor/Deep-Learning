@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from tqdm import tqdm
+from torch.amp import autocast, GradScaler
 
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
@@ -33,7 +34,7 @@ torch.manual_seed(SEED)
 torch.cuda.manual_seed(SEED)
 torch.backends.cudnn.deterministic = True
 
-def DataLoaderSplit(raw_data, batch_size, val_ratio=0.2, force_reload=False, workers=1, distributed=False, rank=0, world_size=1):
+def DataLoaderSplit(raw_data, batch_size, val_ratio=0.2, force_reload=False, workers=1, distributed=False, rank=0, world_size=1,half=False):
     """
     Prepare DataLoaders for training, validation, and testing.
     If distributed=True, use DistributedSampler for training and validation sets.
@@ -42,7 +43,17 @@ def DataLoaderSplit(raw_data, batch_size, val_ratio=0.2, force_reload=False, wor
                                      std=[0.2302, 0.2265, 0.2262])
     if rank == 0:
         print("Loading training data")
-    train_transform = transforms.Compose([
+    if half:
+        train_transform = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.RandomResizedCrop(64),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            normalize,
+            transforms.ConvertImageDtype(torch.float16)
+        ])
+    else:
+        train_transform = transforms.Compose([
             transforms.ToPILImage(),
             transforms.RandomResizedCrop(64),
             transforms.RandomHorizontalFlip(),
@@ -91,7 +102,7 @@ def DataLoaderSplit(raw_data, batch_size, val_ratio=0.2, force_reload=False, wor
 
     return train_loader, val_loader, test_loader
 
-def train(model, iterator, optimizer, criterion, device, rank=0):
+def train(model, iterator, optimizer, criterion, scaler, device, rank=0):
     epoch_loss = 0
     epoch_acc = 0
     model.train()
@@ -102,11 +113,18 @@ def train(model, iterator, optimizer, criterion, device, rank=0):
         x = x.to(device)
         y = label.to(device)
         optimizer.zero_grad()
-        y_pred, h = model(x)
-        loss = criterion(y_pred, y)
-        acc = calculate_accuracy(y_pred, y)
-        loss.backward()
-        optimizer.step()
+
+        with autocast('cuda'):
+            y_pred, h = model(x)
+            loss = criterion(y_pred, y)
+            acc = calculate_accuracy(y_pred, y)
+
+        scaler.scale(loss).backward()
+        scaler.step(optimizer)
+        scaler.update()
+
+        # loss.backward()
+        # optimizer.step()
         if rank == 0:
             pbar.set_postfix(loss=loss.item(), acc=acc.item())
             pbar.update(1)
@@ -138,9 +156,12 @@ def evaluate(model, iterator, criterion, device, rank=0):
         for i, (x, label) in enumerate(iterator):
             x = x.to(device)
             y = label.to(device)
-            y_pred, h = model(x)
-            loss = criterion(y_pred, y)
-            acc = calculate_accuracy(y_pred, y)
+
+            with autocast('cuda'):
+
+                y_pred, h = model(x)
+                loss = criterion(y_pred, y)
+                acc = calculate_accuracy(y_pred, y)
             if rank == 0:
                 pbar.set_postfix(loss=loss.item(), acc=acc.item())
                 pbar.update(1)
@@ -161,7 +182,7 @@ def evaluate(model, iterator, criterion, device, rank=0):
 
 def train_model(model, num_epochs, train_loader, val_loader, optimizer, criterion, scheduler=None, device='cpu', rank=0):
     log_history = {'train_loss': [], 'val_loss': [], 'train_acc': [], 'val_acc': [], 'lr': []}
-
+    scaler = GradScaler('cuda')
     if rank == 0:
         pbar = tqdm(total=num_epochs)
     else:
@@ -174,7 +195,7 @@ def train_model(model, num_epochs, train_loader, val_loader, optimizer, criterio
         if hasattr(val_loader.sampler, 'set_epoch'):
             val_loader.sampler.set_epoch(epoch)
 
-        train_loss, train_acc = train(model, train_loader, optimizer, criterion, device, rank)
+        train_loss, train_acc = train(model, train_loader, optimizer, criterion,scaler, device, rank)
         if scheduler is not None:
             scheduler.step()
         valid_loss, valid_acc = evaluate(model, val_loader, criterion, device, rank)
@@ -229,7 +250,8 @@ def get_args_parser():
     parser.add_argument("--wo-norm", action="store_false", help="without normalization in the model")
     parser.add_argument("--wo-skip", action="store_false", help="without skip connection in the model")
     parser.add_argument("--writer", action="store_true", help="Enable Tensorboard logging")
-    
+    parser.add_argument('--half', action='store_true', help='use half precision')
+
 
     return parser
 

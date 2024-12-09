@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from tqdm import tqdm
+from torch.amp import autocast, GradScaler
 
 import numpy as np
 import random
@@ -29,7 +30,7 @@ torch.manual_seed(SEED)
 torch.cuda.manual_seed(SEED)
 torch.backends.cudnn.deterministic = True
 
-def DataLoaderSplit(raw_data, batch_size, val_ratio=0.2, force_reload=False,workers=1):
+def DataLoaderSplit(raw_data, batch_size, val_ratio=0.2, force_reload=False,workers=1, half=False):
     """
     Prepare DataLoaders for training, validation, and testing.
 
@@ -49,13 +50,24 @@ def DataLoaderSplit(raw_data, batch_size, val_ratio=0.2, force_reload=False,work
     normalize = transforms.Normalize(mean=[0.4802, 0.4481, 0.3975],
                                      std=[0.2302, 0.2265, 0.2262])
     print("Loading training data")
-    train_transform = transforms.Compose([
+    if half:
+        train_transform = transforms.Compose([
             transforms.ToPILImage(),
             transforms.RandomResizedCrop(64),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
             normalize,
+            transforms.ConvertImageDtype(torch.half)
         ])
+    else:
+        train_transform = transforms.Compose([
+                transforms.ToPILImage(),
+                transforms.RandomResizedCrop(64),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                normalize,
+
+            ])
 
     test_transform = transforms.Compose([
                            transforms.ToTensor(),
@@ -87,7 +99,7 @@ def DataLoaderSplit(raw_data, batch_size, val_ratio=0.2, force_reload=False,work
 
     return train_loader, val_loader, test_loader
 
-def train(model, iterator, optimizer, criterion, device, writer=None):
+def train(model, iterator, optimizer, criterion, device, scaler, writer=None):
     epoch_loss = 0
     epoch_acc = 0
     model.train()
@@ -96,11 +108,25 @@ def train(model, iterator, optimizer, criterion, device, writer=None):
             x = x.to(device)
             y = label.to(device)
             optimizer.zero_grad()
-            y_pred, h = model(x)
-            loss = criterion(y_pred, y)
-            acc = calculate_accuracy(y_pred, y)
-            loss.backward()
-            optimizer.step()                
+
+            with autocast('cuda'):
+                y_pred, h = model(x)
+                loss = criterion(y_pred, y)
+                acc = calculate_accuracy(y_pred, y)
+            
+            
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
+
+
+            # y_pred, h = model(x)
+            # loss = criterion(y_pred, y)
+            # acc = calculate_accuracy(y_pred, y)
+            # loss.backward()
+            # optimizer.step()
+
+
             epoch_loss += loss.item()
             epoch_acc += acc.item()
             t.set_postfix(loss=epoch_loss / (i + 1), acc=epoch_acc / (i + 1))
@@ -119,9 +145,13 @@ def evaluate(model, iterator, criterion, device, writer=None):
             for i, (x, label) in enumerate(iterator):
                 x = x.to(device)
                 y = label.to(device)
-                y_pred, h = model(x)
-                loss = criterion(y_pred, y)
-                acc = calculate_accuracy(y_pred, y)
+                with autocast('cuda'):
+                    y_pred, h = model(x)
+                    loss = criterion(y_pred, y)
+                    acc = calculate_accuracy(y_pred, y)
+                # y_pred, h = model(x)
+                # loss = criterion(y_pred, y)
+                # acc = calculate_accuracy(y_pred, y)
                 epoch_loss += loss.item()
                 epoch_acc += acc.item()
                 t.set_postfix(loss=epoch_loss / (i + 1), acc=epoch_acc / (i + 1))
@@ -135,12 +165,13 @@ def evaluate(model, iterator, criterion, device, writer=None):
 def train_model(model, num_epochs, train_loader, val_loader, optimizer, criterion, scheduler=None, save_dir=None, device='cpu', writer=None):
     log_history = {'train_loss': [], 'train_acc': [], 'val_loss': [], 'val_acc': []}
     model = model.to(device)
+    scaler = GradScaler('cuda')
     print("Training model on device: ", device)
     best_val_acc = 0.0
     with tqdm(total=num_epochs) as pbar:
         for epoch in range(num_epochs):
             # Train
-            train_loss, train_acc = train(model, train_loader, optimizer, criterion, device, writer)
+            train_loss, train_acc = train(model, train_loader, optimizer, criterion, device, scaler, writer)
             if scheduler is not None:
                 scheduler.step()
             # Validate
@@ -205,6 +236,8 @@ def get_args_parser():
     parser.add_argument("--wo-norm", action="store_false", help="without normalization in the model")
     parser.add_argument("--wo-skip", action="store_false", help="without skip connection in the model")
     parser.add_argument('--writer', action='store_true', help='write the log to tensorboard')
+    parser.add_argument('--half', action='store_true', help='use half precision')
+
     return parser
 
 def main(args):
@@ -229,7 +262,7 @@ def main(args):
     num_classes = len(raw_data.labels_t())
     print(f"Number of classes: {num_classes}")
     # Create DataLoader objects
-    train_loader, val_loader, test_loader = DataLoaderSplit(raw_data, batch_size, val_ratio=0.2, force_reload=force_reload, workers=workers)
+    train_loader, val_loader, test_loader = DataLoaderSplit(raw_data, batch_size, val_ratio=0.2, force_reload=force_reload, workers=workers, half=args.half)
 
     # Create the model
     if args.model == "vgg11":
