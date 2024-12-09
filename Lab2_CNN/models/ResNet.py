@@ -150,6 +150,8 @@ class ResNet(nn.Module):
         self.cardinality = cardinality
         self.base_width = base_width
         self.use_skip = use_skip
+        if use_skip==False:
+            print("No skip connection")
         assert len(n_blocks) == len(channels) == 4
 
         # 与原始 ResNet 不同，我们使用 kernel_size=3, stride=1 的第一个卷积层

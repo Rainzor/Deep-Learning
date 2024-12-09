@@ -7,8 +7,11 @@ class VGG(nn.Module):
     def __init__(self, config, output_dim, use_norm=True):
         super().__init__()
 
-        self.features = self.get_vgg_block(config)
         self.use_norm = use_norm
+        if use_norm==False:
+            print("No normalization")
+
+        self.features = self.get_vgg_block(config)
         self.avgpool = nn.AdaptiveAvgPool2d(7) # allow for different image input sizes
 
         self.classifier = nn.Sequential(
