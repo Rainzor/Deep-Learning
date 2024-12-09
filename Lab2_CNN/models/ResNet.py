@@ -132,7 +132,7 @@ class Bottleneck(nn.Module):
 
 
 class ResNet(nn.Module):
-    def __init__(self, config, output_dim):
+    def __init__(self, config, output_dim, use_skip=True):
         """
         通用的 ResNet/ResNeXt 网络结构
 
@@ -149,7 +149,7 @@ class ResNet(nn.Module):
         self.in_channels = channels[0]
         self.cardinality = cardinality
         self.base_width = base_width
-
+        self.use_skip = use_skip
         assert len(n_blocks) == len(channels) == 4
 
         # 与原始 ResNet 不同，我们使用 kernel_size=3, stride=1 的第一个卷积层
@@ -172,11 +172,11 @@ class ResNet(nn.Module):
     def get_resnet_layer(self, block, n_blocks, channels, stride=1):
         layers = []
 
-        layers.append(block(self.in_channels, channels, stride,
+        layers.append(block(self.in_channels, channels, stride, use_skip=self.use_skip,
                            cardinality=self.cardinality, base_width=self.base_width))
 
         for _ in range(1, n_blocks):
-            layers.append(block(block.expansion * channels, channels, stride=1,
+            layers.append(block(block.expansion * channels, channels, stride=1, use_skip=self.use_skip,
                                cardinality=self.cardinality, base_width=self.base_width))
 
         self.in_channels = block.expansion * channels
