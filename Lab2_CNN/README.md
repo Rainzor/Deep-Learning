@@ -6,7 +6,7 @@
 
 ## 1. Overview
 
-使用 `pytorch` 实现卷积神经网络，在 ImageNet 数据集上进行图片分 类。研究 dropout, normalization, learning rate decay, residual connection, network depth等超参数对分类性能的影响。
+使用 `pytorch` 实现卷积神经网络，在 ImageNet 数据集上进行图片分类。研究 dropout, normalization, learning rate decay, residual connection, network depth等超参数对分类性能的影响。
 
 实验测试和对比的网络架构：
 
@@ -150,7 +150,7 @@ def vgg_block(num_convs, in_channels, out_channels, use_norm=True):
 >
 > 第三，更深层的网络很复杂，容易过拟合。 这意味着正则化变得更加重要。
 >
-> 总之，在模型训练过程中，批量规范化利用小批量的均值和标准差，不断调整神经网络的中间输出，使整个神经网络各层的中间输出值更加稳定
+> 总之，在模型训练过程中，批量规范化利用小批量的均值和标准差，不断调整神经网络的中间输出，使整个神经网络各层的中间输出值更加稳定。
 
 ****
 
@@ -210,12 +210,14 @@ class ResBlock(nn.Module):
 
 ****
 
-**实验主要从两个方面来对比测试**： 网络深度的变化和 Skip Connections
+**实验主要从两个方面来对比测试**： 
+
+网络深度的变化和 Skip Connections
 
 - Depth：对比经典的 `ResNet18`、`ResNet34`、`ResNet50`
 - Skip Connections：删去 `ResNet50` 中的残差连接
 
-其中，HyperParameter:
+**HyperParameter**:
 
 - Epochs: 100
 - Optimizer: `SGD`
@@ -224,14 +226,117 @@ class ResBlock(nn.Module):
 - Learning Rate: 0.2
 - Batch Size: 256
 
+**值得强调的是：** 
+
+由于 `TinyImageNet` 图像是 $64\times64$ 的，所以在原来 ResNet的基础上将最开始 **Block** 改为 $3\times 3$ 的卷积核。
+
+```python
+# Different from origin ResNet, we use kernel_size=3, stride=1
+self.conv1 = nn.Conv2d(3, self.in_channels, kernel_size=3, stride=1, 
+                       padding=1, bias=False)
+#self.conv1 = nn.Conv2d(3, self.in_channels, kernel_size=7, stride=3, 
+#                       padding=3, bias=False)
+self.bn1 = nn.BatchNorm2d(self.in_channels)
+self.relu = nn.ReLU(inplace=True)
+# self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+self.maxpool = nn.Identity()
+```
+
+
+
 ### 2.2.3 ResNeXt
 
-ResNeXt 是一种改进的卷积神经网络架构，最早由 Facebook AI Research (FAIR) 团队在 2017 年提出。它是在 ResNet 的基础上进行扩展和优化的。ResNeXt 的设计理念是基于“分组卷积”（Group Convolution）来提高网络的表现力，同时保持计算效率和模型的可扩展性。
+ResNeXt 是一种改进的卷积神经网络架构，它是在 ResNet 的基础上进行扩展和优化的。ResNeXt 的设计理念是基于“分组卷积”（Group Convolution）来提高网络的表现力，同时保持计算效率和模型的可扩展性。
 
 深度卷积神经网络（如 ResNet）在图像分类、目标检测、语义分割等任务中取得了非常好的效果，但它们通常面临以下挑战：
 
 1. **深度网络的训练**：尽管增加网络深度通常能提高性能，但也会带来训练难度，尤其是在计算资源有限的情况下。
 2. **参数数量过大**：为了提高网络表现力，增加了网络的宽度和深度，但这也会导致模型参数数量和计算量的爆炸性增长。
 
-ResNeXt 通过结合“分组卷积”和“残差连接”两种思想，提供了一个解决方案，在不显著增加计算量的情况下大幅提升了模型的表现。
+除了网络深度和网络宽度以外，ResNeXt 注意到 **Cardinality** 这个维度，具体来说：
+
+- ResNeXt 将 Channel 进行分组，**Cardinality** 是指分组卷积中“Group的数量”
+- 然后，每个Group会单独进行卷积运算，这使得每个卷积核只作用于输入的一部分通道,
+- 最后将结果拼接起来。
+
+<img src="assets/image-20241209201952880.png" alt="image-20241209201952880" style="zoom:33%;" />
+
+如图所示，在参数量相同的前提下，左边是ResNet，右边是ResNeXt，ResNeXt的主要区别在于对各个通道进行独立的卷积运算。
+
+****
+
+实验主要对比：**在总参数量大致相同的前提下，进行分组卷积后进行测试**。
+
+### 2.2.4 ViT
+
+**Vision Transformer (ViT)** 是一种基于 Transformer 架构的图像分类模型，它通过将图像视为一个由小块（patch）组成的序列，借助 Transformer 进行处理，标志着从传统的卷积神经网络（CNN）到基于 Transformer 的模型在CV领域中的一次重要转变。
+
+ViT 通过将图像划分为固定大小的块（patch），并将这些块作为一个序列输入到 Transformer 中，完全摒弃了传统 CNN 中的卷积层。这种方法成功地将 Transformer 引入到图像分类任务中
+
+Transformer架构的核心部件在于：Attention Mechanics，允许模型在处理每个图像块时考虑其他所有块的信息，而不是像 CNN 那样仅依赖局部感受野。这使得 ViT 能够捕捉到全局上下文信息，并能更好地处理复杂的图像特征。
+
+<img src="assets/image-20241209203454625.png" alt="image-20241209203454625" style="zoom:33%;" />
+
+**某种意义上，Multi-Head Attention 正是承袭了 ResNeXt 的思路，将特征进行分组处理，更加高效地捕捉到数据中的重要特征。**
+
+****
+
+由于ViT模型是依赖于大量数据和算力训练的预训练模型，所以本实验采用了可以重头训练的模型 **T2T ViT**。在原来 ViT的基础上，添加了 **Token-to-Token** 模块，强调对图像进行分割时，需要存在部分重叠，使得 Patch 之间更容易提取彼此间的特征。
+
+<img src="assets/image-20241209204214281.png" alt="image-20241209204214281" style="zoom: 33%;" />
+
+## 3. Results
+
+### 3.1 VGG
+
+在VGG的实验中，主要对比了Batch Norm的效果，如下图所示
+
+<img src="assets/image-20241209212438055.png" alt="image-20241209212438055" style="zoom: 33%;" />
+
+图中对坐标轴进行的调整方便对比，可以看到在相同超参数前提下，未添加 **Batch Norm** 训练时损失难以下降，且验证集曲线没有收敛。这证明了Batch Norm 对于数值稳定和网络最终收敛性的作用。
+
+最终在 Test Dataset 上 **Top-1 Accuracy** 为：
+
+- VGG：0.5279
+- VGG (Without BatchNorm): 0.0050
+
+### 3.2 ResNet
+
+首先对比了不同 **Depth** 对于ResNet的提升，主要是 `ResNet18`, `ResNet34` 和 `ResNet50`
+
+<img src="assets/image-20241209220528718.png" alt="image-20241209220528718" style="zoom:33%;" />
+
+可以看到 **Depth** 的增加可以提高网络最终收敛的结果。
+
+接着对比了 **Skip Connect**ion 对于 `ResNet50` 的影响：
+
+<img src="assets/image-20241209222054339.png" alt="image-20241209222054339" style="zoom:33%;" />
+
+同样的，**Skip Connection** 对于图像分类提升有帮助。
+
+最终在 Test Dataset 上 **Top-1 Accuracy** 为：
+
+- ResNet18: 0.5509
+- ResNet34: 0.5603
+- ResNet50: 0.5897
+- ResNet50 (Without Skip): 0.5403
+
+### 3.3 ResNeXt
+
+ResNeXt对比 ResNet 添加了**Cardinality** 维度，实验在相同参数量下，对比了 `ResNet50` 和 `ResNeXt50` 的结果
+
+<img src="assets/image-20241209234941195.png" alt="image-20241209234941195" style="zoom:33%;" />
+
+可以看到，ResNeXt 收敛的更快。
+
+最终在 Test Dataset 上 **Top-1 Accuracy** 为：
+
+- ResNet50: 0.5897
+- ResNeXt50: 0.5929
+
+### 3.4 ViT
+
+在 **Tiny ImageNet** 训练 **T2T ViT** 的结果和 **ResNeXt** 对比结果如下
+
+
 

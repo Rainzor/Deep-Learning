@@ -178,6 +178,8 @@ def evaluate(model, iterator, criterion, device='cpu', rank=0):
 
 def train_model(model, num_epochs, train_loader, val_loader, optimizer, criterion, half=False,scheduler=None, device='cpu', rank=0):
     log_history = {'train_loss': [], 'val_loss': [], 'train_acc': [], 'val_acc': [], 'lr': []}
+    best_acc = 0
+    best_parms = model.state_dict()
     scaler = GradScaler('cuda') if half else None
     if rank == 0:
         pbar = tqdm(total=num_epochs)
@@ -203,10 +205,15 @@ def train_model(model, num_epochs, train_loader, val_loader, optimizer, criterio
             log_history['train_acc'].append(train_acc)
             log_history['val_acc'].append(valid_acc)
             log_history['lr'].append(optimizer.param_groups[0]['lr'])
+
+            if valid_acc > best_acc:
+                best_acc = valid_acc
+                best_parms = model.module.state_dict().copy()
+
             pbar.update(1)
     if pbar is not None:
         pbar.close()
-    return log_history
+    return log_history, best_parms
 
 def get_args_parser():
     parser = argparse.ArgumentParser(description="PyTorch Classification Training on Tiny ImageNet", add_help=True)
@@ -363,22 +370,23 @@ def main(args):
     model = DDP(model, device_ids=[local_rank], output_device=local_rank, find_unused_parameters=False)
 
     # Train the model
-    log_history = train_model(model, num_epochs, train_loader, val_loader, optimizer, criterion, half=args.half, scheduler=lr_scheduler, device=device, rank=rank)
+    log_history,best_parms = train_model(model, num_epochs, train_loader, val_loader, optimizer, criterion, half=args.half, scheduler=lr_scheduler, device=device, rank=rank)
     if rank == 0:
         print("Training complete.")
 
-    # Evaluate the model on the test set
-    test_loss, test_acc = evaluate(model, test_loader, criterion, device, rank=rank)
-    print(f"Test Loss: {test_loss:.4f}, Test Acc: {test_acc:.4f}")
-    # Wait for all processes to finish
     dist.barrier()
+    
 
     if rank == 0:
+            # Evaluate the model on the test set
+        model.module.load_state_dict(best_parms)
+        test_loss, test_acc = evaluate(model, test_loader, criterion, device, rank=rank)
+        print(f"Test Loss: {test_loss:.4f}, Test Acc: {test_acc:.4f}")
         timestamp = time.strftime("%Y_%m_%d_%H_%M", time.localtime())
         save_dir = os.path.join(save_dir, args.model)
         os.makedirs(save_dir, exist_ok=True)
         torch_save_path = os.path.join(save_dir, f"{timestamp}_ddp_model.pth")
-        torch.save(model.module.state_dict(), torch_save_path)
+        torch.save(best_parms, torch_save_path)
         print(f"Model saved as {torch_save_path}")
 
         # Save the log history

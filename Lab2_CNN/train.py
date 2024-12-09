@@ -99,7 +99,7 @@ def DataLoaderSplit(raw_data, batch_size, val_ratio=0.2, force_reload=False,work
 
     return train_loader, val_loader, test_loader
 
-def train(model, iterator, optimizer, criterion, device, scaler, writer=None):
+def train(model, iterator, optimizer, criterion, device='cpu', scaler=scaler, writer=None):
     epoch_loss = 0
     epoch_acc = 0
     model.train()
@@ -114,10 +114,13 @@ def train(model, iterator, optimizer, criterion, device, scaler, writer=None):
                 loss = criterion(y_pred, y)
                 acc = calculate_accuracy(y_pred, y)
             
-            
-            scaler.scale(loss).backward()
-            scaler.step(optimizer)
-            scaler.update()
+            if scaler is not None:
+                scaler.scale(loss).backward()
+                scaler.step(optimizer)
+                scaler.update()
+            else:
+                loss.backward()
+                optimizer.step()
 
 
             # y_pred, h = model(x)
@@ -136,7 +139,7 @@ def train(model, iterator, optimizer, criterion, device, scaler, writer=None):
             t.update(1)
     return epoch_loss / len(iterator), epoch_acc / len(iterator)
 
-def evaluate(model, iterator, criterion, device, writer=None):
+def evaluate(model, iterator, criterion, device='cpu', writer=None):
     epoch_loss = 0
     epoch_acc = 0
     model.eval()
@@ -162,26 +165,27 @@ def evaluate(model, iterator, criterion, device, writer=None):
 
     return epoch_loss / len(iterator), epoch_acc / len(iterator)
 
-def train_model(model, num_epochs, train_loader, val_loader, optimizer, criterion, scheduler=None, save_dir=None, device='cpu', writer=None):
+def train_model(model, num_epochs, train_loader, val_loader, optimizer, criterion, scheduler=None, save_dir=None, device='cpu', writer=None, half=False):
     log_history = {'train_loss': [], 'train_acc': [], 'val_loss': [], 'val_acc': []}
     model = model.to(device)
-    scaler = GradScaler('cuda')
+    best_parms = model.state_dict()
+    best_acc  = 0.0
+    scaler = GradScaler('cuda') if half else None
     print("Training model on device: ", device)
-    best_val_acc = 0.0
     with tqdm(total=num_epochs) as pbar:
         for epoch in range(num_epochs):
             # Train
-            train_loss, train_acc = train(model, train_loader, optimizer, criterion, device, scaler, writer)
+            train_loss, train_acc = train(model, train_loader, optimizer, criterion, device=device, scaler=scaler, writer=writer)
             if scheduler is not None:
                 scheduler.step()
             # Validate
-            valid_loss, valid_acc = evaluate(model, val_loader, criterion, device, writer)
+            valid_loss, valid_acc = evaluate(model, val_loader, criterion, device=device, writer=writer)
 
             pbar.set_postfix(train_loss=train_loss, valid_loss=valid_loss)
 
             # Save the best model
-            if valid_acc > best_val_acc:
-                best_val_acc = valid_acc
+            if valid_acc > best_acc:
+                best_acc = valid_acc
                 best_parms = model.state_dict()
 
             # log_history['train_loss'].append(train_loss)
@@ -352,7 +356,7 @@ def main(args):
     # Train the model
     save_dir = os.path.join(save_dir, args.model)
     os.makedirs(save_dir, exist_ok=True)
-    log_history = train_model(model, num_epochs, train_loader, val_loader, optimizer, criterion, scheduler=lr_scheduler, save_dir=save_dir, device=device, writer=writer)
+    log_history = train_model(model, num_epochs, train_loader, val_loader, optimizer, criterion, scheduler=lr_scheduler, save_dir=save_dir, device=device, writer=writer, half=args.half)
 
     # Evaluate the model on test set
     test_loss, test_acc = evaluate(model, test_loader, criterion, device)
