@@ -247,7 +247,7 @@ def get_args_parser():
     parser.add_argument("--wo-skip", action="store_false", help="without skip connection in the model")
     parser.add_argument("--writer", action="store_true", help="Enable Tensorboard logging")
     parser.add_argument('--half', action='store_true', help='use half precision')
-
+    parser.add_argument('--val', default=0.2, type=float, help='validation ratio')
 
     return parser
 
