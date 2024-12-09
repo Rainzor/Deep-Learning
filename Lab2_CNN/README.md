@@ -78,6 +78,137 @@ class TinyImageNetDataset(Dataset):
         return len(self.labels)
 ```
 
-### 2.1.2 Transform
+### 2.1.2 Data Argument
 
 为了高效利用图像数据，对训练数据进行相关变换操作，用于数据增强。
+
+```python
+normalize = transforms.Normalize(mean=[0.4802, 0.4481, 0.3975],
+                                     std=[0.2302, 0.2265, 0.2262])
+train_transform = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.RandomResizedCrop(64),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            normalize])
+test_transform = transforms.Compose([
+                           transforms.ToTensor(),
+                            normalize])
+```
+
+### 2.2 Models
+
+### 2.2.1 VGG
+
+对于CV领域，`VGG`是最早提出使用模块 (Block) 的形式来设计网络架构，之后经典卷积神经网络的基本组成部分是下面的这个序列：
+
+1. 带 padding 以保持分辨率的卷积层；
+2. 非线性激活函数，如ReLU；
+3. Pooling，如最大汇聚层
+
+```python
+def vgg_block(num_convs, in_channels, out_channels, use_norm=True):
+    layers = []
+    for _ in range(num_convs):
+        layers.append(nn.Conv2d(in_channels, out_channels,
+                                kernel_size=3, padding=1))
+        if use_norm:
+            layers.append(nn.BatchNorm2d(out_channels))
+        layers.append(nn.ReLU())
+        in_channels = out_channels
+    layers.append(nn.MaxPool2d(kernel_size=2,stride=2))
+    return nn.Sequential(*layers)
+```
+
+
+
+<center class="half">
+<img src="assets/image-20241208235931241.png" style="zoom: 33%;" />
+<img src="assets/image-20241209000331936.png" style="zoom: 25%;" />
+</center>
+****
+
+**本实验主要测试了：** BatchNorm 的效果
+
+- 含BatchNorm:  `VGG19`，包含 16 个卷积层和 3 个全连接层
+- 不含BatchNorm：`VGG19 (W/O BN)`
+
+其中，HyperParameter:
+
+- Optimizer: `Adam`
+- Schedular: `CosineAnnealingLR`
+- Learning Rate: 5e-4
+- Batch Size: 256
+
+> 为什么需要批量规范化层呢？让我们来回顾一下训练神经网络时出现的一些实际挑战。
+>
+> 首先，数据预处理的方式通常会对最终结果产生巨大影响。 回想一下我们应用多层感知机来预测房价的例子。 使用真实数据时，我们的第一步是标准化输入特征，使其平均值为0，方差为1。 直观地说，这种标准化可以很好地与我们的优化器配合使用，因为它可以将参数的量级进行统一。
+>
+> 第二，对于典型的多层感知机或卷积神经网络。当我们训练时，中间层中的变量（例如，多层感知机中的仿射变换输出）可能具有更广的变化范围：不论是沿着从输入到输出的层，跨同一层中的单元，或是随着时间的推移，模型参数的随着训练更新变幻莫测。 批量规范化的发明者非正式地假设，这些变量分布中的这种偏移可能会阻碍网络的收敛。 直观地说，我们可能会猜想，如果一个层的可变值是另一层的100倍，这可能需要对学习率进行补偿调整。
+>
+> 第三，更深层的网络很复杂，容易过拟合。 这意味着正则化变得更加重要。
+>
+> 总之，在模型训练过程中，批量规范化利用小批量的均值和标准差，不断调整神经网络的中间输出，使整个神经网络各层的中间输出值更加稳定
+
+****
+
+### 2.2.2 ResNet
+
+残差神经网络的主要贡献是发现了“退化现象（Degradation）”，并针对退化现象发明了 “快捷连接（Shortcut connection）”，极大的消除了深度过大的神经网络训练困难问题。神经网络的“深度”首次突破了100层、最大的神经网络甚至超过了1000层。
+
+具体来说，随着网络的深度变得越来越深。理论上，增加网络的深度应该能够提高模型的表现，因为更深的网络能够捕捉到更多的复杂特征。然而，随着网络深度的增加，实际训练中常常遇到以下问题：
+
+1. **梯度消失与梯度爆炸**：在深度网络中，梯度在反向传播时容易变得非常小（梯度消失）或非常大（梯度爆炸），这使得模型难以训练。
+2. **退化问题**：随着层数的增加，理论上模型的性能应该逐渐提升，但实际上，实验中发现随着网络层数的增加，训练误差反而增大，这称为退化问题（Degradation Problem）。
+
+ResNet 的核心创新是引入了**残差块**（Residual Block），通过引入跳跃连接（Skip Connections）来解决深层网络训练中的问题。具体来说，残差块通过在每一层的输入和输出之间添加恒等映射来建立连接。这使得网络能够直接学习到输入和输出之间的**残差**，而不是直接学习复杂的映射。
+
+**残差连接的形式：**
+
+- 在每个残差块中，输入 $x$ 会通过一系列卷积层进行处理，产生输出 $F(x)$。
+- 然后，输入 $x$ 会直接与输出 $F(x$) 相加，形成 $F(x)+x$，这个新的结果会传递到下一层。
+- 这样，网络的目标就变成了学习输入与输出之间的**残差**，而不是直接学习复杂的映射。
+
+这种设计可以通过使得梯度在反向传播时更容易流动，从而缓解梯度消失和梯度爆炸问题，同时避免了退化问题。
+
+>  对于深度神经网络，如果我们能将新添加的层训练成*恒等映射*（identity function）$f(x)=x$，新模型和原模型将同样有效。 同时，由于新模型可能得出更优的解来拟合训练数据集，因此添加层似乎更容易降低训练误差。
+
+```python
+class ResBlock(nn.Module):    
+    def __init__(self, in_channels, out_channels, stride = 1):
+        super().__init__()            
+        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size = 3, 
+                               stride = stride, padding = 1)
+        self.bn1 = nn.BatchNorm2d(out_channels)
+        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size = 3, 
+                               stride = 1, padding = 1)
+        self.bn2 = nn.BatchNorm2d(out_channels)
+        self.relu = nn.ReLU(inplace = True)
+        if in_channels != out_channels:
+            self.shortcut = nn.Sequential(
+            				nn.Conv2d(in_channels, out_channels, kernel_size = 1, stride = stride),
+            				nn.BatchNorm2d(out_channels))
+        else:
+            self.shortcut = nn.Identity()       
+        
+    def forward(self, x):
+        i = x
+        
+        x = self.conv1(x)
+        x = self.bn1(x)       
+        x = self.relu(x)
+        
+        x = self.bn2(self.conv2(x))  
+        x += self.shortcut(i)
+        x = self.relu(x)       
+        return x
+```
+
+<img src="assets/image-20241209003911334.png" alt="image-20241209003911334" style="zoom:50%;" />
+
+****
+
+**实验主要从两个方面来对比测试**： 网络深度的变化和 Skip Connections
+
+- Depth：对比经典的 `ResNet18`、`ResNet34`、`ResNet50`
+-  Skip Connections：删去 `ResNet50` 中的残差连接

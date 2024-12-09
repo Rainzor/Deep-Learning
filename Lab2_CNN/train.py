@@ -133,6 +133,7 @@ def evaluate(model, iterator, criterion, device, writer=None):
     return epoch_loss / len(iterator), epoch_acc / len(iterator)
 
 def train_model(model, num_epochs, train_loader, val_loader, optimizer, criterion, scheduler=None, save_dir=None, device='cpu', writer=None):
+    log_history = {'train_loss': [], 'train_acc': [], 'val_loss': [], 'val_acc': []}
     model = model.to(device)
     print("Training model on device: ", device)
     best_val_acc = 0.0
@@ -151,12 +152,11 @@ def train_model(model, num_epochs, train_loader, val_loader, optimizer, criterio
             if valid_acc > best_val_acc:
                 best_val_acc = valid_acc
                 best_parms = model.state_dict()
-            # if writer is not None:
-            #     writer.add_scalar('Loss/train', train_loss, epoch)
-            #     writer.add_scalar('Loss/val', valid_loss, epoch)
-            #     writer.add_scalar('Accuracy/train', train_acc, epoch)
-            #     writer.add_scalar('Accuracy/val', valid_acc, epoch)
-            #     writer.add_scalar('LearningRate', optimizer.param_groups[0]['lr'], epoch)
+
+            # log_history['train_loss'].append(train_loss)
+            # log_history['train_acc'].append(train_acc)
+            # log_history['val_loss'].append(valid_loss)
+            # log_history['val_acc'].append(valid_acc)
             pbar.update(1)
     log_history = {}
     if save_dir is not None:
@@ -171,6 +171,7 @@ def train_model(model, num_epochs, train_loader, val_loader, optimizer, criterio
 def get_args_parser():
     parser = argparse.ArgumentParser(description="PyTorch Classification Training on Tiny ImageNet", add_help=True)
     parser.add_argument('-d',"--data-path", type=str, default="./data/tiny-imagenet-200", help="Path to the Tiny ImageNet data")
+    parser.add_argument('-o',"--save-dir", default="./out", type=str, help="path to save outputs (default: ./out)")
     parser.add_argument("--force-reload", action="store_true", help="Force reload of data")
     parser.add_argument('-m',"--model", type=str, default="resnet18", help="Model to use for training")
     parser.add_argument('-b',"--batch-size", type=int, default=32, help="Batch size for training")
@@ -178,8 +179,6 @@ def get_args_parser():
     parser.add_argument(
         "-j", "--workers", default=4, type=int, metavar="N", help="number of data loading workers (default: 16)"
     )
-    parser.add_argument('-o',"--save-dir", default="./out", type=str, help="path to save outputs (default: ./out)")
-
     parser.add_argument('-opt',"--optimizer", default="sgd", type=str, help="optimizer", choices=["sgd", "adam", "adamw"])
     parser.add_argument('-lr',"--learning-rate", default=0.1, type=float, help="initial learning rate")
     parser.add_argument(
@@ -203,6 +202,8 @@ def get_args_parser():
 
     parser.add_argument("--smoothing", default=0.0, type=float, help="label smoothing (default: 0.0)")
     
+    parser.add_argument("--wo-norm", action="store_false", help="without normalization in the model")
+    parser.add_argument("--wo-skip", action="store_false", help="without skip connection in the model")
     parser.add_argument('--writer', action='store_true', help='write the log to tensorboard')
     return parser
 
@@ -232,21 +233,21 @@ def main(args):
 
     # Create the model
     if args.model == "vgg11":
-        model = VGG(vgg11_config, num_classes)
+        model = VGG(vgg11_config, num_classes, use_norm=args.wo_norm)
     elif args.model == "vgg13":
-        model = VGG(vgg13_config, num_classes)
+        model = VGG(vgg13_config, num_classes, use_norm=args.wo_norm)
     elif args.model == "vgg16":
-        model = VGG(vgg16_config, num_classes)
+        model = VGG(vgg16_config, num_classes, use_norm=args.wo_norm)
     elif args.model == "vgg19":
-        model = VGG(vgg19_config, num_classes)
+        model = VGG(vgg19_config, num_classes, use_norm=args.wo_norm)
     elif args.model == "resnet18":
-        model = ResNet(resnet18_config, num_classes)
+        model = ResNet(resnet18_config, num_classes, use_skip=args.wo_skip)
     elif args.model == "resnet34":
-        model = ResNet(resnet34_config, num_classes)
+        model = ResNet(resnet34_config, num_classes, use_skip=args.wo_skip)
     elif args.model == "resnet50":
-        model = ResNet(resnet50_config, num_classes)
+        model = ResNet(resnet50_config, num_classes, use_skip=args.wo_skip)
     elif args.model == "resnet101":
-        model = ResNet(resnet101_config, num_classes)
+        model = ResNet(resnet101_config, num_classes, use_skip=args.wo_skip)
     elif args.model == "resnext50":
         model = ResNet(resnext50_32x4d_config, num_classes)
     elif args.model == "resnext101":

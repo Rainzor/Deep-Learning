@@ -6,7 +6,7 @@ import math
 class BasicBlock(nn.Module):
     expansion = 1
 
-    def __init__(self, in_channels, out_channels, stride=1, use_skip=True, use_norm=True, 
+    def __init__(self, in_channels, out_channels, stride=1, use_skip=True,
                  cardinality=1, base_width=64):
         """
         通用的 BasicBlock，可用于 ResNet 和 ResNeXt
@@ -28,20 +28,20 @@ class BasicBlock(nn.Module):
         # 第一层 3x3 卷积
         self.conv1 = nn.Conv2d(in_channels, D, kernel_size=3, stride=stride, 
                                padding=1, bias=False, groups=C if C > 1 else 1)
-        self.bn1 = nn.BatchNorm2d(D) if use_norm else nn.Identity()
+        self.bn1 = nn.BatchNorm2d(D)
         self.relu = nn.ReLU(inplace=True)
 
         # 第二层 3x3 卷积
         self.conv2 = nn.Conv2d(D, out_channels * self.expansion, kernel_size=3, 
                                stride=1, padding=1, bias=False, groups=C if C > 1 else 1)
-        self.bn2 = nn.BatchNorm2d(out_channels * self.expansion) if use_norm else nn.Identity()
+        self.bn2 = nn.BatchNorm2d(out_channels * self.expansion)
 
         # 跳跃连接
         if use_skip and (in_channels != out_channels * self.expansion or stride != 1):
             self.shortcut = nn.Sequential(
                     nn.Conv2d(in_channels, out_channels * self.expansion, 
                               kernel_size=1, stride=stride, bias=False),
-                    nn.BatchNorm2d(out_channels * self.expansion) if use_norm else nn.Identity()
+                    nn.BatchNorm2d(out_channels * self.expansion)
                 )
         else:
             self.shortcut = nn.Identity()
@@ -65,7 +65,7 @@ class BasicBlock(nn.Module):
 class Bottleneck(nn.Module):
     expansion = 4
 
-    def __init__(self, in_channels, out_channels, stride=1, use_skip=True, use_norm=True,
+    def __init__(self, in_channels, out_channels, stride=1, use_skip=True,
                  cardinality=32, base_width=4):
         """
         通用的 Bottleneck 块，可用于 ResNet 和 ResNeXt
@@ -87,17 +87,17 @@ class Bottleneck(nn.Module):
         # 第一层 1x1 卷积（减少通道数）
         self.conv1 = nn.Conv2d(in_channels, D, kernel_size=1, stride=1, 
                                bias=False)
-        self.bn1 = nn.BatchNorm2d(D) if use_norm else nn.Identity()
+        self.bn1 = nn.BatchNorm2d(D)
 
         # 第二层 3x3 分组卷积
         self.conv2 = nn.Conv2d(D, D, kernel_size=3, stride=stride, 
                                padding=1, bias=False, groups=C if C > 1 else 1)
-        self.bn2 = nn.BatchNorm2d(D) if use_norm else nn.Identity()
+        self.bn2 = nn.BatchNorm2d(D)
 
         # 第三层 1x1 卷积（恢复通道数）
         self.conv3 = nn.Conv2d(D, out_channels * self.expansion, kernel_size=1, 
                                stride=1, bias=False)
-        self.bn3 = nn.BatchNorm2d(out_channels * self.expansion) if use_norm else nn.Identity()
+        self.bn3 = nn.BatchNorm2d(out_channels * self.expansion)
 
         self.relu = nn.ReLU(inplace=True)
 
@@ -106,7 +106,7 @@ class Bottleneck(nn.Module):
                 self.shortcut = nn.Sequential(
                     nn.Conv2d(in_channels, out_channels * self.expansion, 
                               kernel_size=1, stride=stride, bias=False),
-                    nn.BatchNorm2d(out_channels * self.expansion) if use_norm else nn.Identity()
+                    nn.BatchNorm2d(out_channels * self.expansion)
                 )
         else:
             self.shortcut = nn.Identity()
@@ -132,7 +132,7 @@ class Bottleneck(nn.Module):
 
 
 class ResNet(nn.Module):
-    def __init__(self, config, output_dim, use_norm=True):
+    def __init__(self, config, output_dim):
         """
         通用的 ResNet/ResNeXt 网络结构
 
@@ -149,14 +149,13 @@ class ResNet(nn.Module):
         self.in_channels = channels[0]
         self.cardinality = cardinality
         self.base_width = base_width
-        self.use_norm = use_norm
 
         assert len(n_blocks) == len(channels) == 4
 
         # 与原始 ResNet 不同，我们使用 kernel_size=3, stride=1 的第一个卷积层
         self.conv1 = nn.Conv2d(3, self.in_channels, kernel_size=3, stride=1, 
                                padding=1, bias=False)
-        self.bn1 = nn.BatchNorm2d(self.in_channels) if self.use_norm else nn.Identity()
+        self.bn1 = nn.BatchNorm2d(self.in_channels)
         self.relu = nn.ReLU(inplace=True)
         # self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.maxpool = nn.Identity()
@@ -173,12 +172,11 @@ class ResNet(nn.Module):
     def get_resnet_layer(self, block, n_blocks, channels, stride=1):
         layers = []
 
-        layers.append(block(self.in_channels, channels, stride, use_norm=self.use_norm,
+        layers.append(block(self.in_channels, channels, stride,
                            cardinality=self.cardinality, base_width=self.base_width))
 
         for _ in range(1, n_blocks):
-            layers.append(block(block.expansion * channels, channels, 
-                               stride=1, use_norm=self.use_norm,
+            layers.append(block(block.expansion * channels, channels, stride=1,
                                cardinality=self.cardinality, base_width=self.base_width))
 
         self.in_channels = block.expansion * channels

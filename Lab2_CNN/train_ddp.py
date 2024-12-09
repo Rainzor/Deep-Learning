@@ -194,6 +194,7 @@ def train_model(model, num_epochs, train_loader, val_loader, optimizer, criterio
 def get_args_parser():
     parser = argparse.ArgumentParser(description="PyTorch Classification Training on Tiny ImageNet", add_help=True)
     parser.add_argument('-d',"--data-path", type=str, default="./data/tiny-imagenet-200", help="Path to the Tiny ImageNet data")
+    parser.add_argument('-o',"--save-dir", default="./out", type=str, help="path to save outputs (default: ./out)")
     parser.add_argument("--force-reload", action="store_true", help="Force reload of data")
     parser.add_argument('-m',"--model", type=str, default="resnet18", help="Model to use for training")
     parser.add_argument('-b',"--batch-size", type=int, default=32, help="Batch size for training")
@@ -201,7 +202,7 @@ def get_args_parser():
     parser.add_argument(
         "-j", "--workers", default=4, type=int, metavar="N", help="number of data loading workers (default: 16)"
     )
-    parser.add_argument('-o',"--save-dir", default="./out", type=str, help="path to save outputs (default: ./out)")
+
 
     parser.add_argument('-opt',"--optimizer", default="sgd", type=str, help="optimizer", choices=["sgd", "adam", "adamw"])
     parser.add_argument('-lr',"--learning-rate", default=0.1, type=float, help="initial learning rate")
@@ -225,7 +226,8 @@ def get_args_parser():
     parser.add_argument("--lr-min", default=0.0, type=float, help="minimum lr of lr schedule (default: 0.0)")
 
     parser.add_argument("--smoothing", default=0.0, type=float, help="label smoothing (default: 0.0)")
-
+    parser.add_argument("--wo-norm", action="store_false", help="without normalization in the model")
+    parser.add_argument("--wo-skip", action="store_false", help="without skip connection in the model")
     parser.add_argument("--writer", action="store_true", help="Enable Tensorboard logging")
     
 
@@ -264,23 +266,21 @@ def main(args):
 
     # Create the model
     if args.model == "vgg11":
-        model = VGG(vgg11_config, num_classes)
+        model = VGG(vgg11_config, num_classes, use_norm=args.wo_norm)
     elif args.model == "vgg13":
-        model = VGG(vgg13_config, num_classes)
+        model = VGG(vgg13_config, num_classes, use_norm=args.wo_norm)
     elif args.model == "vgg16":
-        model = VGG(vgg16_config, num_classes)
+        model = VGG(vgg16_config, num_classes, use_norm=args.wo_norm)
     elif args.model == "vgg19":
-        model = VGG(vgg19_config, num_classes)
+        model = VGG(vgg19_config, num_classes, use_norm=args.wo_norm)
     elif args.model == "resnet18":
-        model = ResNet(resnet18_config, num_classes)
+        model = ResNet(resnet18_config, num_classes, use_skip=args.wo_skip)
     elif args.model == "resnet34":
-        model = ResNet(resnet34_config, num_classes)
+        model = ResNet(resnet34_config, num_classes, use_skip=args.wo_skip)
     elif args.model == "resnet50":
-        model = ResNet(resnet50_config, num_classes)
+        model = ResNet(resnet50_config, num_classes, use_skip=args.wo_skip)
     elif args.model == "resnet101":
-        model = ResNet(resnet101_config, num_classes)
-    elif args.model == "resnext50":
-        model = ResNet(resnext50_32x4d_config, num_classes)
+        model = ResNet(resnet101_config, num_classes, use_skip=args.wo_skip)
     elif args.model == "resnext101":
         model = ResNet(resnext101_32x4d_config, num_classes)
     elif args.model == "t2t_vit_14":
