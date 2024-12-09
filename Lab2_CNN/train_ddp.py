@@ -34,7 +34,7 @@ torch.manual_seed(SEED)
 torch.cuda.manual_seed(SEED)
 torch.backends.cudnn.deterministic = True
 
-def DataLoaderSplit(raw_data, batch_size, val_ratio=0.2, force_reload=False, workers=1, distributed=False, rank=0, world_size=1,half=False):
+def DataLoaderSplit(raw_data, batch_size, val_ratio=0.2, force_reload=False, workers=1, distributed=False, rank=0, world_size=1):
     """
     Prepare DataLoaders for training, validation, and testing.
     If distributed=True, use DistributedSampler for training and validation sets.
@@ -43,17 +43,7 @@ def DataLoaderSplit(raw_data, batch_size, val_ratio=0.2, force_reload=False, wor
                                      std=[0.2302, 0.2265, 0.2262])
     if rank == 0:
         print("Loading training data")
-    if half:
-        train_transform = transforms.Compose([
-            transforms.ToPILImage(),
-            transforms.RandomResizedCrop(64),
-            transforms.RandomHorizontalFlip(),
-            transforms.ToTensor(),
-            normalize,
-            transforms.ConvertImageDtype(torch.float16)
-        ])
-    else:
-        train_transform = transforms.Compose([
+    train_transform = transforms.Compose([
             transforms.ToPILImage(),
             transforms.RandomResizedCrop(64),
             transforms.RandomHorizontalFlip(),
@@ -102,7 +92,7 @@ def DataLoaderSplit(raw_data, batch_size, val_ratio=0.2, force_reload=False, wor
 
     return train_loader, val_loader, test_loader
 
-def train(model, iterator, optimizer, criterion, scaler, device, rank=0):
+def train(model, iterator, optimizer, criterion, device='cpu', scaler=None, rank=0):
     epoch_loss = 0
     epoch_acc = 0
     model.train()
@@ -113,15 +103,21 @@ def train(model, iterator, optimizer, criterion, scaler, device, rank=0):
         x = x.to(device)
         y = label.to(device)
         optimizer.zero_grad()
+        if scaler is not None:
+            with autocast('cuda'):
+                y_pred, h = model(x)
+                loss = criterion(y_pred, y)
+                acc = calculate_accuracy(y_pred, y)
 
-        with autocast('cuda'):
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
+        else:
             y_pred, h = model(x)
             loss = criterion(y_pred, y)
             acc = calculate_accuracy(y_pred, y)
-
-        scaler.scale(loss).backward()
-        scaler.step(optimizer)
-        scaler.update()
+            loss.backward()
+            optimizer.step()
 
         # loss.backward()
         # optimizer.step()
@@ -145,7 +141,7 @@ def train(model, iterator, optimizer, criterion, scaler, device, rank=0):
 
     return avg_loss.item(), avg_acc.item()
 
-def evaluate(model, iterator, criterion, device, rank=0):
+def evaluate(model, iterator, criterion, device='cpu', rank=0):
     epoch_loss = 0
     epoch_acc = 0
     model.eval()
@@ -180,9 +176,9 @@ def evaluate(model, iterator, criterion, device, rank=0):
 
     return avg_loss.item(), avg_acc.item()
 
-def train_model(model, num_epochs, train_loader, val_loader, optimizer, criterion, scheduler=None, device='cpu', rank=0):
+def train_model(model, num_epochs, train_loader, val_loader, optimizer, criterion, half=False,scheduler=None, device='cpu', rank=0):
     log_history = {'train_loss': [], 'val_loss': [], 'train_acc': [], 'val_acc': [], 'lr': []}
-    scaler = GradScaler('cuda')
+    scaler = GradScaler('cuda') if half else None
     if rank == 0:
         pbar = tqdm(total=num_epochs)
     else:
@@ -195,7 +191,7 @@ def train_model(model, num_epochs, train_loader, val_loader, optimizer, criterio
         if hasattr(val_loader.sampler, 'set_epoch'):
             val_loader.sampler.set_epoch(epoch)
 
-        train_loss, train_acc = train(model, train_loader, optimizer, criterion,scaler, device, rank)
+        train_loss, train_acc = train(model, train_loader, optimizer, criterion,scaler=scaler, device=device, rank=rank)
         if scheduler is not None:
             scheduler.step()
         valid_loss, valid_acc = evaluate(model, val_loader, criterion, device, rank)
@@ -284,7 +280,7 @@ def main(args):
     if rank == 0:
         print(f"Number of classes: {num_classes}")
     # Create DataLoader objects
-    train_loader, val_loader, test_loader = DataLoaderSplit(raw_data, batch_size, val_ratio=0.2, force_reload=force_reload, workers=workers, distributed=True, rank=rank, world_size=world_size)
+    train_loader, val_loader, test_loader = DataLoaderSplit(raw_data, batch_size, val_ratio=args.val, force_reload=force_reload, workers=workers, distributed=True, rank=rank, world_size=world_size)
 
     # Create the model
     if args.model == "vgg11":
@@ -367,7 +363,7 @@ def main(args):
     model = DDP(model, device_ids=[local_rank], output_device=local_rank, find_unused_parameters=False)
 
     # Train the model
-    log_history = train_model(model, num_epochs, train_loader, val_loader, optimizer, criterion, scheduler=lr_scheduler, device=device, rank=rank)
+    log_history = train_model(model, num_epochs, train_loader, val_loader, optimizer, criterion, half=args.half, scheduler=lr_scheduler, device=device, rank=rank)
     if rank == 0:
         print("Training complete.")
 
