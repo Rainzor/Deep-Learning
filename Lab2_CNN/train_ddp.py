@@ -169,10 +169,10 @@ def evaluate(model, iterator, criterion, device='cpu', rank=0):
     # 分布式求平均
     avg_loss = torch.tensor(epoch_loss / len(iterator), device=device)
     avg_acc = torch.tensor(epoch_acc / len(iterator), device=device)
-    dist.all_reduce(avg_loss, op=dist.ReduceOp.SUM)
-    dist.all_reduce(avg_acc, op=dist.ReduceOp.SUM)
-    avg_loss = avg_loss / dist.get_world_size()
-    avg_acc = avg_acc / dist.get_world_size()
+    # dist.all_reduce(avg_loss, op=dist.ReduceOp.SUM)
+    # dist.all_reduce(avg_acc, op=dist.ReduceOp.SUM)
+    # avg_loss = avg_loss / dist.get_world_size()
+    # avg_acc = avg_acc / dist.get_world_size()
 
     return avg_loss.item(), avg_acc.item()
 
