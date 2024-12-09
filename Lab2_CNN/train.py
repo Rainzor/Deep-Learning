@@ -21,7 +21,7 @@ from dataset import TinyImageNetDataset, RawData
 from config import *
 from utils import *
 
-SEED = 1234
+SEED = 42
 
 random.seed(SEED)
 np.random.seed(SEED)
