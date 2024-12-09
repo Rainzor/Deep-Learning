@@ -151,7 +151,7 @@ class T2T_module(nn.Module):
         if tokens_type == 'transformer':
             print('adopt transformer encoder for tokens-to-token')
             self.soft_split0 = nn.Unfold(kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
-            self.soft_split1 = nn.Unfold(kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+            self.soft_split1 = nn.Unfold(kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
             self.soft_split2 = nn.Unfold(kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
             self.attention1 = Token_transformer(in_dim=in_chans * 3 * 3, out_dim=token_dim,num_heads=1, mlp_ratio=1.0)
             self.attention2 = Token_transformer(in_dim=token_dim * 3 * 3, out_dim=token_dim,num_heads=1, mlp_ratio=1.0)
@@ -160,7 +160,7 @@ class T2T_module(nn.Module):
         elif tokens_type == 'performer':
             print('adopt performer encoder for tokens-to-token')
             self.soft_split0 = nn.Unfold(kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
-            self.soft_split1 = nn.Unfold(kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+            self.soft_split1 = nn.Unfold(kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
             self.soft_split2 = nn.Unfold(kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
             self.attention1 = Token_performer(dim=in_chans * 3 * 3, in_dim=token_dim, head_cnt=1, kernel_ratio=0.5, dp1=0.1, dp2=0.1)
             self.attention2 = Token_performer(dim=token_dim * 3 * 3, in_dim=token_dim, head_cnt=1, kernel_ratio=0.5, dp1=0.1, dp2=0.1)
@@ -168,7 +168,7 @@ class T2T_module(nn.Module):
         else:
             raise NotImplementedError(f"Unkown tokens_type: {tokens_type}")
 
-        self.num_patches = (img_size // (2 * 2 * 1)) * (img_size // (2 * 2 * 1))  # there are 3 sfot split, stride are 2, 2, 1 respectively
+        self.num_patches = (img_size // (2 * 1 * 1)) * (img_size // (2 * 1 * 1))  # there are 3 sfot split, stride are 2, 2, 1 respectively
 
     def forward(self, x):
         # step0: soft split

@@ -2,7 +2,7 @@
 
 > 卷积神经网络：图像分类
 >
-> SA24229016 王润泽、
+> SA24229016 王润泽
 
 ## 1. Overview
 
@@ -128,12 +128,14 @@ def vgg_block(num_convs, in_channels, out_channels, use_norm=True):
 </center>
 ****
 
-**本实验主要测试了：** BatchNorm 的效果
+**实验主要测试了：** BatchNorm 的效果，主要模型为：
 
 - 含BatchNorm:  `VGG19`，包含 16 个卷积层和 3 个全连接层
 - 不含BatchNorm：`VGG19 (W/O BN)`
 
 其中，HyperParameter:
+
+- Epochs: 200
 
 - Optimizer: `Adam`
 - Schedular: `CosineAnnealingLR`
@@ -211,4 +213,25 @@ class ResBlock(nn.Module):
 **实验主要从两个方面来对比测试**： 网络深度的变化和 Skip Connections
 
 - Depth：对比经典的 `ResNet18`、`ResNet34`、`ResNet50`
--  Skip Connections：删去 `ResNet50` 中的残差连接
+- Skip Connections：删去 `ResNet50` 中的残差连接
+
+其中，HyperParameter:
+
+- Epochs: 100
+- Optimizer: `SGD`
+- Momentum: 0.9
+- Schedular: `CosineAnnealingLR`
+- Learning Rate: 0.2
+- Batch Size: 256
+
+### 2.2.3 ResNeXt
+
+ResNeXt 是一种改进的卷积神经网络架构，最早由 Facebook AI Research (FAIR) 团队在 2017 年提出。它是在 ResNet 的基础上进行扩展和优化的。ResNeXt 的设计理念是基于“分组卷积”（Group Convolution）来提高网络的表现力，同时保持计算效率和模型的可扩展性。
+
+深度卷积神经网络（如 ResNet）在图像分类、目标检测、语义分割等任务中取得了非常好的效果，但它们通常面临以下挑战：
+
+1. **深度网络的训练**：尽管增加网络深度通常能提高性能，但也会带来训练难度，尤其是在计算资源有限的情况下。
+2. **参数数量过大**：为了提高网络表现力，增加了网络的宽度和深度，但这也会导致模型参数数量和计算量的爆炸性增长。
+
+ResNeXt 通过结合“分组卷积”和“残差连接”两种思想，提供了一个解决方案，在不显著增加计算量的情况下大幅提升了模型的表现。
+
