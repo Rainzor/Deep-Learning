@@ -169,10 +169,10 @@ def evaluate(model, iterator, criterion, device='cpu', rank=0):
     # 分布式求平均
     avg_loss = torch.tensor(epoch_loss / len(iterator), device=device)
     avg_acc = torch.tensor(epoch_acc / len(iterator), device=device)
-    # dist.all_reduce(avg_loss, op=dist.ReduceOp.SUM)
-    # dist.all_reduce(avg_acc, op=dist.ReduceOp.SUM)
-    # avg_loss = avg_loss / dist.get_world_size()
-    # avg_acc = avg_acc / dist.get_world_size()
+    dist.all_reduce(avg_loss, op=dist.ReduceOp.SUM)
+    dist.all_reduce(avg_acc, op=dist.ReduceOp.SUM)
+    avg_loss = avg_loss / dist.get_world_size()
+    avg_acc = avg_acc / dist.get_world_size()
 
     return avg_loss.item(), avg_acc.item()
 
@@ -375,13 +375,12 @@ def main(args):
         print("Training complete.")
 
     dist.barrier()
-    
+    model.module.load_state_dict(best_parms)
+    test_loss, test_acc = evaluate(model, test_loader, criterion, device, rank=rank)
 
     if rank == 0:
-            # Evaluate the model on the test set
-        model.module.load_state_dict(best_parms)
-        test_loss, test_acc = evaluate(model, test_loader, criterion, device, rank=rank)
         print(f"Test Loss: {test_loss:.4f}, Test Acc: {test_acc:.4f}")
+        # Evaluate the model on the test set
         timestamp = time.strftime("%Y_%m_%d_%H_%M", time.localtime())
         save_dir = os.path.join(save_dir, args.model)
         os.makedirs(save_dir, exist_ok=True)
