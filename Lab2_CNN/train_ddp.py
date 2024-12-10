@@ -324,17 +324,16 @@ def main(args):
     if args.checkpoint is not None:
         checkpoint = torch.load(args.checkpoint, map_location='cpu', weights_only=True)
         model.load_state_dict(checkpoint)
+        if rank == 0:
+            print(f"Model loaded from {args.checkpoint}")
     
     model = model.to(device)
     # 使用DDP包装模型
     model = DDP(model, device_ids=[local_rank], output_device=local_rank, find_unused_parameters=False)
-    test_loss, test_acc = evaluate(model, test_loader, criterion, device, rank=rank)
     if rank == 0:
         print(f"Model: {args.model}")
         print(f"Number of parameters: {sum(p.numel() for p in model.parameters())}")
-        if args.checkpoint is not None:
-            print(f"Checkpoint loaded from {args.checkpoint}")
-            print(f"At checkpoint, test Loss: {test_loss:.4f}, test Acc: {test_acc:.4f}")
+
 
     # Set up the optimizer
     if args.optimizer == "sgd":
@@ -380,7 +379,10 @@ def main(args):
     if rank == 0:
         print(f"Learning rate scheduler: {args.lr_scheduler}")
 
-
+    if args.checkpoint is not None:
+        test_loss, test_acc = evaluate(model, test_loader, criterion, device, rank=rank)
+        if rank == 0:
+            print(f"At checkpoint, test Loss: {test_loss:.4f}, test Acc: {test_acc:.4f}")
 
     # Train the model
     log_history,best_parms = train_model(model, num_epochs, train_loader, val_loader, optimizer, criterion, half=args.half, scheduler=lr_scheduler, device=device, rank=rank)
