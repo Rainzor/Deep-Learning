@@ -206,7 +206,7 @@ def train_model(model, num_epochs, train_loader, val_loader, optimizer, criterio
             log_history['val_acc'].append(valid_acc)
             log_history['lr'].append(optimizer.param_groups[0]['lr'])
 
-            if valid_acc > best_acc:
+            if valid_acc > best_acc and epoch > 0.1 * num_epochs:
                 best_acc = valid_acc
                 best_parms = model.state_dict()
 
