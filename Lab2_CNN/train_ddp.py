@@ -256,6 +256,7 @@ def get_args_parser():
     parser.add_argument('--half', action='store_true', help='use half precision')
     parser.add_argument('--val', default=0.2, type=float, help='validation ratio')
     parser.add_argument('--checkpoint', default=None, type=str, help='path to checkpoint')
+    parser.add_argument("--dropout", default=0.0, type=float, help="dropout rate (default: 0.0)")
 
     return parser
 
@@ -313,9 +314,9 @@ def main(args):
     elif args.model == "resnext101":
         model = ResNet(resnext101_32x4d_config, num_classes)
     elif args.model == "t2t_vit_14":
-        model = T2T_ViT(t2t_vit_14_config, num_classes)
+        model = T2T_ViT(t2t_vit_14_config, num_classes,drop_rate=args.dropout)
     elif args.model == "t2t_vit_t_14":
-        model = T2T_ViT(t2t_vit_t_14_config, num_classes)
+        model = T2T_ViT(t2t_vit_t_14_config, num_classes,drop_rate=args.dropout)
     else:
         raise ValueError(f"Model {args.model} not recognized.")
     

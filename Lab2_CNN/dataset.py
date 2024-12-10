@@ -81,7 +81,7 @@ class RawData:
 
 
 class TinyImageNetDataset(Dataset):
-    def __init__(self, type_, raw_data, transform=None, force_reload=False):
+    def __init__(self, type_, raw_data, transform=None, force_reload=False, save_processed=True):
         """
         type_: 'train' or 'val'
         raw_data: RawData instance
@@ -91,7 +91,7 @@ class TinyImageNetDataset(Dataset):
         self.type = type_
         self.raw_data = raw_data
         self.force_reload = force_reload
-
+        self.save_processed = save_processed
         # Create a directory to save processed data
         self.processed_path = os.path.join(self.raw_data.data_path, "process")
         os.makedirs(self.processed_path, exist_ok=True)
@@ -115,8 +115,9 @@ class TinyImageNetDataset(Dataset):
         else:
             print("Preprocessing training data...")
             images, labels = self._preload_train_data()
-            print(f"Saving preprocessed training data to {train_data_file}...")
-            np.savez(train_data_file, images=images, labels=labels)
+            if self.save_processed:
+                print(f"Saving preprocessed training data to {train_data_file}...")
+                np.savez(train_data_file, images=images, labels=labels)
         return images, labels
 
     def _load_or_preprocess_val_data(self):
@@ -129,8 +130,9 @@ class TinyImageNetDataset(Dataset):
         else:
             print("Preprocessing validation data...")
             images, labels = self._preload_val_data()
-            print(f"Saving preprocessed validation data to {val_data_file}...")
-            np.savez(val_data_file, images=images, labels=labels)
+            if self.save_processed:
+                print(f"Saving preprocessed validation data to {val_data_file}...")
+                np.savez(val_data_file, images=images, labels=labels)
         return images, labels
 
     def _preload_train_data(self):

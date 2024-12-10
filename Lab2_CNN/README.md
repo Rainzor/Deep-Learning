@@ -275,7 +275,8 @@ ResNeXt 是一种改进的卷积神经网络架构，它是在 ResNet 的基础�
 - Schedular: `CosineAnnealingLR`
 - Learning Rate: 0.1
 - Batch Size: 128
-- 
+- cardinality: 32
+- base_width: 4
 
 ### 2.2.4 ViT
 
@@ -299,9 +300,9 @@ Transformer架构的核心部件在于：Attention Mechanics，允许模型在�
 
 ### 3.1 VGG
 
-在VGG的实验中，主要对比了Batch Norm的效果，如下图所示
+在VGG的实验中，主要对比了**Batch Norm**的效果，如下图所示
 
-<img src="assets/image-20241209212438055.png" alt="image-20241209212438055" style="zoom: 33%;" />
+<img src="assets/image-20241209212438055.png" alt="image-20241209212438055" style="zoom: 50%;" />
 
 图中对坐标轴进行的调整方便对比，可以看到在相同超参数前提下，未添加 **Batch Norm** 训练时损失难以下降，且验证集曲线没有收敛。这证明了Batch Norm 对于数值稳定和网络最终收敛性的作用。
 
@@ -314,39 +315,81 @@ Transformer架构的核心部件在于：Attention Mechanics，允许模型在�
 
 首先对比了不同 **Depth** 对于ResNet的提升，主要是 `ResNet18`, `ResNet34` 和 `ResNet50`
 
-<img src="assets/image-20241209220528718.png" alt="image-20241209220528718" style="zoom:33%;" />
+<img src="assets/image-20241210190721219.png" alt="image-20241210190721219" style="zoom:50%;" />
 
 可以看到 **Depth** 的增加可以提高网络最终收敛的结果。
 
-接着对比了 **Skip Connect**ion 对于 `ResNet50` 的影响：
+接着对比了 **Skip Connect**ion 对于 `ResNet50` 的影响，为了比较公平性，对比了相同参数量的 `ResNet34`
 
-<img src="assets/image-20241209222054339.png" alt="image-20241209222054339" style="zoom:33%;" />
+<img src="assets/image-20241210190736867.png" alt="image-20241210190736867" style="zoom:50%;" />
 
-同样的，**Skip Connection** 对于图像分类提升有帮助。
+同样的，**Skip Connection** 对于收敛性和图像分类提升有帮助。
 
 最终在 Test Dataset 上 **Top-1 Accuracy** 为：
 
-- ResNet18: 0.5509
-- ResNet34: 0.5603
-- ResNet50: 0.5897
-- ResNet50 (Without Skip): 0.5403
+- `ResNet18` Acc: 0.5509, Param: 11.27M
+- `ResNet34` Acc: 0.5603, Param: 21.38M
+- `ResNet50` Acc:0.5897, Param: 23.91M
+- `ResNet50 (W/O Skip)` Acc: 0.5403, Param: 21.133M
 
 ### 3.3 ResNeXt
 
 ResNeXt对比 ResNet 添加了**Cardinality** 维度，实验在相同参数量下，对比了 `ResNet50` 和 `ResNeXt50` 的结果
 
-<img src="assets/image-20241209234941195.png" alt="image-20241209234941195" style="zoom:33%;" />
+<img src="assets/image-20241210190804910.png" alt="image-20241210190804910" style="zoom:50%;" />
 
 可以看到，ResNeXt 收敛的更快。
 
 最终在 Test Dataset 上 **Top-1 Accuracy** 为：
 
-- ResNet50: 0.5897
-- ResNeXt50: 0.5929
+- `ResNet50`  Acc: 0.5897, Param: 23.91M
+- `ResNeXt50` Acc: 0.5929, Param: 23.38M
 
 ### 3.4 ViT
 
 在 **Tiny ImageNet** 训练 **T2T ViT** 的结果和 **ResNeXt** 对比结果如下
 
+<img src="assets/image-20241210190825159.png" alt="image-20241210190825159" style="zoom:50%;" />
 
+可以看到最终ViT结果虽然也收敛，但是在验证集上存在严重过拟合的问题，这可能是由于  `TinyImageNet` 的训练数据量不足导致的，故而最终的结果为：
 
+- `ResNeXt50` Acc: 0.5929, Param: 23.38M
+- `T2T-ViT-T-14` Acc: 0.3948, Param: 21.23M
+
+## 4. Conclusion
+
+在本次实验中，我们深入研究并比较了多种卷积神经网络（CNN）架构在 **Tiny ImageNet-200** 数据集上的图像分类性能。通过对 `VGG`、`ResNet`、`ResNeXt` 以及 `T2T-ViT` 等模型的实现与测试，我们系统地分析了不同架构及其超参数对分类效果的影响。
+
+### 4.1 Batch Normalization 的重要性
+
+在 **VGG** 模型的实验中，我们观察到 **Batch Normalization (BatchNorm)** 对模型训练的显著影响。含有 BatchNorm 的 `VGG19` 模型在训练过程中损失迅速下降并在验证集上取得了较高的准确率（52.79%），而未添加 BatchNorm 的版本则表现极差（0.50%）。这一结果验证了 BatchNorm 在稳定训练过程、加速收敛以及提高模型泛化能力方面的重要作用。
+
+### 4.2 网络深度与残差连接的效果
+
+通过对不同深度的 **ResNet** 模型（`ResNet18`、`ResNet34` 和 `ResNet50`）的比较，我们发现随着网络深度的增加，模型的分类准确率也相应提升，`ResNet50` 达到了最高的 **Top-1 Accuracy**（58.97%）。此外，移除 **Skip Connections** 后的 `ResNet50` 显著下降至 54.03%，进一步证明了残差连接在缓解梯度消失、提升深层网络训练效果中的关键作用。
+
+### 4.3 ResNeXt 的优化优势
+
+在 **ResNeXt** 的实验中，通过引入 **Cardinality**（分组卷积），在保持相近参数量的情况下，`ResNeXt50` 相较于 `ResNet50` 实现了略微提升的准确率（59.29% 对比 58.97%），且收敛速度更快。这表明 ResNeXt 通过增加分组数，有效增强了模型的表示能力，同时保持了计算效率，是对 ResNet 的有效优化。
+
+### 4.4 Vision Transformer 的局限性
+
+尽管 **T2T-ViT** 作为一种基于 Transformer 的图像分类模型，在理论上具备强大的全局特征捕捉能力，但在本次实验中，其在 **Tiny ImageNet** 数据集上的表现（**Top-1 Accuracy** 为 39.48%）明显低于基于 CNN 的 ResNeXt 模型。这主要归因于 **Tiny ImageNet** 数据集规模相对较小，无法充分发挥 ViT 模型对大规模数据和算力的需求，导致模型在训练过程中出现严重的过拟合现象。
+
+### 4.5 总结与展望
+
+本次实验系统地展示了不同 CNN 架构在图像分类任务中的性能表现，并强调了关键技术如 BatchNorm、残差连接以及分组卷积在提升模型效果中的重要性。具体结论如下：
+
+1. **Batch Normalization** 是提升模型稳定性和收敛速度的关键组件，几乎在所有深度学习模型中都表现出其不可或缺的价值。
+2. **网络深度** 与 **残差连接** 共同作用，显著提升了深层网络的训练效果和分类准确率。
+3. **分组卷积（Cardinality）** 的引入在保持模型参数量的同时，进一步增强了模型的表现力，是 ResNeXt 相较于 ResNet 的一大优势。
+4. **Vision Transformer** 在小规模数据集上的表现仍有待提升，未来研究可考虑结合 CNN 的局部特征提取优势，或在更大规模的数据集上验证其潜力。
+
+未来可以进一步探索以下方向：
+
+- **混合模型架构**：结合 CNN 和 Transformer 的优势，设计更为高效和强大的图像分类模型。
+- **数据增强与正则化技术**：针对过拟合问题，进一步优化数据增强策略和正则化方法，以提升模型的泛化能力。
+- **超参数优化**：系统地调整和优化各类超参数（如学习率、Batch Size 等），以挖掘模型潜力，提升分类性能。
+- **扩展到更大规模的数据集**：在更大且多样化的数据集上验证模型的有效性和鲁棒性，确保其在实际应用中的适用性。
+
+通过本次实验，我们不仅加深了对不同深度学习模型的理解，也为未来的模型设计和优化提供了有价值的参考。
