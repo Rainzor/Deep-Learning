@@ -322,8 +322,10 @@ def main(args):
         checkpoint = torch.load(args.checkpoint, map_location='cpu', weights_only=True)
         model.load_state_dict(checkpoint)
         # optimizer.load_state_dict(checkpoint['optimizer'])
+        test_loss, test_acc = evaluate(model, test_loader, criterion, device, rank=rank)
         if rank == 0:
             print(f"Checkpoint loaded from {args.checkpoint}")
+            print(f"At checkpoint, test Loss: {test_loss:.4f}, test Acc: {test_acc:.4f}")
 
     if rank == 0:
         print(f"Model: {args.model}")
