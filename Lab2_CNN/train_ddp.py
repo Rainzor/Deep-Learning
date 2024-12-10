@@ -309,6 +309,8 @@ def main(args):
         model = ResNet(resnet34_config, num_classes, use_skip=args.wo_skip)
     elif args.model == "resnet50":
         model = ResNet(resnet50_config, num_classes, use_skip=args.wo_skip)
+    elif args.model == "resnext50":
+        model = ResNet(resnext50_32x4d_config, num_classes)
     elif args.model == "resnet101":
         model = ResNet(resnet101_config, num_classes, use_skip=args.wo_skip)
     elif args.model == "resnext101":
