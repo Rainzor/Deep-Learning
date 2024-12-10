@@ -241,7 +241,7 @@ def get_args_parser():
     parser.add_argument("--wo-skip", action="store_false", help="without skip connection in the model")
     parser.add_argument('--writer', action='store_true', help='write the log to tensorboard')
     parser.add_argument('--half', action='store_true', help='use half precision')
-
+    parser.add_argument('--checkpoint', default=None, type=str, help='path to the checkpoint')
     return parser
 
 def main(args):
@@ -298,6 +298,12 @@ def main(args):
     
     print(f"Model: {args.model}")
     print(f"Number of parameters: {sum(p.numel() for p in model.parameters())}")
+    if args.checkpoint is not None:
+        state_dict = torch.load(args.checkpoint, map_location='cpu', weights_only=True)
+        if 'module.' in next(iter(state_dict)):
+            state_dict = {k[7:]: v for k, v in state_dict.items()}  # 去掉module.前缀
+        model.load_state_dict(state_dict)
+        print(f"Model loaded from {args.checkpoint}")
 
     
     # Set up the optimizer

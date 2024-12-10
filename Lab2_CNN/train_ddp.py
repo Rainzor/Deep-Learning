@@ -319,17 +319,16 @@ def main(args):
     else:
         raise ValueError(f"Model {args.model} not recognized.")
     
-
-    # Load checkpoint
-    if args.checkpoint is not None:
-        checkpoint = torch.load(args.checkpoint, map_location='cpu', weights_only=True)
-        model.modules.load_state_dict(checkpoint)
-        if rank == 0:
-            print(f"Model loaded from {args.checkpoint}")
-    
     model = model.to(device)
     # 使用DDP包装模型
     model = DDP(model, device_ids=[local_rank], output_device=local_rank, find_unused_parameters=False)
+    # Load checkpoint
+    if args.checkpoint is not None:
+        state_dict  = torch.load(args.checkpoint, map_location=device, weights_only=True)
+        model.load_state_dict(state_dict )
+        if rank == 0:
+            print(f"Model loaded from {args.checkpoint}")
+    
     if rank == 0:
         print(f"Model: {args.model}")
         print(f"Number of parameters: {sum(p.numel() for p in model.parameters())}")
