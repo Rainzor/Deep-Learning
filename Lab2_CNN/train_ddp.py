@@ -289,6 +289,9 @@ def main(args):
         print(f"Number of classes: {num_classes}")
     # Create DataLoader objects
     train_loader, val_loader, test_loader = DataLoaderSplit(raw_data, batch_size, val_ratio=args.val, force_reload=force_reload, workers=workers, distributed=True, rank=rank, world_size=world_size)
+    
+    # Set up the loss function
+    criterion = nn.CrossEntropyLoss(label_smoothing=args.smoothing)
 
     # Create the model
     if args.model == "vgg11":
@@ -375,7 +378,6 @@ def main(args):
     if rank == 0:
         print(f"Learning rate scheduler: {args.lr_scheduler}")
 
-    criterion = nn.CrossEntropyLoss(label_smoothing=args.smoothing)
 
     model = model.to(device)
     # 使用DDP包装模型
