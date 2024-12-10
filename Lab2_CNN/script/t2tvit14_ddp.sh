@@ -1,1 +1,1 @@
-torchrun --nproc_per_node=4  ./train_ddp.py -m 't2t_vit_t_14' -d '/data2/wrz/Datasets/tiny-imagenet-200' -b 128 -n 100 -opt 'adamw' -lr 5e-5 -o 'out' --weight-decay 0.05 --lr-scheduler 'cosine' --lr-warmup-epochs 10 --lr-warmup-method 'linear' --lr-warmup-decay 0.01 --writer --val 0.05
+torchrun --nproc_per_node=4  ./train_ddp.py -m 't2t_vit_t_14' -d '/data2/wrz/Datasets/tiny-imagenet-200' -b 128 -n 100 -opt 'adamw' -lr 5e-5 -o 'out' --weight-decay 0.05 --lr-scheduler 'cosine' --lr-warmup-epochs 5 --lr-warmup-method 'linear' --lr-warmup-decay 0.01 --writer --val 0.05

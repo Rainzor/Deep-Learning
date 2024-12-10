@@ -255,6 +255,7 @@ def get_args_parser():
     parser.add_argument("--writer", action="store_true", help="Enable Tensorboard logging")
     parser.add_argument('--half', action='store_true', help='use half precision')
     parser.add_argument('--val', default=0.2, type=float, help='validation ratio')
+    parser.add_argument('--checkpoint', default=None, type=str, help='path to checkpoint')
 
     return parser
 
@@ -315,6 +316,15 @@ def main(args):
     else:
         raise ValueError(f"Model {args.model} not recognized.")
     
+
+    # Load checkpoint
+    if args.checkpoint is not None:
+        checkpoint = torch.load(args.checkpoint, map_location='cpu', weights_only=True)
+        model.load_state_dict(checkpoint)
+        # optimizer.load_state_dict(checkpoint['optimizer'])
+        if rank == 0:
+            print(f"Checkpoint loaded from {args.checkpoint}")
+
     if rank == 0:
         print(f"Model: {args.model}")
         print(f"Number of parameters: {sum(p.numel() for p in model.parameters())}")
