@@ -323,7 +323,7 @@ def main(args):
     # Load checkpoint
     if args.checkpoint is not None:
         checkpoint = torch.load(args.checkpoint, map_location='cpu', weights_only=True)
-        model.load_state_dict(checkpoint)
+        model.modules.load_state_dict(checkpoint)
         if rank == 0:
             print(f"Model loaded from {args.checkpoint}")
     
