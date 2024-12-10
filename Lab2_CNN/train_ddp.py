@@ -208,7 +208,7 @@ def train_model(model, num_epochs, train_loader, val_loader, optimizer, criterio
 
             if valid_acc > best_acc:
                 best_acc = valid_acc
-                best_parms = model.module.state_dict().copy()
+                best_parms = model.module.state_dict()
 
             pbar.update(1)
     if pbar is not None:
@@ -390,7 +390,7 @@ def main(args):
         print("Training complete.")
 
     dist.barrier()
-    model.module.load_state_dict(best_parms)
+    model.load_state_dict(best_parms)
     test_loss, test_acc = evaluate(model, test_loader, criterion, device, rank=rank)
 
     if rank == 0:
