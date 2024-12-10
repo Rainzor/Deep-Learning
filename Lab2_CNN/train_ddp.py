@@ -26,12 +26,7 @@ from config import *
 from utils import *
 
 
-SEED = 42
 
-random.seed(SEED)
-np.random.seed(SEED)
-torch.manual_seed(SEED)
-torch.cuda.manual_seed(SEED)
 torch.backends.cudnn.deterministic = True
 
 def DataLoaderSplit(raw_data, batch_size, val_ratio=0.2, force_reload=False, workers=1, distributed=False, rank=0, world_size=1):
@@ -257,7 +252,7 @@ def get_args_parser():
     parser.add_argument('--val', default=0.2, type=float, help='validation ratio')
     parser.add_argument('--checkpoint', default=None, type=str, help='path to checkpoint')
     parser.add_argument("--dropout", default=0.0, type=float, help="dropout rate (default: 0.0)")
-
+    parser.add_argument("--seed", default=42, type=int, help="seed for training")
     return parser
 
 def main(args):
@@ -447,4 +442,10 @@ def main(args):
 
 if __name__ == "__main__":
     args = get_args_parser().parse_args()
+    SEED = args.seed
+
+    random.seed(SEED)
+    np.random.seed(SEED)
+    torch.manual_seed(SEED)
+    torch.cuda.manual_seed(SEED)
     main(args)
