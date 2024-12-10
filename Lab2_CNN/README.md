@@ -267,6 +267,16 @@ ResNeXt 是一种改进的卷积神经网络架构，它是在 ResNet 的基础�
 
 实验主要对比：**在总参数量大致相同的前提下，进行分组卷积后进行测试**。
 
+**HyperParameter**:
+
+- Epochs: 100
+- Optimizer: `SGD`
+- Momentum: 0.9
+- Schedular: `CosineAnnealingLR`
+- Learning Rate: 0.1
+- Batch Size: 128
+- 
+
 ### 2.2.4 ViT
 
 **Vision Transformer (ViT)** 是一种基于 Transformer 架构的图像分类模型，它通过将图像视为一个由小块（patch）组成的序列，借助 Transformer 进行处理，标志着从传统的卷积神经网络（CNN）到基于 Transformer 的模型在CV领域中的一次重要转变。

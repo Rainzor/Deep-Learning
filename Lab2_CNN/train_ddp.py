@@ -208,7 +208,7 @@ def train_model(model, num_epochs, train_loader, val_loader, optimizer, criterio
 
             if valid_acc > best_acc:
                 best_acc = valid_acc
-                best_parms = model.module.state_dict()
+                best_parms = model.state_dict()
 
             pbar.update(1)
     if pbar is not None:
