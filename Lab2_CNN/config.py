@@ -52,6 +52,12 @@ resnext101_32x4d_config = ResNetConfig(block = Bottleneck,
                                         cardinality = 32,
                                         base_width = 4)
 
+t2t_vit_t_12_config = ViTConfig(tokens_type = 'transformer',
+                                embed_dim = 256,
+                                depth = 12,
+                                num_heads = 4,
+                                mlp_ratio = 2.0)
+
 t2t_vit_t_14_config = ViTConfig(tokens_type = 'transformer',
                                 embed_dim = 384,
                                 depth = 14,

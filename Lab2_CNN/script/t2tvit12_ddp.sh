@@ -1,0 +1,1 @@
+torchrun --nproc_per_node=3  ./train_ddp.py -m 't2t_vit_t_12' -d '/data2/wrz/Datasets/tiny-imagenet-200' -b 256 -n 100 -opt 'sgd'  -lr 0.1 -o 'out' --momentum 0.9 -o 'out' --weight-decay 0.05 --lr-scheduler 'cosine' --lr-warmup-epochs 5 --lr-warmup-method 'linear' --lr-warmup-decay 0.01 --writer --val 0.05 --dropout 0.2

@@ -310,6 +310,8 @@ def main(args):
         model = ResNet(resnet101_config, num_classes, use_skip=args.wo_skip)
     elif args.model == "resnext101":
         model = ResNet(resnext101_32x4d_config, num_classes)
+    elif args.model == "t2t_vit_t_12":
+        model = T2T_ViT(t2t_vit_t_12_config, num_classes,drop_rate=args.dropout)
     elif args.model == "t2t_vit_14":
         model = T2T_ViT(t2t_vit_14_config, num_classes,drop_rate=args.dropout)
     elif args.model == "t2t_vit_t_14":
