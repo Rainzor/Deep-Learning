@@ -145,12 +145,12 @@ class T2T_module(nn.Module):
     """
     Tokens-to-Token encoding module
     """
-    def __init__(self, img_size=64, in_chans=3,tokens_type='performer', embed_dim=768, token_dim=64):
+    def __init__(self, img_size=64, in_chans=3,tokens_type='performer', embed_dim=768, token_dim=64, stride=2):
         super().__init__()
 
         if tokens_type == 'transformer':
             print('adopt transformer encoder for tokens-to-token')
-            self.soft_split0 = nn.Unfold(kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+            self.soft_split0 = nn.Unfold(kernel_size=(3, 3), stride=(stride, stride), padding=(1, 1))
             self.soft_split1 = nn.Unfold(kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
             self.soft_split2 = nn.Unfold(kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
             self.attention1 = Token_transformer(in_dim=in_chans * 3 * 3, out_dim=token_dim,num_heads=1, mlp_ratio=1.0)
@@ -159,7 +159,7 @@ class T2T_module(nn.Module):
 
         elif tokens_type == 'performer':
             print('adopt performer encoder for tokens-to-token')
-            self.soft_split0 = nn.Unfold(kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+            self.soft_split0 = nn.Unfold(kernel_size=(3, 3), stride=(stride, stride), padding=(1, 1))
             self.soft_split1 = nn.Unfold(kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
             self.soft_split2 = nn.Unfold(kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
             self.attention1 = Token_performer(dim=in_chans * 3 * 3, in_dim=token_dim, head_cnt=1, kernel_ratio=0.5, dp1=0.1, dp2=0.1)
@@ -168,7 +168,7 @@ class T2T_module(nn.Module):
         else:
             raise NotImplementedError(f"Unkown tokens_type: {tokens_type}")
 
-        self.num_patches = (img_size // (2 * 2 * 1)) * (img_size // (2 * 2 * 1))  # there are 3 sfot split, stride are 2, 2, 1 respectively
+        self.num_patches = (img_size // (2 * stride * 1)) * (img_size // (2 * stride * 1))  # there are 3 sfot split, stride are 2, 2, 1 respectively
 
     def forward(self, x):
         # step0: soft split
@@ -196,9 +196,10 @@ class T2T_ViT(nn.Module):
     def __init__(self, config, num_classes, img_size=64, in_chans=3, qkv_bias=False, qk_scale=None, drop_rate=0., attn_drop_rate=0.,
                  drop_path_rate=0., 
                  norm_layer=nn.LayerNorm, 
-                 token_dim=64):
+                 token_dim=64
+                 ):
         super().__init__()
-        tokens_type, embed_dim, depth, num_heads, mlp_ratio = config
+        tokens_type, embed_dim, stride, depth, num_heads, mlp_ratio = config
 
         self.num_classes = num_classes
         self.num_features = self.embed_dim = embed_dim  # num_features for consistency with other models
@@ -206,7 +207,7 @@ class T2T_ViT(nn.Module):
         self.tokens_to_token = T2T_module(
                 img_size=img_size, in_chans=in_chans, 
                 tokens_type=tokens_type,
-                embed_dim=embed_dim, token_dim=token_dim)
+                embed_dim=embed_dim, token_dim=token_dim, stride=stride)
         num_patches = self.tokens_to_token.num_patches
 
         self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
