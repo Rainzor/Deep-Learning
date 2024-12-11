@@ -3,7 +3,7 @@ from models.ResNet import BasicBlock, Bottleneck
 
 ResNetConfig = namedtuple('ResNetConfig', ['block', 'n_blocks', 'channels','cardinality', 'base_width'])
 
-ViTConfig = namedtuple('ViTConfig', ['tokens_type', 'embed_dim', 'depth', 'num_heads', 'mlp_ratio'])
+ViTConfig = namedtuple('ViTConfig', ['tokens_type', 'embed_dim','stride', 'depth', 'num_heads', 'mlp_ratio'])
 
 vgg11_config = [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M']
 
