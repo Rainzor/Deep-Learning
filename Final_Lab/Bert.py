@@ -609,6 +609,9 @@ def train_model(model, train_loader, valid_loader, train_args, tokenizer, writer
                     writer.add_scalar("Loss/eval", val_loss, global_steps)
                     writer.add_scalar("Accuracy/eval", val_acc, global_steps)
 
+                    if best_val_acc- val_acc > 0.1:
+                        print(f"Early stop at step {global_steps}")
+                        return best_val_acc, best_steps
 
                     # 保存最佳模型
                     if val_acc > best_val_acc:
@@ -708,9 +711,12 @@ def main(args):
     test_dataset = ContrastiveDataset(rawdata["test"], tokenizer, max_length=data_args.max_length, type_='test')
 
     # 使用自定义的 collate_fn 创建 DataLoader
-    train_loader = DataLoader(train_dataset, batch_size=train_args.train_batch_size, shuffle=False, collate_fn=custom_collate_fn)
-    valid_loader = DataLoader(valid_dataset, batch_size=train_args.eval_batch_size, shuffle=False, collate_fn=custom_collate_fn)
-    test_loader = DataLoader(test_dataset, batch_size=train_args.eval_batch_size, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=train_args.train_batch_size, shuffle=False,             
+                            collate_fn=custom_collate_fn)
+    valid_loader = DataLoader(valid_dataset, batch_size=train_args.eval_batch_size, shuffle=False,          
+                             collate_fn=custom_collate_fn)
+    test_loader = DataLoader(test_dataset, batch_size=train_args.eval_batch_size, shuffle=False,
+                            collate_fn=custom_collate_fn)
 
     model = QKModel(data_args.model_dir, data_args.labels)
     model.to(train_args.device)
