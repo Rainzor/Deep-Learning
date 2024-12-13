@@ -694,8 +694,8 @@ def main(args):
                             weight_decay=args.weight_decay, 
                             warmup_ratio=args.warmup_ratio)
     timename = time.strftime("%Y-%m-%d-%H-%M", time.localtime())
-    model_name = f'bert-{timename}'
-    train_args.output_dir = os.path.join(train_args.output_dir, model_name)
+    model_name = 'bert'
+    train_args.output_dir = os.path.join(train_args.output_dir, model_name, timename)
 
     writer = SummaryWriter(log_dir=train_args.output_dir)
 
