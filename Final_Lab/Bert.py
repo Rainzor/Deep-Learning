@@ -576,6 +576,8 @@ def train_model(model, train_loader, valid_loader, train_args, tokenizer, writer
     optimizer, scheduler = create_optimizer_and_scheduler(train_args, model, len(train_loader) * train_args.num_train_epochs)
     # 开始训练
     best_val_acc = 0.0
+    val_loss = 0
+    val_acc = 0
     best_steps = 0
     log_history = {
             "train_loss": [],
@@ -590,8 +592,7 @@ def train_model(model, train_loader, valid_loader, train_args, tokenizer, writer
             epoch_loss= 0
             epoch_correct = 0
             epoch_total = 0
-            val_loss = 0
-            val_acc = 0
+
             for batch in train_loader:
                 global_steps += 1
                 
