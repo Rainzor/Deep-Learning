@@ -35,7 +35,7 @@ DATA_DIR = "../data"
 OUTPUT_DIR = "./output_data"
 TASK_NAME = "KUAKE-QQR"
 MAX_LENGTH = 64
-BATCH_SIZE = 16
+BATCH_SIZE = 4
 EPOCHS = 3
 LABELS = 3
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -83,7 +83,7 @@ class TrainingArguments:
         metadata={'help': 'The output directory where the model predictions and checkpoints will be written.'}
     )
     train_batch_size: int = field(
-        default=4,
+        default=BATCH_SIZE,
         metadata={'help': 'batch size for training'}
     )
     eval_batch_size: int = field(
@@ -687,7 +687,12 @@ def main(args):
     set_seed(42)
 
     data_args = DataTrainingArguments(data_dir=args.data_dir, model_dir=args.model_dir)
-    train_args = TrainingArguments()
+    train_args = TrainingArguments(output_dir=args.output_dir, 
+                            num_train_epochs=args.epochs, 
+                            train_batch_size=args.batch_size, 
+                            learning_rate=args.learning_rate, 
+                            weight_decay=args.weight_decay, 
+                            warmup_ratio=args.warmup_ratio)
 
     model_name = f'bert-{str(int(time.time()))}'
     train_args.output_dir = os.path.join(train_args.output_dir, model_name)
