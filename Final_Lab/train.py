@@ -1,9 +1,4 @@
-from transformers import (
-    AutoTokenizer,
-    AutoModel,
-    PreTrainedModel,
-    PreTrainedTokenizer,
-)
+from transformers import AutoTokenizer
 import os
 import time 
 import json
@@ -24,7 +19,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from models.utils import *
 from models.dataset import *
-from models.qkmodel import *
+from models.model import *
 
 
 # 配置参数
@@ -219,6 +214,27 @@ def evaluate(model, dataloader, criterion, device):
                 
     return eval_loss/len(dataloader), eval_correct/len(dataloader)
 
+def predict(
+    args: TrainingArguments,
+    model: nn.Module,
+    test_dataloader
+):
+    model.eval()
+    preds_list = []
+    with torch.no_grad():
+        with tqdm(test_dataloader, desc="Predicting") as pbar:
+            for item in test_dataloader:
+                inputs = prepare_input(item, device=args.device)
+                outputs = model(inputs)
+
+                preds = torch.argmax(outputs.cpu(), dim=-1).numpy()
+                preds_list.append(preds)
+                pbar.update(1)
+
+    print(f'Prediction Finished!')
+    preds = np.concatenate(preds_list, axis=0).tolist()
+
+    return preds
 
 def train_model(model, train_loader, valid_loader, train_args, tokenizer, writer):
     # 定义损失函数和优化器
@@ -286,44 +302,6 @@ def train_model(model, train_loader, valid_loader, train_args, tokenizer, writer
     return best_val_acc, best_steps
 
 
-def predict(
-    args: TrainingArguments,
-    model: nn.Module,
-    test_dataloader
-):
-    model.eval()
-    preds_list = []
-    with torch.no_grad():
-        for item in test_dataloader:
-            inputs = prepare_input(item, device=args.device)
-            outputs = model(inputs)
-
-            preds = torch.argmax(outputs.cpu(), dim=-1).numpy()
-            preds_list.append(preds)
-
-    print(f'Prediction Finished!')
-    preds = np.concatenate(preds_list, axis=0).tolist()
-
-    return preds
-
-def args_parser():
-    parser = argparse.ArgumentParser(description="PyTorch Question-Keyword Matching Training")
-
-    parser.add_argument("--model-dir",'-m', default=MODEL_DIR, type=str, help="The pretrained model directory")
-    parser.add_argument("--data-dir",'-d', default=DATA_DIR, type=str, help="The data directory")
-    parser.add_argument("--output-dir",'-o', default=OUTPUT_DIR, type=str, help="The output directory where the model predictions and checkpoints will be written.")
-
-    parser.add_argument("--epochs",'-n', default=EPOCHS, type=int, help="The total number of training epochs")
-    parser.add_argument("--batch-size",'-b', default=BATCH_SIZE, type=int, help="batch size for training")
-
-    parser.add_argument("--learning-rate",'-lr', default=3e-5, type=float, help="The initial learning rate for AdamW.")
-    parser.add_argument("--weight-decay",'-wd', default=0.0, type=float, help="Weight decay for AdamW")
-    parser.add_argument("--warmup-ratio",'-wr', default=0.05, type=float, help="Linear warmup over warmup_ratio fraction of total steps.")
-
-    parser.add_argument("--tolerance",'-tol', default=0.1, type=float, help="Tolerance for early stopping")
-    parser.add_argument("--tag", default=None, type=str, help="The tag of the model")
-    return parser.parse_args()
-
 def main(args):
 
     set_seed(42)
@@ -366,6 +344,8 @@ def main(args):
     print("Start training...")
     best_acc, best_steps = train_model(model, train_loader, valid_loader, train_args, tokenizer, writer)
 
+    writer.add_scalar("Best Accuracy", best_acc, best_steps)
+    writer.close()
     print(f'Training Finished! Best step - {best_steps} - Best accuracy {best_acc}')
     
     best_state_dict = torch.load(os.path.join(train_args.output_dir, f"checkpoint-{best_steps}", "model.pth"), weights_only=True)

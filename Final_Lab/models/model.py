@@ -1,10 +1,21 @@
 import torch
 from torch import nn
-from transformers import AutoModel
+from transformers import AutoModel, AutoModelForSequenceClassification
 from collections import defaultdict
 import os
 import numpy as np
 
+
+class Bert(nn.Module):
+    def __init__(self, model_dir, num_labels):
+        super(Bert, self).__init__()
+        self.bert = AutoModel.from_pretrained(model_dir, num_labels=num_labels)
+
+    def forward(self, input_ids, attention_mask):
+        return self.bert(input_ids=input_ids, attention_mask=attention_mask)
+    
+    def criterion(self):
+        return nn.CrossEntropyLoss()
 
 class QKModel(nn.Module):
     def __init__(self, model_name, num_labels):
