@@ -3,6 +3,7 @@ import json
 import random
 import numpy as np
 import torch
+import torch.nn as nn
 from dataclasses import dataclass, field
 from collections import defaultdict
 from typing import List, Union, Any
