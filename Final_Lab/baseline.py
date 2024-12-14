@@ -8,10 +8,6 @@ from transformers import (
     EarlyStoppingCallback,
 )
 
-from transformers.trainer_pt_utils import get_parameter_names
-from transformers.optimization import get_linear_schedule_with_warmup
-
-from dataclasses import dataclass, field
 from torch.utils.data import Dataset
 import numpy as np
 import os
@@ -22,6 +18,11 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch.optim import AdamW
+
+import torch.distributed as dist
+from torch.utils.data import DataLoader, DistributedSampler
+from torch.nn.parallel import DistributedDataParallel as DDP
+
 from tqdm import tqdm
 from collections import defaultdict
 from typing import List, Union, Any
@@ -376,6 +377,7 @@ def main(args):
     train_args = TrainingArguments(
         output_dir=args.output_dir,
         train_batch_size=args.batch_size,
+        eval_batch_size=args.batch_size,
         num_train_epochs=args.epochs,
         learning_rate=args.learning_rate,
         weight_decay=args.weight_decay,
