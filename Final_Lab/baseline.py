@@ -36,6 +36,7 @@ from models.utils import (
             set_seed,  
             args_parser,
             create_optimizer_and_scheduler)
+from models.model import Bert
 
 # 初始化路径和任务参数
 MODEL_DIR = "hfl/chinese-bert-wwm-ext"
@@ -125,22 +126,6 @@ class KUAKEQQR_Dataset(Dataset):
     @classmethod
     def label2id(cls, label):
         return cls._label2id[label]
-
-class Bert(nn.Module):
-    def __init__(self, model_dir, num_labels):
-        super(Bert, self).__init__()
-        self.bert = AutoModel.from_pretrained(model_dir)
-        self.num_labels = num_labels
-        self.classifier = nn.Linear(self.bert.config.hidden_size, num_labels)
-
-    def forward(self, input_ids, attention_mask):
-        outputs = self.bert(input_ids=input_ids, attention_mask=attention_mask)
-
-        logits = self.classifier(outputs.pooler_output)
-        return logits
-    
-    def criterion(self):
-        return nn.CrossEntropyLoss()
 
 
 def prepare_input(data: Union[torch.Tensor, Any], device: str = 'cuda'):

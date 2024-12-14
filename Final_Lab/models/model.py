@@ -7,13 +7,27 @@ import os
 import numpy as np
 
 
+
 class Bert(nn.Module):
     def __init__(self, model_dir, num_labels):
         super(Bert, self).__init__()
-        self.bert = AutoModel.from_pretrained(model_dir, num_labels=num_labels)
+        self.bert = AutoModel.from_pretrained(model_dir)
+        self.num_labels = num_labels
+        self.classifier = nn.Linear(self.bert.config.hidden_size*3, num_labels)
 
     def forward(self, input_ids, attention_mask):
-        return self.bert(input_ids=input_ids, attention_mask=attention_mask)
+        outputs = self.bert(input_ids=input_ids, attention_mask=attention_mask)
+
+        pooled_output = outputs.pooler_output # [num_keys, hidden_size]
+
+        last_hidden_state = outputs.last_hidden_state # [num_keys, max_length, hidden_size]
+
+        mean_pooling = torch.mean(last_hidden_state, dim=1) # [num_keys, hidden_size]
+        first4_pooling = torch.sum(last_hidden_state[:, :4], dim=1) # [num_keys, hidden_size]
+
+        readout = torch.cat([pooled_output, mean_pooling, first4_pooling], dim=-1) # [num_keys, hidden_size*3]
+        logits = self.classifier(readout)
+        return logits
     
     def criterion(self):
         return nn.CrossEntropyLoss()
@@ -69,28 +83,20 @@ class ContrastiveModel(nn.Module):
 
     def criterion(self, inputs, outputs):
         
-        exp_scores = torch.exp(outputs/self.temperature)
+        exp_scores = torch.exp(outputs/self.temperature) # [num_keys]
         labels = inputs.labels
         batch = inputs.batch
         # 创建标签掩码
-        mask0 = labels == 0
-        mask1 = labels == 1
-        mask2 = labels == 2
-
-        # 计算批次数量
-        num_batches = batch.max().item() + 1
-
-        # 按批次和标签分组求和
-        sum0 = torch.bincount(batch, weights=exp_scores * mask0.float(), minlength=num_batches)
-        sum1 = torch.bincount(batch, weights=exp_scores * mask1.float(), minlength=num_batches)
-        sum2 = torch.bincount(batch, weights=exp_scores * mask2.float(), minlength=num_batches)
-
-        # 计算分子和分母
-        numerator = sum2 + sum1
-        denominator = sum0 + sum1 + 1e-6 # 防止分母为0
-
-        # 计算比值并取对数
-        ratio = numerator / denominator
+        batch_num = batch.max().item() + 1
+        ratio = torch.zeros(batch_num)
+        for i in range(batch_num):
+            mask = (batch == i)
+            label = labels[mask]
+            exp_score = exp_scores[mask]
+            score2 = exp_score[label==2]
+            score1 = exp_score[label==1]
+            score0 = exp_score[label==0]
+            ratio[i] = (score2.sum() + score1.sum()) / (score1.sum() + score0.sum())
         result = -torch.log(ratio)
 
         return result.mean()
