@@ -4,13 +4,16 @@ import random
 import numpy as np
 import torch
 import torch.nn as nn
+from torch.optim import AdamW
+
 from dataclasses import dataclass, field
 from collections import defaultdict
 from typing import List, Union, Any
 from collections.abc import Mapping
 from .dataset import KUAKE_Dataset
 import argparse
-
+from transformers.trainer_pt_utils import get_parameter_names
+from transformers.optimization import get_linear_schedule_with_warmup, get_cosine_schedule_with_warmup
 
 MODEL_DIR = "hfl/chinese-bert-wwm-ext"
 DATA_DIR = "../data"
