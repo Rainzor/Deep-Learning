@@ -251,6 +251,7 @@ def load_data(data_dir, task_name, argument = False):
 
         new_grouped_data = defaultdict(lambda: [[], []])
         if argument:
+            print("Data is augmented")
             for query, keys in grouped_data.items():
                 key, label = keys
                 key2, key1, key0 = [], [], []
@@ -280,7 +281,7 @@ def load_data(data_dir, task_name, argument = False):
                     for j in range(len(key0)):
                         new_grouped_data[key2[i]][0].append(key0[j])
                         new_grouped_data[key2[i]][1].append(0)
-                        
+
         grouped_data.update(new_grouped_data)
         for query1, keys in grouped_data.items():
             find_quary = False
