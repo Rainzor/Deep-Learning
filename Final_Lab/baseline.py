@@ -127,8 +127,8 @@ def load_data(data_dir, task_name, argument=False):
                             new_grouped_data[key2[i]][0].append(key1[j])
                             new_grouped_data[key2[i]][1].append(1)
 
-                            new_grouped_data[key1[j]][0].append(key2[i])
-                            new_grouped_data[key1[j]][1].append(0)
+                            # new_grouped_data[key1[j]][0].append(key2[i])
+                            # new_grouped_data[key1[j]][1].append(0)
                         
                         for j in range(len(key0)):
                             new_grouped_data[key2[i]][0].append(key0[j])
