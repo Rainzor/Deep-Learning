@@ -117,7 +117,12 @@ def load_data(data_dir, task_name, argument=False):
 
                     #     new_grouped_data[key2[j]][0].append(key2[i])
                     #     new_grouped_data[key2[j]][1].append(2)
-                    
+                    new_grouped_data[key2[i]][0].append(key2[i])
+                    new_grouped_data[key2[i]][1].append(2)
+                    if query != key2[i]:
+                        new_grouped_data[key2[i]][0].append(query)
+                        new_grouped_data[key2[i]][1].append(2)
+
                     for j in range(len(key1)):
                         new_grouped_data[key2[i]][0].append(key1[j])
                         new_grouped_data[key2[i]][1].append(1)
