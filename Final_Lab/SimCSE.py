@@ -13,7 +13,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from models.utils import *
 from models.dataset import *
-from models.model import QKModel
+from models.model import ContrastiveModel
 
 def train(model, data, optimizer, scheduler, device):
     model.train()
@@ -21,13 +21,13 @@ def train(model, data, optimizer, scheduler, device):
     optimizer.zero_grad()
     data = data.to(device)
     labals = data.labels
-
+    correct = 0
     # 前向传播
     logits = model(data)
     nums = 0
     loss = model.criterion(data, logits)
-    correct = (torch.argmax(logits, dim=1) == labals).sum().item()
-    correct /= len(labals)
+    # correct = (torch.argmax(logits, dim=1) == labals).sum().item()
+    # correct /= len(labals)
     loss.backward()
     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
 
@@ -48,8 +48,8 @@ def evaluate(model, dataloader, device):
                 # 前向传播
                 logits = model(data)
                 loss = model.criterion(data, logits).item()
-                correct = (torch.argmax(logits, dim=1) == labels).sum().item()
-                eval_correct += correct/len(labels)
+                # correct = (torch.argmax(logits, dim=1) == labels).sum().item()
+                # eval_correct += correct/len(labels)
                 eval_loss += loss   
                 pbar.update(1)
                 
@@ -81,17 +81,10 @@ def train_model(model, train_loader, valid_loader, train_args, tokenizer, writer
     # 定义损失函数和优化器
     optimizer, scheduler = create_optimizer_and_scheduler(train_args, model, len(train_loader) * train_args.num_train_epochs)
     # 开始训练
-    best_val_acc = 0.0
     val_loss = 0
     val_acc = 0
     best_steps = 0
-    log_history = {
-            "train_loss": [],
-            "train_accuracy": [],
-            "eval_loss": [],
-            "eval_accuracy": []
-        }
-
+    final_loss = 0
     with tqdm(range(train_args.num_train_epochs* len(train_loader)), desc="Epochs") as epochs_pbar:
         global_steps = 0
         for epoch in range(train_args.num_train_epochs):
@@ -112,36 +105,31 @@ def train_model(model, train_loader, valid_loader, train_args, tokenizer, writer
                     val_loss, val_acc = evaluate(model, valid_loader, train_args.device)
 
                     writer.add_scalar("Loss/train", epoch_loss / epoch_total, global_steps)
-                    writer.add_scalar("Accuracy/train", epoch_correct / epoch_total, global_steps)
+                    # writer.add_scalar("Accuracy/train", epoch_correct / epoch_total, global_steps)
                     writer.add_scalar("Loss/eval", val_loss, global_steps)
-                    writer.add_scalar("Accuracy/eval", val_acc, global_steps)
+                    # writer.add_scalar("Accuracy/eval", val_acc, global_steps)
 
                     writer.add_scalar("Learning Rate", scheduler.get_last_lr()[0], global_steps)
 
-                    if best_val_acc- val_acc > train_args.tolerance:
-                        print(f"Early stop at step {global_steps}")
-                        return best_val_acc, best_steps
-
-                    # 保存最佳模型
-                    if val_acc > best_val_acc:
-                        best_val_acc = val_acc
-                        best_steps = epoch
-                        os.makedirs(train_args.output_dir, exist_ok=True)
-                        save_dir = os.path.join(train_args.output_dir, f"checkpoint-{best_steps}")
-                        os.makedirs(save_dir, exist_ok=True)
-                        
-                        torch.save(model.state_dict(), os.path.join(save_dir, "model.pth"))
-
-                        tokenizer.save_pretrained(save_directory=save_dir)
+                    final_loss = val_loss
                 
                 epochs_pbar.set_postfix({
                     "train loss": epoch_loss / epoch_total,
-                    "train acc": epoch_correct / epoch_total,
+                    # "train acc": epoch_correct / epoch_total,
                     "eval loss": val_loss,
-                    "eval acc": val_acc
+                    # "eval acc": val_acc
                 })
                 epochs_pbar.update(1)
-    return best_val_acc, best_steps
+
+        final_steps = epoch
+        os.makedirs(train_args.output_dir, exist_ok=True)
+        save_dir = train_args.output_dir
+        
+        model.encoder.save_pretrained(save_dir)
+        torch.save(model.state_dict(), os.path.join(save_dir, "model.pth"))
+        tokenizer.save_pretrained(save_directory=save_dir)
+        print(f"Model saved at {save_dir}")
+    return final_loss, final_steps
 
 
 def main(args):
@@ -179,28 +167,14 @@ def main(args):
     test_loader = DataLoader(test_dataset, batch_size=train_args.eval_batch_size, shuffle=False,
                             collate_fn=custom_collate_fn)
 
-    model = QKModel(data_args.model_dir, data_args.labels)
+    model = ContrastiveModel(data_args.model_dir, data_args.labels)
     model.to(train_args.device)
 
     print("Start training...")
-    best_acc, best_steps = train_model(model, train_loader, valid_loader, train_args, tokenizer, writer)
+    final_loss, final_steps = train_model(model, train_loader, valid_loader, train_args, tokenizer, writer)
 
-    writer.add_scalar("Best Accuracy", best_acc, best_steps)
     writer.close()
-    print(f'Training Finished! Best step - {best_steps} - Best accuracy {best_acc}')
-    
-    best_state_dict = torch.load(os.path.join(train_args.output_dir, f"checkpoint-{best_steps}", "model.pth"), weights_only=True)
-    
-    model.load_state_dict(best_state_dict)
-
-    torch.save(model.state_dict(), os.path.join(train_args.output_dir, "model.pth"))
-
-    tokenizer.save_pretrained(save_directory=train_args.output_dir)
-    print(f"Final model and tokenizer are saved to {train_args.output_dir}")
-
-    preds = predict(train_args, model, test_loader)
-    generate_commit(train_args.output_dir, data_args.task_name, rawdata["test"], preds)
-    print(f"Commit file generated to {train_args.output_dir}")
+    print(f'Training Finished! Final Steps: {final_steps}, Final Loss: {final_loss}')
 
 if __name__ == "__main__":
     args = args_parser()

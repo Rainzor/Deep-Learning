@@ -306,7 +306,8 @@ def main(args):
         learning_rate=args.learning_rate,
         weight_decay=args.weight_decay,
         warmup_ratio=args.warmup_ratio,
-        tolerance=args.tolerance
+        tolerance=args.tolerance,
+        scheduler=args.scheduler
     )
 
     data_args.data_dir = os.path.join(data_args.data_dir, data_args.task_name)
