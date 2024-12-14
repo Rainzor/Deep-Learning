@@ -60,7 +60,26 @@ def load_data(data_dir, task_name, argument=False):
         with open(file_path, "r", encoding="utf-8") as f:
             return json.load(f)
 
-    def preprocess_train_dev(samples):
+    def preprocess_valid(samples):
+        processed_samples = []
+        for sample in samples:
+            label = sample.get("label", None)
+            if label == "NA":
+                continue
+            try:
+                label = int(label)
+            except (ValueError, TypeError):
+                continue
+            query1 = sample["query1"]
+            query2 = sample["query2"]
+            processed_samples.append({
+                "text_a": query1,
+                "text_b": query2,
+                "label": label,
+            })
+        return processed_samples
+
+    def preprocess_train(samples):
         processed_samples = []
         
         grouped_data = defaultdict(lambda: [[], []])
@@ -80,7 +99,6 @@ def load_data(data_dir, task_name, argument=False):
 
         new_grouped_data = defaultdict(lambda: [[], []])
         if argument:
-            print("Data is augmented")
             for query, keys in grouped_data.items():
                 key, label = keys
                 key2, key1, key0 = [], [], []
@@ -111,13 +129,6 @@ def load_data(data_dir, task_name, argument=False):
                         new_grouped_data[key2[i]][0].append(key0[j])
                         new_grouped_data[key2[i]][1].append(0)
 
-            # if argument and query1 != query2:
-            #     if label == 2:
-            #         grouped_data[query2][0].append(query1)
-            #         grouped_data[query2][1].append(2)
-            #     elif label == 1:
-            #         grouped_data[query2][0].append(query1)
-            #         grouped_data[query2][1].append(0)
         grouped_data.update(new_grouped_data)
         for query1, keys in grouped_data.items():
             find_quary = False
@@ -130,27 +141,6 @@ def load_data(data_dir, task_name, argument=False):
                 keys[0].append(query1)
                 keys[1].append(2)
 
-        
-        # 转换为列表形式
-        # processed_samples = [{
-        #     "query": query1,
-        #     "keys": keys[0],
-        #     "label": keys[1]
-        # } for query1, keys in grouped_data.items()]
-        # return processed_samples
-        # for sample in samples:
-        #     label = sample.get("label", None)
-        #     if label == "NA":
-        #         continue  # Skip samples where label is "NA"
-            
-        #     try:
-        #         # Convert label to int if it's not already
-        #         label = int(label)
-        #     except (ValueError, TypeError):
-        #         # Skip samples that have non-integer labels that are not "NA"
-        #         continue
-        #     query1 = sample["query1"]
-        #     query2 = sample["query2"]
 
         for query, keys in grouped_data.items():
             query1 = query
@@ -163,11 +153,6 @@ def load_data(data_dir, task_name, argument=False):
                     "label": label,
                 })
 
-        # processed_samples.append({
-        #         "text_a": query1,
-        #         "text_b": query1,
-        #         "label": label,
-        #     })
 
         return processed_samples
 
@@ -179,17 +164,20 @@ def load_data(data_dir, task_name, argument=False):
             "label": -1,
         } for sample in samples]
 
-    def load_and_preprocess(file_path, is_test=False):
+    def load_and_preprocess(file_path, type_="train"):
         data = read_file(file_path)
-        if is_test:
-            return preprocess_test(data)
+        if type_ == "train":
+            return preprocess_train(data)
+        elif type_ == "valid":
+            return preprocess_valid(data)
         else:
-            return preprocess_train_dev(data)
+            return preprocess_test(data)
+
 
     return {
-        "train": load_and_preprocess(train_path, is_test=False),
-        "dev": load_and_preprocess(dev_path, is_test=False),
-        "test": load_and_preprocess(test_path, is_test=True),
+        "train": load_and_preprocess(train_path, type_="train"),
+        "dev": load_and_preprocess(dev_path, type_="valid"),
+        "test": load_and_preprocess(test_path, type_="test")
     }
 
 class KUAKEQQR_Dataset(Dataset):

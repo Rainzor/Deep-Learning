@@ -76,22 +76,54 @@ class ContrastiveModel(nn.Module):
         score = self.score(pooled_output).squeeze(-1) # [num_keys]
         return score
 
-    def criterion(self, inputs, outputs):
+    # def criterion(self, inputs, outputs):
         
-        exp_scores = torch.exp(outputs/self.temperature) # [num_keys]
+    #     exp_scores = torch.exp(outputs/self.temperature) # [num_keys]
+    #     labels = inputs.labels
+    #     batch = inputs.batch
+    #     # 创建标签掩码
+    #     batch_num = batch.max().item() + 1
+    #     ratio = torch.zeros(batch_num)
+    #     for i in range(batch_num):
+    #         mask2 = (batch == i) & (labels == 2)
+    #         mask1 = (batch == i) & (labels == 1)
+    #         mask0 = (batch == i) & (labels == 0)
+    #         mask0 = mask0 | (batch != i)
+    #         score2 = exp_score[mask2]
+    #         score1 = exp_score[mask0]
+    #         score0 = exp_score[mask1]
+    #         ratio[i] = (score2.sum() + score1.sum()) / (score1.sum() + score0.sum())
+    #     result = -torch.log(ratio)
+
+    #     return result.mean()
+
+    def criterion(self, inputs, outputs):
+        exp_scores = torch.exp(outputs / self.temperature)  # [num_keys]
         labels = inputs.labels
         batch = inputs.batch
-        # 创建标签掩码
+        
+        # 获取 batch 的数量
         batch_num = batch.max().item() + 1
-        ratio = torch.zeros(batch_num)
-        for i in range(batch_num):
-            mask = (batch == i)
-            label = labels[mask]
-            exp_score = exp_scores[mask]
-            score2 = exp_score[label==2]
-            score1 = exp_score[label==1]
-            score0 = exp_score[label==0]
-            ratio[i] = (score2.sum() + score1.sum()) / (score1.sum() + score0.sum())
-        result = -torch.log(ratio)
+        
+        # 创建掩码
+        mask2 = (labels == 2)  # 类别2的掩码
+        mask1 = (labels == 1)  # 类别1的掩码
+        mask0 = (labels == 0)  # 类别0的掩码
 
+        # 将掩码与 batch 索引对齐
+        mask2_batch = mask2.unsqueeze(1) & (batch.unsqueeze(0) == torch.arange(batch_num).to(batch.device).unsqueeze(1))
+        mask1_batch = mask1.unsqueeze(1) & (batch.unsqueeze(0) == torch.arange(batch_num).to(batch.device).unsqueeze(1))
+        mask0_batch = mask0.unsqueeze(1) & (batch.unsqueeze(0) == torch.arange(batch_num).to(batch.device).unsqueeze(1))
+
+        # 计算每个类别的得分
+        score2 = exp_scores[mask2_batch].sum(dim=1)
+        score1 = exp_scores[mask0_batch].sum(dim=1)
+        score0 = exp_scores[mask1_batch].sum(dim=1)
+        
+        # 计算 ratio
+        ratio = (score2 + score1) / (score1 + score0)
+
+        # 计算结果并返回
+        result = -torch.log(ratio)
+        
         return result.mean()
