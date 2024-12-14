@@ -20,51 +20,6 @@ from models.utils import *
 from models.dataset import *
 from models.model import *
 
-
-def create_optimizer_and_scheduler(
-    args: TrainingArguments,
-    model: nn.Module,
-    num_training_steps: int):
-
-    decay_parameters = get_parameter_names(model, [nn.LayerNorm])
-    decay_parameters = [name for name in decay_parameters if "bias" not in name]
-    optimizer_grouped_parameters = [
-        {
-            "params": [p for n, p in model.named_parameters() if n in decay_parameters],
-            "weight_decay": args.weight_decay,
-        },
-        {
-            "params": [p for n, p in model.named_parameters() if n not in decay_parameters],
-            "weight_decay": 0.0,
-        },
-    ]
-
-    optimizer = AdamW(
-        optimizer_grouped_parameters, 
-        lr=args.learning_rate,
-        weight_decay=args.weight_decay,
-    )
-    if args.scheduler == "linear":
-        scheduler = get_linear_schedule_with_warmup(
-            optimizer, 
-            num_training_steps=num_training_steps, 
-            num_warmup_steps=args.get_warmup_steps(num_training_steps)
-        )
-    elif args.scheduler == "cosine":
-        scheduler = get_cosine_schedule_with_warmup(
-            optimizer, 
-            num_training_steps=num_training_steps,
-            num_warmup_steps=args.get_warmup_steps(num_training_steps)
-        )
-    elif args.scheduler == "constant":
-        scheduler = get_constant_schedule_with_warmup(
-            optimizer, 
-            num_warmup_steps=args.get_warmup_steps(num_training_steps)
-        )
-
-    return optimizer, scheduler
-
-
 def train(model, data, optimizer, scheduler, criterion, device):
     model.train()
 

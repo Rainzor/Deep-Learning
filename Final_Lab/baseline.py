@@ -30,6 +30,12 @@ from collections.abc import Mapping
 from torch.utils.tensorboard import SummaryWriter
 import argparse
 
+from models.utils import (
+            DataTrainingArguments, 
+            TrainingArguments,
+            set_seed,  
+            args_parser,
+            create_optimizer_and_scheduler)
 
 # 初始化路径和任务参数
 MODEL_DIR = "hfl/chinese-bert-wwm-ext"
@@ -42,118 +48,6 @@ EPOCHS = 3
 LABELS = 3
 
 
-@dataclass
-class DataTrainingArguments:
-
-    model_dir: str = field(
-        default= MODEL_DIR,
-        metadata={'help': 'The pretrained model directory'}
-    )
-    data_dir: str = field(
-        default=DATA_DIR,
-        metadata={'help': 'The data directory'}
-    )
-    max_length: int = field(
-        default=MAX_LENGTH,
-        metadata={'help': 'Maximum sequence length allowed to input'}
-    )
-
-    task_name: str = field(
-        default=TASK_NAME,
-        metadata={'help': 'The name of the task to train on'}
-    )
-
-    labels: int = field(
-        default=LABELS,
-        metadata={'help': 'The number of labels in the dataset'}
-    )
-
-    def __str__(self):
-        self_as_dict = dataclasses.asdict(self)
-        attrs_as_str = [f"{k}={v},\n" for k, v in sorted(self_as_dict.items())]
-        return f"{self.__class__.__name__}(\n{''.join(attrs_as_str)})"
-        
-    def to_json_string(self):
-        """Serializes this instance to a JSON string."""
-        return json.dumps(dataclasses.asdict(self), indent=2) + "\n"
-
-@dataclass
-class TrainingArguments:
-
-    output_dir: str = field(
-        default='output_data/',
-        metadata={'help': 'The output directory where the model predictions and checkpoints will be written.'}
-    )
-    train_batch_size: int = field(
-        default=BATCH_SIZE,
-        metadata={'help': 'batch size for training'}
-    )
-    eval_batch_size: int = field(
-        default=1,
-        metadata={'help': 'batch size for evaluation'}
-    )
-    gradient_accumulation_steps: int = field(
-        default=1,
-        metadata={'help': 'Number of updates steps to accumulate before performing a backward/update pass.'}
-    )
-    num_train_epochs: int = field(
-        default=EPOCHS,
-        metadata={"help": "The total number of training epochs"}
-    )
-    learning_rate: float = field(
-        default=3e-5,
-        metadata={'help': '"The initial learning rate for AdamW.'}
-    )
-    weight_decay: float = field(
-        default=0.0,
-        metadata={"help": "Weight decay for AdamW"}
-    )
-    warmup_ratio: float = field(
-        default=0.05,
-        metadata={"help": "Linear warmup over warmup_ratio fraction of total steps."}
-    )
-    dataloader_num_workers: int = field(
-        default=0,
-        metadata={"help": "Number of subprocesses to use for data loading (PyTorch only)"}
-    )
-    
-    logging_steps: int = field(
-        default=100,
-        metadata={'help': 'logging states every X updates steps.'}
-    )
-    eval_steps: int = field(
-        default=50,
-        metadata={'help': 'Run an evaluation every X steps.'}
-    )
-    device: str = field(
-        default= "cuda" if torch.cuda.is_available() else "cpu",
-        metadata={"help": 'The device used for training'}
-    )
-
-    tolerance: float = field(
-        default=0.1,
-        metadata={"help": "Tolerance for early stopping"}
-    )
-
-    def get_warmup_steps(self, num_training_steps):
-        return int(num_training_steps * self.warmup_ratio)
-
-    def __str__(self):
-        self_as_dict = dataclasses.asdict(self)
-        attrs_as_str = [f"{k}={v},\n" for k, v in sorted(self_as_dict.items())]
-        return f"{self.__class__.__name__}(\n{''.join(attrs_as_str)})"
-        
-    def to_json_string(self):
-        """Serializes this instance to a JSON string."""
-        return json.dumps(dataclasses.asdict(self), indent=2) + "\n"
-
-def set_seed(seed=42):
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)  # 如果使用GPU
-    torch.backends.cudnn.deterministic = True  # 确保每次使用相同的算法
-    torch.backends.cudnn.benchmark = False  # 如果输入大小变化不大，关闭此项以确保可重复性
 
 def load_data(data_dir, task_name):
     train_path = os.path.join(data_dir, f"{task_name}_train.json")
@@ -248,37 +142,6 @@ class Bert(nn.Module):
     def criterion(self):
         return nn.CrossEntropyLoss()
 
-def create_optimizer_and_scheduler(
-    args: TrainingArguments,
-    model: nn.Module,
-    num_training_steps: int,
-):
-    decay_parameters = get_parameter_names(model, [nn.LayerNorm])
-    decay_parameters = [name for name in decay_parameters if "bias" not in name]
-    optimizer_grouped_parameters = [
-        {
-            "params": [p for n, p in model.named_parameters() if n in decay_parameters],
-            "weight_decay": args.weight_decay,
-        },
-        {
-            "params": [p for n, p in model.named_parameters() if n not in decay_parameters],
-            "weight_decay": 0.0,
-        },
-    ]
-
-    optimizer = AdamW(
-        optimizer_grouped_parameters, 
-        lr=args.learning_rate,
-        weight_decay=args.weight_decay,
-    )
-
-    scheduler = get_linear_schedule_with_warmup(
-        optimizer, 
-        num_training_steps=num_training_steps, 
-        num_warmup_steps=args.get_warmup_steps(num_training_steps)
-    )
-
-    return optimizer, scheduler
 
 def prepare_input(data: Union[torch.Tensor, Any], device: str = 'cuda'):
     """
@@ -442,6 +305,7 @@ def args_parser():
     parser.add_argument("--learning-rate",'-lr', default=3e-5, type=float, help="The initial learning rate for AdamW.")
     parser.add_argument("--weight-decay",'-wd', default=0.0, type=float, help="Weight decay for AdamW")
     parser.add_argument("--warmup-ratio",'-wr', default=0.05, type=float, help="Linear warmup over warmup_ratio fraction of total steps.")
+    parser.add_argument("--scheduler",'-s', default="linear", type=str, help="The scheduler to use for training.", choices=["linear", "cosine", "constant"])
 
     parser.add_argument("--tolerance",'-tol', default=0.1, type=float, help="Tolerance for early stopping")
     parser.add_argument("--tag",'-tag', default=None, type=str, help="The tag of the model")
