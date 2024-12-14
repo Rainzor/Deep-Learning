@@ -65,6 +65,7 @@ class ContrastiveModel(nn.Module):
         outputs = self.encoder(input_ids, attention_mask)
         pooled_output = outputs.pooler_output # [num_keys, hidden_size]
         score = self.score(pooled_output).squeeze(-1) # [num_keys]
+        return score
 
     def criterion(self, inputs, outputs):
         
