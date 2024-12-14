@@ -113,12 +113,12 @@ def load_data(data_dir, task_name, augment=False):
                 for i in range(len(key2)):
 
                     if query != key2[i]:
-                        # for j in range(i+1, len(key2)):
-                        #     new_grouped_data[key2[i]][0].append(key2[j])
-                        #     new_grouped_data[key2[i]][1].append(2)
+                        for j in range(i+1, len(key2)):
+                            new_grouped_data[key2[i]][0].append(key2[j])
+                            new_grouped_data[key2[i]][1].append(2)
 
-                        #     new_grouped_data[key2[j]][0].append(key2[i])
-                        #     new_grouped_data[key2[j]][1].append(2)
+                            new_grouped_data[key2[j]][0].append(key2[i])
+                            new_grouped_data[key2[j]][1].append(2)
 
                         new_grouped_data[key2[i]][0].append(query)
                         new_grouped_data[key2[i]][1].append(2)
@@ -127,8 +127,8 @@ def load_data(data_dir, task_name, augment=False):
                             new_grouped_data[key2[i]][0].append(key1[j])
                             new_grouped_data[key2[i]][1].append(1)
 
-                            # new_grouped_data[key1[j]][0].append(key2[i])
-                            # new_grouped_data[key1[j]][1].append(0)
+                            new_grouped_data[key1[j]][0].append(key2[i])
+                            new_grouped_data[key1[j]][1].append(0)
                         
                         for j in range(len(key0)):
                             new_grouped_data[key2[i]][0].append(key0[j])
@@ -361,6 +361,8 @@ def train_model(model, train_loader, valid_loader, train_args, tokenizer, writer
                     "eval acc": val_acc
                 })
                 epochs_pbar.update(1)
+
+            print(f"Epoch {global_steps} finished, train loss: {epoch_loss / epoch_total}, train accuracy: {epoch_correct / epoch_total}, eval loss: {val_loss}, eval accuracy: {val_acc}")
     return best_val_acc, best_steps
 
 def main(args):

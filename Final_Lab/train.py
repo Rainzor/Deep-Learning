@@ -91,6 +91,8 @@ def train_model(model, train_loader, valid_loader, train_args, tokenizer, writer
             "eval_loss": [],
             "eval_accuracy": []
         }
+    val_loss, val_acc = evaluate(model, valid_loader, train_args.device)
+    print(f"Initial eval loss: {val_loss}, eval accuracy: {val_acc}")
 
     with tqdm(range(train_args.num_train_epochs* len(train_loader)), desc="Epochs") as epochs_pbar:
         global_steps = 0
@@ -141,13 +143,15 @@ def train_model(model, train_loader, valid_loader, train_args, tokenizer, writer
                     "eval acc": val_acc
                 })
                 epochs_pbar.update(1)
+            print(f"Epoch {global_steps} finished, train loss: {epoch_loss / epoch_total}, train accuracy: {epoch_correct / epoch_total}, eval loss: {val_loss}, eval accuracy: {val_acc}")
     return best_val_acc, best_steps
 
 
 def main(args):
     data_args = DataTrainingArguments(data_dir=args.data_dir,
                             model_dir=args.model_dir,
-                            augment=args.augment)
+                            augment=args.augment,
+                            checkpoint=args.checkpoint)
     train_args = TrainingArguments(output_dir=args.output_dir, 
                             num_train_epochs=args.epochs, 
                             train_batch_size=args.batch_size, 
@@ -183,6 +187,11 @@ def main(args):
 
     model = QKModel(data_args.model_dir, data_args.labels)
     model.to(train_args.device)
+
+    if data_args.checkpoint:
+        checkpoint_file = os.path.join(data_args.checkpoint, "model.pth")
+        model.load_state_dict(torch.load(checkpoint_file, map_location=train_args.device, weights_only=True))
+        print(f"Load model from {data_args.checkpoint}")
 
 
     print("Start training...")
