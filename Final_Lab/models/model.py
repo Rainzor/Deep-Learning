@@ -25,7 +25,6 @@ class QKModel(nn.Module):
         self.classifier = nn.Sequential(
             nn.Linear(hidden_size, hidden_size*2),
             nn.ReLU(),
-            nn.Dropout(0.1),
             nn.Linear(hidden_size*2, num_labels)
         )
         # self.classifier = nn.Linear(hidden_size, num_labels)
