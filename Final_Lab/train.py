@@ -7,10 +7,11 @@ import torch.nn as nn
 import random
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
+from torch.optim import AdamW
 from tqdm import tqdm
 
 from transformers.trainer_pt_utils import get_parameter_names
-from transformers.optimization import AdamW, get_linear_schedule_with_warmup, get_cosine_schedule_with_warmup
+from transformers.optimization import get_linear_schedule_with_warmup, get_cosine_schedule_with_warmup
 import argparse
 
 from torch.utils.tensorboard import SummaryWriter
