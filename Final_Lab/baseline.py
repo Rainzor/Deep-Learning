@@ -51,7 +51,7 @@ LABELS = 3
 
 
 
-def load_data(data_dir, task_name, argument=False):
+def load_data(data_dir, task_name, aug=False):
     train_path = os.path.join(data_dir, f"{task_name}_train.json")
     dev_path = os.path.join(data_dir, f"{task_name}_dev.json")
     test_path = os.path.join(data_dir, f"{task_name}_test.json")
@@ -98,7 +98,7 @@ def load_data(data_dir, task_name, argument=False):
         
 
         new_grouped_data = defaultdict(lambda: [[], []])
-        if argument:
+        if aug:
             for query, keys in grouped_data.items():
                 key, label = keys
                 key2, key1, key0 = [], [], []
@@ -113,12 +113,12 @@ def load_data(data_dir, task_name, argument=False):
                 for i in range(len(key2)):
 
                     if query != key2[i]:
-                        for j in range(i+1, len(key2)):
-                            new_grouped_data[key2[i]][0].append(key2[j])
-                            new_grouped_data[key2[i]][1].append(2)
+                        # for j in range(i+1, len(key2)):
+                        #     new_grouped_data[key2[i]][0].append(key2[j])
+                        #     new_grouped_data[key2[i]][1].append(2)
 
-                            new_grouped_data[key2[j]][0].append(key2[i])
-                            new_grouped_data[key2[j]][1].append(2)
+                        #     new_grouped_data[key2[j]][0].append(key2[i])
+                        #     new_grouped_data[key2[j]][1].append(2)
 
                         new_grouped_data[key2[i]][0].append(query)
                         new_grouped_data[key2[i]][1].append(2)
@@ -365,7 +365,7 @@ def main(args):
 
     data_args = DataTrainingArguments(data_dir=args.data_dir,
                             model_dir=args.model_dir,
-                            argument=args.argument)
+                            aug=args.aug)
 
     train_args = TrainingArguments(
         output_dir=args.output_dir,
@@ -388,7 +388,7 @@ def main(args):
     writer = SummaryWriter(log_dir=train_args.output_dir)
 
 
-    data = load_data(data_args.data_dir, data_args.task_name, data_args.argument)   
+    data = load_data(data_args.data_dir, data_args.task_name, data_args.aug)   
 
     tokenizer = AutoTokenizer.from_pretrained(data_args.model_dir)
 

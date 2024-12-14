@@ -162,7 +162,7 @@ def args_parser():
     parser.add_argument("--tolerance", '-tol', default=0.1, type=float, help="Tolerance for early stopping")
     parser.add_argument("--tag", '-tag', default=None, type=str, help="The tag of the model")
 
-    parser.add_argument("--argument", action="store_true", help="Whether to use argument data")
+    parser.add_argument("-aug", action="store_true", help="Whether to use argument data")
 
     return parser.parse_args()
 
@@ -224,7 +224,7 @@ def create_optimizer_and_scheduler(
     return optimizer, scheduler
 
 
-def load_data(data_dir, task_name, argument = False):
+def load_data(data_dir, task_name, aug = False):
     dir_path = os.path.join(data_dir, task_name)
     train_path = os.path.join(dir_path, f"{task_name}_train.json")
     dev_path = os.path.join(dir_path, f"{task_name}_dev.json")
@@ -251,7 +251,7 @@ def load_data(data_dir, task_name, argument = False):
         
 
         new_grouped_data = defaultdict(lambda: [[], []])
-        if argument and type_ == 'train':
+        if aug and type_ == 'train':
             for query, keys in grouped_data.items():
                 key, label = keys
                 key2, key1, key0 = [], [], []
