@@ -52,7 +52,7 @@ class DataTrainingArguments:
         metadata={'help': 'The number of labels in the dataset'}
     )
 
-    argument: bool = field(
+    augment: bool = field(
         default=False,
         metadata={"help": "Whether to use argument data"}
     )

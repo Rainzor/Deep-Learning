@@ -51,7 +51,7 @@ LABELS = 3
 
 
 
-def load_data(data_dir, task_name, aug=False):
+def load_data(data_dir, task_name, augment=False):
     train_path = os.path.join(data_dir, f"{task_name}_train.json")
     dev_path = os.path.join(data_dir, f"{task_name}_dev.json")
     test_path = os.path.join(data_dir, f"{task_name}_test.json")
@@ -98,7 +98,7 @@ def load_data(data_dir, task_name, aug=False):
         
 
         new_grouped_data = defaultdict(lambda: [[], []])
-        if aug:
+        if augment:
             for query, keys in grouped_data.items():
                 key, label = keys
                 key2, key1, key0 = [], [], []
@@ -365,7 +365,7 @@ def main(args):
 
     data_args = DataTrainingArguments(data_dir=args.data_dir,
                             model_dir=args.model_dir,
-                            aug=args.augment)
+                            augment=args.augment)
 
     train_args = TrainingArguments(
         output_dir=args.output_dir,
@@ -388,7 +388,7 @@ def main(args):
     writer = SummaryWriter(log_dir=train_args.output_dir)
 
 
-    data = load_data(data_args.data_dir, data_args.task_name, data_args.aug)   
+    data = load_data(data_args.data_dir, data_args.task_name, data_args.augment)   
 
     tokenizer = AutoTokenizer.from_pretrained(data_args.model_dir)
 
