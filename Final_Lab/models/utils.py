@@ -234,7 +234,7 @@ def load_data(data_dir, task_name, argument = False):
         with open(file_path, "r", encoding="utf-8") as f:
             return json.load(f)
 
-    def preprocess_train_dev(samples):
+    def preprocess_train_dev(samples, type_='train'):
         grouped_data = defaultdict(lambda: [[], []])
         for sample in samples:
             label = sample.get("label", None)
@@ -251,7 +251,7 @@ def load_data(data_dir, task_name, argument = False):
         
 
         new_grouped_data = defaultdict(lambda: [[], []])
-        if argument:
+        if argument and type_ == 'train':
             for query, keys in grouped_data.items():
                 key, label = keys
                 key2, key1, key0 = [], [], []
@@ -314,17 +314,17 @@ def load_data(data_dir, task_name, argument = False):
             })
         return processed_samples
 
-    def load_and_preprocess(file_path, is_test=False):
+    def load_and_preprocess(file_path, type_='train'):
         data = read_file(file_path)
-        if is_test:
+        if type_ == 'test':
             return preprocess_test(data)
-        else:
-            return preprocess_train_dev(data)
+        return preprocess_train_dev(data, type_)
+
 
     return {
-        "train": load_and_preprocess(train_path, is_test=False),
-        "valid": load_and_preprocess(dev_path, is_test=False),
-        "test": load_and_preprocess(test_path, is_test=True),
+        "train": load_and_preprocess(train_path, type_='train'),
+        "valid": load_and_preprocess(dev_path, type_='valid'),
+        "test": load_and_preprocess(test_path, type_='test')
     }
 
 def prepare_input(data: Union[torch.Tensor, Any], device: str = 'cuda'):
