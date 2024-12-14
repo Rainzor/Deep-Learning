@@ -3,11 +3,130 @@ import json
 import random
 import numpy as np
 import torch
+from dataclasses import dataclass, field
 from collections import defaultdict
 from typing import List, Union, Any
 from collections.abc import Mapping
 from .dataset import KUAKE_Dataset
 import argparse
+
+
+MODEL_DIR = "hfl/chinese-bert-wwm-ext"
+DATA_DIR = "../data"
+OUTPUT_DIR = "./output_data"
+TASK_NAME = "KUAKE-QQR"
+MAX_LENGTH = 64
+BATCH_SIZE = 4
+EPOCHS = 3
+LABELS = 3
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+
+
+@dataclass
+class DataTrainingArguments:
+
+    model_dir: str = field(
+        default= MODEL_DIR,
+        metadata={'help': 'The pretrained model directory'}
+    )
+    data_dir: str = field(
+        default=DATA_DIR,
+        metadata={'help': 'The data directory'}
+    )
+    max_length: int = field(
+        default=MAX_LENGTH,
+        metadata={'help': 'Maximum sequence length allowed to input'}
+    )
+
+    task_name: str = field(
+        default=TASK_NAME,
+        metadata={'help': 'The name of the task to train on'}
+    )
+
+    labels: int = field(
+        default=LABELS,
+        metadata={'help': 'The number of labels in the dataset'}
+    )
+
+    def __str__(self):
+        self_as_dict = dataclasses.asdict(self)
+        attrs_as_str = [f"{k}={v},\n" for k, v in sorted(self_as_dict.items())]
+        return f"{self.__class__.__name__}(\n{''.join(attrs_as_str)})"
+        
+    def to_json_string(self):
+        """Serializes this instance to a JSON string."""
+        return json.dumps(dataclasses.asdict(self), indent=2) + "\n"
+
+@dataclass
+class TrainingArguments:
+
+    output_dir: str = field(
+        default='output_data/',
+        metadata={'help': 'The output directory where the model predictions and checkpoints will be written.'}
+    )
+    train_batch_size: int = field(
+        default=BATCH_SIZE,
+        metadata={'help': 'batch size for training'}
+    )
+    eval_batch_size: int = field(
+        default=1,
+        metadata={'help': 'batch size for evaluation'}
+    )
+    gradient_accumulation_steps: int = field(
+        default=1,
+        metadata={'help': 'Number of updates steps to accumulate before performing a backward/update pass.'}
+    )
+    num_train_epochs: int = field(
+        default=EPOCHS,
+        metadata={"help": "The total number of training epochs"}
+    )
+    learning_rate: float = field(
+        default=3e-5,
+        metadata={'help': '"The initial learning rate for AdamW.'}
+    )
+    weight_decay: float = field(
+        default=0.0,
+        metadata={"help": "Weight decay for AdamW"}
+    )
+    warmup_ratio: float = field(
+        default=0.05,
+        metadata={"help": "Linear warmup over warmup_ratio fraction of total steps."}
+    )
+    dataloader_num_workers: int = field(
+        default=0,
+        metadata={"help": "Number of subprocesses to use for data loading (PyTorch only)"}
+    )
+    
+    logging_steps: int = field(
+        default=100,
+        metadata={'help': 'logging states every X updates steps.'}
+    )
+    eval_steps: int = field(
+        default=50,
+        metadata={'help': 'Run an evaluation every X steps.'}
+    )
+    device: str = field(
+        default= "cuda" if torch.cuda.is_available() else "cpu",
+        metadata={"help": 'The device used for training'}
+    )
+
+    tolerance: float = field(
+        default=0.1,
+        metadata={"help": "Tolerance for early stopping"}
+    )
+
+    def get_warmup_steps(self, num_training_steps):
+        return int(num_training_steps * self.warmup_ratio)
+
+    def __str__(self):
+        self_as_dict = dataclasses.asdict(self)
+        attrs_as_str = [f"{k}={v},\n" for k, v in sorted(self_as_dict.items())]
+        return f"{self.__class__.__name__}(\n{''.join(attrs_as_str)})"
+        
+    def to_json_string(self):
+        """Serializes this instance to a JSON string."""
+        return json.dumps(dataclasses.asdict(self), indent=2) + "\n"
+
 
 def args_parser():
     parser = argparse.ArgumentParser(description="PyTorch Question-Keyword Matching Training")

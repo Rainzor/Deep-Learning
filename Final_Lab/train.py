@@ -9,7 +9,6 @@ import numpy as np
 from torch.utils.data import Dataset, DataLoader
 from torch.optim import AdamW
 from tqdm import tqdm
-from dataclasses import dataclass, field
 
 from transformers.trainer_pt_utils import get_parameter_names
 from transformers.optimization import get_linear_schedule_with_warmup
@@ -20,123 +19,6 @@ from torch.utils.tensorboard import SummaryWriter
 from models.utils import *
 from models.dataset import *
 from models.model import *
-
-
-# 配置参数
-MODEL_DIR = "hfl/chinese-bert-wwm-ext"
-DATA_DIR = "../data"
-OUTPUT_DIR = "./output_data"
-TASK_NAME = "KUAKE-QQR"
-MAX_LENGTH = 64
-BATCH_SIZE = 4
-EPOCHS = 3
-LABELS = 3
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-
-@dataclass
-class DataTrainingArguments:
-
-    model_dir: str = field(
-        default= MODEL_DIR,
-        metadata={'help': 'The pretrained model directory'}
-    )
-    data_dir: str = field(
-        default=DATA_DIR,
-        metadata={'help': 'The data directory'}
-    )
-    max_length: int = field(
-        default=MAX_LENGTH,
-        metadata={'help': 'Maximum sequence length allowed to input'}
-    )
-
-    task_name: str = field(
-        default=TASK_NAME,
-        metadata={'help': 'The name of the task to train on'}
-    )
-
-    labels: int = field(
-        default=LABELS,
-        metadata={'help': 'The number of labels in the dataset'}
-    )
-
-    def __str__(self):
-        self_as_dict = dataclasses.asdict(self)
-        attrs_as_str = [f"{k}={v},\n" for k, v in sorted(self_as_dict.items())]
-        return f"{self.__class__.__name__}(\n{''.join(attrs_as_str)})"
-        
-    def to_json_string(self):
-        """Serializes this instance to a JSON string."""
-        return json.dumps(dataclasses.asdict(self), indent=2) + "\n"
-
-@dataclass
-class TrainingArguments:
-
-    output_dir: str = field(
-        default='output_data/',
-        metadata={'help': 'The output directory where the model predictions and checkpoints will be written.'}
-    )
-    train_batch_size: int = field(
-        default=BATCH_SIZE,
-        metadata={'help': 'batch size for training'}
-    )
-    eval_batch_size: int = field(
-        default=1,
-        metadata={'help': 'batch size for evaluation'}
-    )
-    gradient_accumulation_steps: int = field(
-        default=1,
-        metadata={'help': 'Number of updates steps to accumulate before performing a backward/update pass.'}
-    )
-    num_train_epochs: int = field(
-        default=EPOCHS,
-        metadata={"help": "The total number of training epochs"}
-    )
-    learning_rate: float = field(
-        default=3e-5,
-        metadata={'help': '"The initial learning rate for AdamW.'}
-    )
-    weight_decay: float = field(
-        default=0.0,
-        metadata={"help": "Weight decay for AdamW"}
-    )
-    warmup_ratio: float = field(
-        default=0.05,
-        metadata={"help": "Linear warmup over warmup_ratio fraction of total steps."}
-    )
-    dataloader_num_workers: int = field(
-        default=0,
-        metadata={"help": "Number of subprocesses to use for data loading (PyTorch only)"}
-    )
-    
-    logging_steps: int = field(
-        default=100,
-        metadata={'help': 'logging states every X updates steps.'}
-    )
-    eval_steps: int = field(
-        default=50,
-        metadata={'help': 'Run an evaluation every X steps.'}
-    )
-    device: str = field(
-        default= "cuda" if torch.cuda.is_available() else "cpu",
-        metadata={"help": 'The device used for training'}
-    )
-
-    tolerance: float = field(
-        default=0.1,
-        metadata={"help": "Tolerance for early stopping"}
-    )
-
-    def get_warmup_steps(self, num_training_steps):
-        return int(num_training_steps * self.warmup_ratio)
-
-    def __str__(self):
-        self_as_dict = dataclasses.asdict(self)
-        attrs_as_str = [f"{k}={v},\n" for k, v in sorted(self_as_dict.items())]
-        return f"{self.__class__.__name__}(\n{''.join(attrs_as_str)})"
-        
-    def to_json_string(self):
-        """Serializes this instance to a JSON string."""
-        return json.dumps(dataclasses.asdict(self), indent=2) + "\n"
 
 
 def create_optimizer_and_scheduler(
@@ -176,9 +58,8 @@ def train(model, data, optimizer, scheduler, criterion, device):
     model.train()
 
     optimizer.zero_grad()
-    data = prepare_input(data, device)
-    batch_size = data["query"][0].size(0)
-    labals = data["labels"]
+    data = data.to(device)
+    labals = data.labels
 
     # 前向传播
     logits = model(data)
@@ -201,9 +82,8 @@ def evaluate(model, dataloader, criterion, device):
     with torch.no_grad():
         with tqdm(dataloader, desc="Evaluation", leave=False) as pbar:
             for data in dataloader:
-                data = prepare_input(data, device)
-                batch_size = data["query"][0].size(0)
-                labels = data["labels"]
+                data = data.to(device)
+                labels = data.labels
                 # 前向传播
                 logits = model(data)
                 loss = criterion(logits, labels).item()
@@ -224,7 +104,7 @@ def predict(
     with torch.no_grad():
         with tqdm(test_dataloader, desc="Predicting") as pbar:
             for item in test_dataloader:
-                inputs = prepare_input(item, device=args.device)
+                inputs = item.to(args.device)
                 outputs = model(inputs)
 
                 preds = torch.argmax(outputs.cpu(), dim=-1).numpy()
