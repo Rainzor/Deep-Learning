@@ -7,11 +7,10 @@ import torch.nn as nn
 import random
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
-from torch.optim import AdamW
 from tqdm import tqdm
 
 from transformers.trainer_pt_utils import get_parameter_names
-from transformers.optimization import get_linear_schedule_with_warmup
+from transformers.optimization import AdamW, get_linear_schedule_with_warmup, get_cosine_schedule_with_warmup
 import argparse
 
 from torch.utils.tensorboard import SummaryWriter
@@ -24,8 +23,8 @@ from models.model import *
 def create_optimizer_and_scheduler(
     args: TrainingArguments,
     model: nn.Module,
-    num_training_steps: int,
-):
+    num_training_steps: int):
+
     decay_parameters = get_parameter_names(model, [nn.LayerNorm])
     decay_parameters = [name for name in decay_parameters if "bias" not in name]
     optimizer_grouped_parameters = [
@@ -44,12 +43,23 @@ def create_optimizer_and_scheduler(
         lr=args.learning_rate,
         weight_decay=args.weight_decay,
     )
-
-    scheduler = get_linear_schedule_with_warmup(
-        optimizer, 
-        num_training_steps=num_training_steps, 
-        num_warmup_steps=args.get_warmup_steps(num_training_steps)
-    )
+    if args.scheduler == "linear":
+        scheduler = get_linear_schedule_with_warmup(
+            optimizer, 
+            num_training_steps=num_training_steps, 
+            num_warmup_steps=args.get_warmup_steps(num_training_steps)
+        )
+    elif args.scheduler == "cosine":
+        scheduler = get_cosine_schedule_with_warmup(
+            optimizer, 
+            num_training_steps=num_training_steps,
+            num_warmup_steps=args.get_warmup_steps(num_training_steps)
+        )
+    elif args.scheduler == "constant":
+        scheduler = get_constant_schedule_with_warmup(
+            optimizer, 
+            num_warmup_steps=args.get_warmup_steps(num_training_steps)
+        )
 
     return optimizer, scheduler
 
@@ -195,7 +205,9 @@ def main(args):
                             learning_rate=args.learning_rate, 
                             weight_decay=args.weight_decay, 
                             warmup_ratio=args.warmup_ratio,
-                            tolerance=args.tolerance)
+                            tolerance=args.tolerance,
+                            scheduler=args.scheduler)
+
     timename = time.strftime("%Y-%m-%d-%H-%M", time.localtime())
     model_name = 'bert'
     if args.tag:

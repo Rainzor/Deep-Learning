@@ -72,6 +72,12 @@ class TrainingArguments:
         default=1,
         metadata={'help': 'batch size for evaluation'}
     )
+
+    scheduler: str = field(
+        default="linear",
+        metadata={'help': 'The scheduler to use for training.'}
+    )
+
     gradient_accumulation_steps: int = field(
         default=1,
         metadata={'help': 'Number of updates steps to accumulate before performing a backward/update pass.'}
@@ -137,6 +143,7 @@ def args_parser():
 
     parser.add_argument("--epochs",'-n', default=EPOCHS, type=int, help="The total number of training epochs")
     parser.add_argument("--batch-size",'-b', default=BATCH_SIZE, type=int, help="batch size for training")
+    parser.add_argument("--scheduler",'-s', default="linear", type=str, help="The scheduler to use for training.", choices=["linear", "cosine", "constant"])
 
     parser.add_argument("--learning-rate",'-lr', default=3e-5, type=float, help="The initial learning rate for AdamW.")
     parser.add_argument("--weight-decay",'-wd', default=0.0, type=float, help="Weight decay for AdamW")
