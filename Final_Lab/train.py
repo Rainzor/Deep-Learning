@@ -146,9 +146,6 @@ def train_model(model, train_loader, valid_loader, train_args, tokenizer, writer
 
 
 def main(args):
-
-    set_seed(42)
-
     data_args = DataTrainingArguments(data_dir=args.data_dir, model_dir=args.model_dir)
     train_args = TrainingArguments(output_dir=args.output_dir, 
                             num_train_epochs=args.epochs, 
@@ -208,6 +205,7 @@ def main(args):
 
 if __name__ == "__main__":
     args = args_parser()
+    set_seed(42)
     main(args)
 
 

@@ -13,7 +13,7 @@ from collections.abc import Mapping
 from .dataset import KUAKE_Dataset
 import argparse
 from transformers.trainer_pt_utils import get_parameter_names
-from transformers.optimization import get_linear_schedule_with_warmup, get_cosine_schedule_with_warmup
+from transformers.optimization import get_linear_schedule_with_warmup, get_cosine_schedule_with_warmup, get_constant_schedule_with_warmup
 
 MODEL_DIR = "hfl/chinese-bert-wwm-ext"
 DATA_DIR = "../data"
@@ -192,18 +192,21 @@ def create_optimizer_and_scheduler(
         weight_decay=args.weight_decay,
     )
     if args.scheduler == "linear":
+        print("Using linear scheduler")
         scheduler = get_linear_schedule_with_warmup(
             optimizer, 
             num_training_steps=num_training_steps, 
             num_warmup_steps=args.get_warmup_steps(num_training_steps)
         )
     elif args.scheduler == "cosine":
+        print("Using cosine scheduler")
         scheduler = get_cosine_schedule_with_warmup(
             optimizer, 
             num_training_steps=num_training_steps,
             num_warmup_steps=args.get_warmup_steps(num_training_steps)
         )
     elif args.scheduler == "constant":
+        print("Using constant scheduler")
         scheduler = get_constant_schedule_with_warmup(
             optimizer, 
             num_warmup_steps=args.get_warmup_steps(num_training_steps)

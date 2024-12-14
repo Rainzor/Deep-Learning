@@ -291,27 +291,6 @@ def train_model(model, train_loader, valid_loader, train_args, tokenizer, writer
                 epochs_pbar.update(1)
     return best_val_acc, best_steps
 
-
-def args_parser():
-    parser = argparse.ArgumentParser(description="PyTorch Question-Keyword Matching Training")
-
-    parser.add_argument("--model-dir",'-m', default=MODEL_DIR, type=str, help="The pretrained model directory")
-    parser.add_argument("--data-dir",'-d', default=DATA_DIR, type=str, help="The data directory")
-    parser.add_argument("--output-dir",'-o', default=OUTPUT_DIR, type=str, help="The output directory where the model predictions and checkpoints will be written.")
-
-    parser.add_argument("--epochs",'-n', default=EPOCHS, type=int, help="The total number of training epochs")
-    parser.add_argument("--batch-size",'-b', default=BATCH_SIZE, type=int, help="batch size for training")
-
-    parser.add_argument("--learning-rate",'-lr', default=3e-5, type=float, help="The initial learning rate for AdamW.")
-    parser.add_argument("--weight-decay",'-wd', default=0.0, type=float, help="Weight decay for AdamW")
-    parser.add_argument("--warmup-ratio",'-wr', default=0.05, type=float, help="Linear warmup over warmup_ratio fraction of total steps.")
-    parser.add_argument("--scheduler",'-s', default="linear", type=str, help="The scheduler to use for training.", choices=["linear", "cosine", "constant"])
-
-    parser.add_argument("--tolerance",'-tol', default=0.1, type=float, help="Tolerance for early stopping")
-    parser.add_argument("--tag",'-tag', default=None, type=str, help="The tag of the model")
-    return parser.parse_args()
-
-
 def main(args):
     set_seed(42)
 
@@ -352,8 +331,6 @@ def main(args):
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=train_args.eval_batch_size, shuffle=False)
 
     model = Bert(data_args.model_dir, data_args.labels).to(train_args.device)
-
-    optimizer, scheduler = create_optimizer_and_scheduler(train_args, model, len(train_loader) * train_args.num_train_epochs)
 
     print("Start training...")
     best_val_acc, best_steps = train_model(model, train_loader, dev_loader, train_args, tokenizer, writer)
