@@ -13,19 +13,14 @@ class Bert(nn.Module):
         super(Bert, self).__init__()
         self.bert = AutoModel.from_pretrained(model_dir)
         self.num_labels = num_labels
-        self.classifier = nn.Linear(self.bert.config.hidden_size*3, num_labels)
+        self.classifier = nn.Linear(self.bert.config.hidden_size, num_labels)
 
     def forward(self, input_ids, attention_mask):
         outputs = self.bert(input_ids=input_ids, attention_mask=attention_mask)
 
         pooled_output = outputs.pooler_output # [num_keys, hidden_size]
+        readout = pooled_output
 
-        last_hidden_state = outputs.last_hidden_state # [num_keys, max_length, hidden_size]
-
-        mean_pooling = torch.mean(last_hidden_state, dim=1) # [num_keys, hidden_size]
-        first4_pooling = torch.sum(last_hidden_state[:, :4], dim=1) # [num_keys, hidden_size]
-
-        readout = torch.cat([pooled_output, mean_pooling, first4_pooling], dim=-1) # [num_keys, hidden_size*3]
         logits = self.classifier(readout)
         return logits
     

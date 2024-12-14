@@ -145,7 +145,9 @@ def train_model(model, train_loader, valid_loader, train_args, tokenizer, writer
 
 
 def main(args):
-    data_args = DataTrainingArguments(data_dir=args.data_dir, model_dir=args.model_dir)
+    data_args = DataTrainingArguments(data_dir=args.data_dir,
+                            model_dir=args.model_dir,
+                            argument=args.argument)
     train_args = TrainingArguments(output_dir=args.output_dir, 
                             num_train_epochs=args.epochs, 
                             train_batch_size=args.batch_size, 
@@ -165,7 +167,7 @@ def main(args):
 
     tokenizer = AutoTokenizer.from_pretrained(data_args.model_dir)
 
-    rawdata = load_data(data_args.data_dir, data_args.task_name)
+    rawdata = load_data(data_args.data_dir, data_args.task_name, data_args.argument)
 
     train_dataset = KUAKE_Dataset(rawdata["train"], tokenizer, max_length=data_args.max_length, type_='train')
     valid_dataset = KUAKE_Dataset(rawdata["valid"], tokenizer, max_length=data_args.max_length, type_='valid')

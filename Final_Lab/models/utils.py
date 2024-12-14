@@ -52,6 +52,11 @@ class DataTrainingArguments:
         metadata={'help': 'The number of labels in the dataset'}
     )
 
+    argument: bool = field(
+        default=False,
+        metadata={"help": "Whether to use argument data"}
+    )
+
     def __str__(self):
         self_as_dict = dataclasses.asdict(self)
         attrs_as_str = [f"{k}={v},\n" for k, v in sorted(self_as_dict.items())]
@@ -155,6 +160,9 @@ def args_parser():
 
     parser.add_argument("--tolerance",'-tol', default=0.1, type=float, help="Tolerance for early stopping")
     parser.add_argument("--tag",'-tag', default=None, type=str, help="The tag of the model")
+
+    parser.add_argument("--argument", default=False, type=bool, help="Whether to use argument data")
+
     return parser.parse_args()
 
 
@@ -215,7 +223,7 @@ def create_optimizer_and_scheduler(
     return optimizer, scheduler
 
 
-def load_data(data_dir, task_name):
+def load_data(data_dir, task_name, argument = False):
     dir_path = os.path.join(data_dir, task_name)
     train_path = os.path.join(dir_path, f"{task_name}_train.json")
     dev_path = os.path.join(dir_path, f"{task_name}_dev.json")
@@ -239,6 +247,41 @@ def load_data(data_dir, task_name):
             query2 = sample["query2"]
             grouped_data[query1][0].append(query2)
             grouped_data[query1][1].append(label)
+        
+
+        new_grouped_data = defaultdict(lambda: [[], []])
+        if argument:
+            for query, keys in grouped_data.items():
+                key, label = keys
+                key2, key1, key0 = [], [], []
+                for i in range(len(label)):
+                    if label[i] == 2:
+                        key2.append(key[i])
+                    elif label[i] == 1:
+                        key1.append(key[i])
+                    else:
+                        key0.append(key[i])
+
+                for i in range(len(key2)):
+                    for j in range(i+1, len(key2)):
+                        new_grouped_data[key2[i]][0].append(key2[j])
+                        new_grouped_data[key2[i]][1].append(2)
+
+                        new_grouped_data[key2[j]][0].append(key2[i])
+                        new_grouped_data[key2[j]][1].append(2)
+                    
+                    for j in range(len(key1)):
+                        new_grouped_data[key2[i]][0].append(key1[j])
+                        new_grouped_data[key2[i]][1].append(1)
+
+                        new_grouped_data[key1[j]][0].append(key2[i])
+                        new_grouped_data[key1[j]][1].append(0)
+                    
+                    for j in range(len(key0)):
+                        new_grouped_data[key2[i]][0].append(key0[j])
+                        new_grouped_data[key2[i]][1].append(0)
+                        
+        grouped_data.update(new_grouped_data)
         for query1, keys in grouped_data.items():
             find_quary = False
             for quary2 in keys[0]:
