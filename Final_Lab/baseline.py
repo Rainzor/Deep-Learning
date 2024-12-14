@@ -365,7 +365,7 @@ def main(args):
 
     data_args = DataTrainingArguments(data_dir=args.data_dir,
                             model_dir=args.model_dir,
-                            aug=args.aug)
+                            aug=args.augment)
 
     train_args = TrainingArguments(
         output_dir=args.output_dir,

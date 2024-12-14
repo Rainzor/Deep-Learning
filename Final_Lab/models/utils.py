@@ -162,7 +162,7 @@ def args_parser():
     parser.add_argument("--tolerance", '-tol', default=0.1, type=float, help="Tolerance for early stopping")
     parser.add_argument("--tag", '-tag', default=None, type=str, help="The tag of the model")
 
-    parser.add_argument("-aug", action="store_true", help="Whether to use argument data")
+    parser.add_argument("--augment","-aug", action="store_true", help="Whether to use argument data")
 
     return parser.parse_args()
 
