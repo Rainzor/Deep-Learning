@@ -407,7 +407,8 @@ def main(args):
     model = Bert(data_args.model_dir, data_args.labels).to(train_args.device)
 
     if data_args.checkpoint:
-        model.load_state_dict(torch.load(data_args.checkpoint))
+        checkpoint_file = os.path.join(data_args.checkpoint, "model.pth")
+        model.load_state_dict(torch.load(checkpoint_file, map_location=train_args.device, weights_only=True))
         print(f"Model loaded from {data_args.checkpoint}")
 
     print("Start training...")
