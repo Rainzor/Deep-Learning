@@ -313,6 +313,9 @@ def train_model(model, train_loader, valid_loader, train_args, tokenizer, writer
             "eval_loss": [],
             "eval_accuracy": []
         }
+    val_loss, val_acc = evaluate(model, valid_loader, criterion, train_args.device)
+
+    print(f"Initial validation loss: {val_loss}, accuracy: {val_acc}")
 
     with tqdm(range(train_args.num_train_epochs* len(train_loader)), desc="Epochs") as epochs_pbar:
         global_steps = 0
