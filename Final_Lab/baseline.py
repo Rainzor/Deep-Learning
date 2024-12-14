@@ -368,6 +368,7 @@ def main(args):
 
     data_args = DataTrainingArguments(data_dir=args.data_dir,
                             model_dir=args.model_dir,
+                            checkpoint=args.checkpoint,
                             augment=args.augment)
 
     train_args = TrainingArguments(
@@ -404,6 +405,10 @@ def main(args):
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=train_args.eval_batch_size, shuffle=False)
 
     model = Bert(data_args.model_dir, data_args.labels).to(train_args.device)
+
+    if data_args.checkpoint:
+        model.load_state_dict(torch.load(data_args.checkpoint))
+        print(f"Model loaded from {data_args.checkpoint}")
 
     print("Start training...")
     best_val_acc, best_steps = train_model(model, train_loader, dev_loader, train_args, tokenizer, writer)

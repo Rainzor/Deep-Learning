@@ -37,6 +37,12 @@ class DataTrainingArguments:
         default=DATA_DIR,
         metadata={'help': 'The data directory'}
     )
+
+    checkpoint: str = field(
+        default=None,
+        metadata={'help': 'The path to the checkpoint for evaluation.'}
+    )
+
     max_length: int = field(
         default=MAX_LENGTH,
         metadata={'help': 'Maximum sequence length allowed to input'}
@@ -150,6 +156,7 @@ def args_parser():
     parser.add_argument("--model-dir", '-m', default=MODEL_DIR, type=str, help="The pretrained model directory")
     parser.add_argument("--data-dir", '-d', default=DATA_DIR, type=str, help="The data directory")
     parser.add_argument("--output-dir", '-o', default=OUTPUT_DIR, type=str, help="The output directory where the model predictions and checkpoints will be written.")
+    parser.add_argument("--checkpoint", '-c', default=None, type=str, help="The path to the checkpoint for evaluation.")
 
     parser.add_argument("--epochs", '-n', default=EPOCHS, type=int, help="The total number of training epochs")
     parser.add_argument("--batch-size", '-b', default=BATCH_SIZE, type=int, help="batch size for training")
