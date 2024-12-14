@@ -320,7 +320,7 @@ def args_parser():
     parser.add_argument("--weight-decay",'-wd', default=0.0, type=float, help="Weight decay for AdamW")
     parser.add_argument("--warmup-ratio",'-wr', default=0.05, type=float, help="Linear warmup over warmup_ratio fraction of total steps.")
 
-    parser.add_argument("--tolerance",'-t', default=0.1, type=float, help="Tolerance for early stopping")
+    parser.add_argument("--tolerance",'-tol', default=0.1, type=float, help="Tolerance for early stopping")
     parser.add_argument("--tag", default=None, type=str, help="The tag of the model")
     return parser.parse_args()
 

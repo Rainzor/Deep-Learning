@@ -47,8 +47,8 @@ class QKModel(nn.Module):
 
         # Key Encoder
         key_outputs = self.encoder(input_ids=key_input_ids, attention_mask=key_attention_mask) # shape: (key_num, seq_len, hidden_size)
-        key_cls = key_outputs.last_hidden_state[:, 0, :]  # CLS token shape: (key_num, hidden_size)
-        
+        # key_cls = key_outputs.last_hidden_state[:, 0, :]  # CLS token shape: (key_num, hidden_size)
+        key_cls = key_outputs.pooler_output  # shape: (key_num, hidden_size)
         combined = torch.cat([query_cls, key_cls], dim=-1)  # shape: (key_num, hidden_size * 2)
 
         # 分类
