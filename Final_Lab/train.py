@@ -156,6 +156,8 @@ def train_model(model, train_loader, valid_loader, train_args, tokenizer, writer
                     writer.add_scalar("Loss/eval", val_loss, global_steps)
                     writer.add_scalar("Accuracy/eval", val_acc, global_steps)
 
+                    writer.add_scalar("Learning Rate", scheduler.get_last_lr()[0], global_steps)
+
                     if best_val_acc- val_acc > train_args.tolerance:
                         print(f"Early stop at step {global_steps}")
                         return best_val_acc, best_steps

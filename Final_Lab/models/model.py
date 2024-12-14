@@ -22,13 +22,13 @@ class QKModel(nn.Module):
         super(QKModel, self).__init__()
         self.encoder = AutoModel.from_pretrained(model_name)
         hidden_size = self.encoder.config.hidden_size
-        # self.classifier = nn.Sequential(
-        #     nn.Linear(hidden_size, hidden_size*2),
-        #     nn.ReLU(),
-        #     nn.Dropout(0.1),
-        #     nn.Linear(hidden_size*2, num_labels)
-        # )
-        self.classifier = nn.Linear(hidden_size, num_labels)
+        self.classifier = nn.Sequential(
+            nn.Linear(hidden_size, hidden_size*2),
+            nn.ReLU(),
+            nn.Dropout(0.1),
+            nn.Linear(hidden_size*2, num_labels)
+        )
+        # self.classifier = nn.Linear(hidden_size, num_labels)
 
 
     def forward(self, data):

@@ -405,6 +405,7 @@ def train_model(model, train_loader, valid_loader, train_args, tokenizer, writer
                         writer.add_scalar("Accuracy/train", epoch_correct / epoch_total, global_steps)
                         writer.add_scalar("Loss/eval", val_loss, global_steps)
                         writer.add_scalar("Accuracy/eval", val_acc, global_steps)
+                        writer.add_scalar("Learning Rate", scheduler.get_last_lr()[0], global_steps)
 
                     # 保存最佳模型
                     if val_acc > best_val_acc:
