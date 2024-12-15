@@ -56,7 +56,7 @@ class QKModel(nn.Module):
         pooled_output, logits = outputs
         contract_loss = 0
 
-        pooled_output = F.normalize(pooled_output, p=2, dim=-1)
+        pooled_output = F.normalize(pooled_output, p=2, dim=-1) # [num_keys, hidden_size]
 
         temperature = 0.05
         ratio = torch.zeros(batch_num).to(pooled_output.device)
@@ -64,8 +64,8 @@ class QKModel(nn.Module):
             mask2 = (batch == i) & (labels == 2)
             mask1 = (batch == i) & (labels == 1)
             mask0 = torch.logical_not(mask2 | mask1)
-            if mask2.sum() == 0 or mask1.sum() == 0 or mask0.sum() == 0:
-                continue
+            # if mask2.sum() == 0 or mask1.sum() == 0 or mask0.sum() == 0:
+            #     continue
 
             value2 = pooled_output[mask2] # [num2, hidden_size]
             value1 = pooled_output[mask1] # [num1, hidden_size]
@@ -74,8 +74,8 @@ class QKModel(nn.Module):
             sim0 = torch.sum(value1.unsqueeze(0) * value2.unsqueeze(1), dim=-1)/temperature  # [num1, num2]
             sim1 = torch.sum(value0.unsqueeze(0) * value2.unsqueeze(1), dim=-1)/temperature  # [num0, num2]
 
-            score1 = torch.clamp_min(torch.sum(torch.exp(sim0), dim=-1), 1e-9) # [num2]
-            score0 = torch.clamp_min(torch.sum(torch.exp(sim1), dim=-1), 1e-9) # [num2]
+            score0 = torch.sum(torch.exp(sim0), dim=-1) # [num2]
+            score1 = torch.sum(torch.exp(sim1), dim=-1) # [num2]
             probs = score1/(score0) # [num2]
             ratio[i] = torch.clamp(probs.mean(), 1e-9, 1-1e-9)
         
