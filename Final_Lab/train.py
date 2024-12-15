@@ -136,17 +136,15 @@ def train_model(model, train_loader, valid_loader, train_args, tokenizer, writer
 
                         tokenizer.save_pretrained(save_directory=save_dir)
                 
-                epoch_loss = epoch_loss/epoch_total
-                epoch_correct = epoch_correct/epoch_total
                 epochs_pbar.set_postfix({
-                    "train loss": epoch_loss,
-                    "train acc": epoch_correct,
+                    "train loss": epoch_loss/epoch_total,
+                    "train acc": epoch_correct/epoch_total,
                     "eval loss": val_loss,
                     "eval acc": val_acc
                 })
                 epochs_pbar.update(1)
 
-            print(f"Epoch {global_steps} finished, train loss: {epoch_loss:.4f}, train accuracy: {epoch_correct:.4f}, best eval accuracy: {best_val_acc:.4f}")
+            print(f"Epoch {global_steps} finished, train loss: {epoch_loss/epoch_total:.4f}, train accuracy: {epoch_correct/epoch_total:.4f}, best eval accuracy: {best_val_acc:.4f}")
     return best_val_acc, best_steps
 
 
