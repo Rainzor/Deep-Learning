@@ -157,6 +157,7 @@ def main(args):
     print("Output Directory: ", args.output_dir)
     print("Task Name: Baseline")
     print("Batch Size: ", args.batch_size)
+    print("Learning Rate: ", args.learning_rate)
     if args.checkpoint:
         print("Checkpoint: ", args.checkpoint)
     if args.augment:
