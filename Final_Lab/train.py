@@ -15,7 +15,7 @@ from models.utils import *
 from models.dataset import *
 from models.model import QKModel
 
-def train(model, data, optimizer, scheduler, device):
+def train(model, data, optimizer, scheduler, device='cpu', lambda_c=0.0):
     model.train()
 
     optimizer.zero_grad()
@@ -25,7 +25,9 @@ def train(model, data, optimizer, scheduler, device):
     # 前向传播
     logits = model(data)
     nums = 0
-    loss = model.criterion(data, logits)
+    loss_cross, loss_contract = model.criterion(data, logits)
+    loss = loss_cross + lambda_c * loss_contract
+    
     correct = (torch.argmax(logits, dim=1) == labels).sum().item()
     correct /= len(labels)
     loss.backward()
@@ -47,10 +49,10 @@ def evaluate(model, dataloader, device):
                 labels = data.labels
                 # 前向传播
                 logits = model(data)
-                loss = model.criterion(data, logits).item()
+                loss_cross, loss_contract = model.criterion(data, logits).item()
                 correct = (torch.argmax(logits, dim=1) == labels).sum().item()
                 eval_correct += correct/len(labels)
-                eval_loss += loss   
+                eval_loss += loss_cross
                 pbar.update(1)
                 
     return eval_loss/len(dataloader), eval_correct/len(dataloader)
@@ -172,7 +174,8 @@ def main(args):
                             num_train_epochs=args.epochs, 
                             train_batch_size=args.batch_size, 
                             learning_rate=args.learning_rate,
-                            lr_ratio=args.lr_ratio, 
+                            lr_ratio=args.lr_ratio,
+                            lambda_c=args.lambda_c, 
                             weight_decay=args.weight_decay, 
                             warmup_ratio=args.warmup_ratio,
                             tolerance=args.tolerance,

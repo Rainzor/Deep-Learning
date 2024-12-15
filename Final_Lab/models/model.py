@@ -56,7 +56,23 @@ class QKModel(nn.Module):
         return logits
     
     def criterion(self, inputs, outputs):
-        return F.cross_entropy(outputs, inputs.labels)
+        labels = inputs.labels # [num_keys]
+        batch = inputs.batch # [num_keys]
+        batch_num = batch.max().item() + 1
+
+
+        contract_loss = 0
+        for i in range(batch_num):
+            mask = (batch == i)
+            logit = outputs[mask]
+            log_prob = F.log_softmax(logit, dim=0)
+            label = labels[mask].view(-1,1)
+            log_prob = log_prob.gather(1, label).view(-1)
+            contract_loss += -log_prob.mean()
+        
+        contract_loss /= batch_num
+
+        return F.cross_entropy(outputs, inputs.labels), contract_loss
 
 
 class ContrastiveModel(nn.Module):
