@@ -417,7 +417,7 @@ QueryA是QueryB的语义父集，但反过来，QueryB不是QueryA的语义父�
 那么损失函数为：
 
 $$
--\log\frac{\exp{(sim(h_i,h^+_i)/\tau)}}{\sum_j\left(\exp(sim(h_i,h_j^-))\right)}
+-\log\frac{\exp{(sim(h_i,h^+_i)/\tau)}}{\sum_j\left(\exp(sim(h_i,h_j^-)/\tau)\right)}
 $$
 
 ### 4.3 Code
@@ -468,13 +468,13 @@ class Model(nn.Module):
             value0 = pooled_output[mask0]
 
             sim0 = torch.sum(value1.unsqueeze(0) * value2.unsqueeze(1), 
-                			dim=-1)/temperature  # [num1, num2]
+                			dim=-1)/temperature  # [num2，num1]
             sim1 = torch.sum(value0.unsqueeze(0) * value2.unsqueeze(1), 
-                            dim=-1)/temperature  # [num0, num2]
+                            dim=-1)/temperature  # [num2，num0]
 
-            score1 = torch.clamp_min(torch.sum(torch.exp(sim0), dim=0), 1e-9) # [num2]
-            score0 = torch.clamp_min(torch.sum(torch.exp(sim1), dim=0), 1e-9) # [num2]
-            probs = score1/(score0) # [num2]
+            score1 = torch.clamp_min(torch.sum(torch.exp(sim0), dim=-1), 1e-9) # [num2]
+            score0 = torch.clamp_min(torch.sum(torch.exp(sim1), dim=-1), 1e-9) # [num2]
+            probs = score1/score0 # [num2]
             ratio[i] = torch.clamp(probs.mean(), 1e-9, 1-1e-9)
         
         contract_loss = -torch.log(ratio).mean()

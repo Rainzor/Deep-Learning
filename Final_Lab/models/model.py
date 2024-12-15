@@ -64,7 +64,7 @@ class QKModel(nn.Module):
             mask2 = (batch == i) & (labels == 2)
             mask1 = (batch == i) & (labels == 1)
             mask0 = torch.logical_not(mask2 | mask1)
-            if mask2.sum() == 0:
+            if mask2.sum() == 0 or mask1.sum() == 0 or mask0.sum() == 0:
                 continue
 
             value2 = pooled_output[mask2] # [num2, hidden_size]
