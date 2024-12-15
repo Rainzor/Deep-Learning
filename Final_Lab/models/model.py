@@ -60,7 +60,7 @@ class QKModel(nn.Module):
         batch = inputs.batch # [num_keys]
         batch_num = batch.max().item() + 1
 
-        pooled_output = outputs[0]
+        pooled_output, logits = outputs
         contract_loss = 0
 
         # sim = F.tanh(outputs)
@@ -95,7 +95,7 @@ class QKModel(nn.Module):
         #     contract_loss += -log_prob.mean()
         
 
-        return F.cross_entropy(outputs, inputs.labels), contract_loss
+        return F.cross_entropy(logits, inputs.labels), contract_loss
 
 
 class ContrastiveModel(nn.Module):
