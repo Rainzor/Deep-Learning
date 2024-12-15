@@ -63,6 +63,8 @@ class QKModel(nn.Module):
         pooled_output, logits = outputs
         contract_loss = 0
 
+        pooled_output = F.normalize(pooled_output, p=2, dim=-1)
+
         # sim = F.tanh(outputs)
         temperature = 0.05
         # exp_score = torch.exp(sim/temperature) # [num_keys]
@@ -78,8 +80,10 @@ class QKModel(nn.Module):
             value1 = pooled_output[mask1]
             value0 = pooled_output[mask0]
 
-            score1 = torch.sum(value1.unsqueeze(0) * value2.unsqueeze(1), dim=-1) / temperature  # [num2, num1]
-            score0 = torch.sum(value0.unsqueeze(0) * value2.unsqueeze(1), dim=-1) / temperature  # [num2, num0]
+            score1 = torch.sum(value1.unsqueeze(0) * value2.unsqueeze(1), dim=-1)  # [num2, num1]
+            score0 = torch.sum(value0.unsqueeze(0) * value2.unsqueeze(1), dim=-1)  # [num2, num0]
+
+            score1 = torch.no
 
             score1 = torch.sum(torch.exp(score1), dim=-1)  # [num2]
             score0 = torch.sum(torch.exp(score0), dim=-1)  # [num2]
