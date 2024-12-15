@@ -371,7 +371,7 @@ def main(args):
     print("Model: ", args.model_dir)
     print("Data Directory: ", args.data_dir)
     print("Output Directory: ", args.output_dir)
-    print("Task Name: ", args.task_name)
+    print("Task Name: Baseline")
     print("Batch Size: ", args.batch_size)
     if args.checkpoint:
         print("Checkpoint: ", args.checkpoint)
