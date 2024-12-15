@@ -63,17 +63,27 @@ class QKModel(nn.Module):
 
         contract_loss = 0
 
-        sim = F.tanh(outputs)
+        # sim = F.tanh(outputs)
         temperature = 0.05
-        exp_score = torch.exp(sim/temperature) # [num_keys]
+        # exp_score = torch.exp(sim/temperature) # [num_keys]
         ratio = torch.zeros(batch_num).to(outputs.device)
         for i in range(batch_num):
+            mask2 = (batch == i) & (labels == 2)
             mask1 = (batch == i) & (labels == 1)
-            mask0 = (batch == i) & (labels == 0)
-            mask0 = mask0 | (batch!=i)
-            score1 = exp_score[mask1].sum()
-            score0 = exp_score[mask0].sum()
-            ratio[i] = score1 / (score0+score1) + 1e-9
+            mask0 = torch.logical_not(mask2 | mask1)
+
+            value2 = outputs[mask2]
+            value1 = outputs[mask1]
+            value0 = outputs[mask0]
+
+            score1 = torch.sum(value1.unsqueeze(0) * value2.unsqueeze(1), dim=-1) / temperature  # [num2, num1]
+            score0 = torch.sum(value0.unsqueeze(0) * value2.unsqueeze(1), dim=-1) / temperature  # [num2, num0]
+
+            score1 = torch.sum(torch.exp(score1), dim=-1)  # [num2]
+            score0 = torch.sum(torch.exp(score0), dim=-1)  # [num2]
+
+            probs = score1/(score0+score1)
+            ratio[i] = torch.sum(probs) + 1e-9
         
         contract_loss = -torch.log(ratio).mean()
         # for i in range(batch_num):
