@@ -196,7 +196,7 @@ def main(args):
     test_dataset = KUAKE_Dataset(rawdata["test"], tokenizer, max_length=data_args.max_length, type_='test')
 
     # 使用自定义的 collate_fn 创建 DataLoader
-    train_loader = DataLoader(train_dataset, batch_size=train_args.train_batch_size, shuffle=False,             
+    train_loader = DataLoader(train_dataset, batch_size=train_args.train_batch_size, shuffle=True,             
                             collate_fn=custom_collate_fn)
     valid_loader = DataLoader(valid_dataset, batch_size=train_args.eval_batch_size, shuffle=False,          
                              collate_fn=custom_collate_fn)
