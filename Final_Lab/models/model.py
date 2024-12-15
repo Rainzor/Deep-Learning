@@ -74,8 +74,8 @@ class QKModel(nn.Module):
             sim0 = torch.sum(value1.unsqueeze(0) * value2.unsqueeze(1), dim=-1)/temperature  # [num1, num2]
             sim1 = torch.sum(value0.unsqueeze(0) * value2.unsqueeze(1), dim=-1)/temperature  # [num0, num2]
 
-            score1 = torch.clamp_min(torch.sum(torch.exp(sim0), dim=0), 1e-9) # [num2]
-            score0 = torch.clamp_min(torch.sum(torch.exp(sim1), dim=0), 1e-9) # [num2]
+            score1 = torch.clamp_min(torch.sum(torch.exp(sim0), dim=-1), 1e-9) # [num2]
+            score0 = torch.clamp_min(torch.sum(torch.exp(sim1), dim=-1), 1e-9) # [num2]
             probs = score1/(score0) # [num2]
             ratio[i] = torch.clamp(probs.mean(), 1e-9, 1-1e-9)
         

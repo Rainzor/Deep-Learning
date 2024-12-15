@@ -27,7 +27,10 @@ def train(model, data, optimizer, scheduler, device='cpu', lambda_c=0.0):
     pooled_output, logits = output
     nums = 0
     loss_cross, loss_contract = model.criterion(data, output)
-    loss = loss_cross + lambda_c * loss_contract
+    if lambda_c > 0 :
+        loss = loss_cross + lambda_c * loss_contract
+    else:
+        loss = loss_cross
 
     correct = (torch.argmax(logits, dim=1) == labels).sum().item()
     correct /= len(labels)
