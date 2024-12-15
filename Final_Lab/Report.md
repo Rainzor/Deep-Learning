@@ -105,13 +105,15 @@ class Classifier(nn.Module):
 
 #### Pipeline
 
-<img src="assets/image-20241211212216529.png" alt="image-20241211212216529" style="zoom:50%;" />
+<img src="assets/image-20241211212216529.png" alt="image-20241211212216529" style="zoom: 33%;" />
 
 ### result
 
 <img src="assets/image-20241211212714173.png" alt="image-20241211212714173" style="zoom: 67%;" />
 
 训练不够稳定，在测试集上分数为：**0.6999**
+
+<img src="assets/image-20241215235842340.png" alt="image-20241215235842340" style="zoom:50%;" />
 
 ### 2.2 Attention
 
@@ -183,9 +185,11 @@ class CrossAttention(nn.Module):
 
 #### Result
 
-<img src="assets/image-20241211214208577.png" alt="image-20241211214208577" style="zoom:50%;" />
+<img src="assets/image-20241211214208577.png" alt="image-20241211214208577" style="zoom: 67%;" />
 
 结果依然不够稳定，在测试集上的分数为：**0.7707**
+
+<img src="assets/image-20241215235854069.png" alt="image-20241215235854069" style="zoom:50%;" />
 
 ## 2.3 Bert
 
@@ -271,9 +275,10 @@ model = BERTForSequenceClassification.from_pretrained(data_args.model_dir, num_l
 ```
 
 <center class="half">
-<img src="assets/bert_train_loss.png" width=400/>
-<img src="assets/bert_eval_acc.png" width=400/>
+<img src="assets/bert_train_loss.png" width=300/>
+<img src="assets/bert_eval_acc.png" width=300/>
 </center>
+
 
 利用第500步模型权重预测测试集label，准确率为 **0.8371。**
 
@@ -307,9 +312,10 @@ RoBERTa通常在下游任务中表现优于 BERT，尤其是分类、序列标�
 ### 3.2 Result
 
 <center class="half">
-<img src="assets/roberta_train_loss.png" width=400/>
-<img src="assets/roberta_eval_acc.png" width=400/>
+<img src="assets/roberta_train_loss.png" width=300/>
+<img src="assets/roberta_eval_acc.png" width=300/>
 </center>
+
 利用第500步模型权重预测测试集label，准确率为 **0.8440**
 
 <img src="assets/robert.png" alt="robert" style="zoom:75%;" />
@@ -414,8 +420,108 @@ $$
 -\log\frac{\exp{(sim(h_i,h^+_i)/\tau)}}{\sum_j\left(\exp(sim(h_i,h_j^-))\right)}
 $$
 
-### 4.3 Result
+### 4.3 Code
 
-最终，我们选择了 [lier007](https://huggingface.co/lier007)/[xiaobu-embedding ](https://huggingface.co/lier007/xiaobu-embedding) 作为我们的待微调的模型，经过对比结果如下：
+```python
+class Model(nn.Module):
+    def __init__(self, model_name, num_labels):
+        super(QKModel, self).__init__()
+        self.encoder = AutoModel.from_pretrained(model_name)
+        hidden_size = self.encoder.config.hidden_size
+        self.classifier = nn.Sequential(
+            nn.Linear(hidden_size, hidden_size*2),
+            nn.ReLU(),
+            nn.Linear(hidden_size*2, num_labels)
+        )
 
-<img src="assets/image-20241215231632663.png" alt="image-20241215231632663" style="zoom:50%;" />
+    def forward(self, data):
+        input_ids = data.input_ids # [num_keys, max_length]
+        attention_mask = data.attention_mask # [num_keys, max_length]
+
+        outputs = self.encoder(input_ids=input_ids, attention_mask=attention_mask)
+        pooled_output = outputs.pooler_output # [num_keys, hidden_size]
+        logits = self.classifier(pooled_output) # [num_keys, num_labels]
+
+        return pooled_output, logits
+    
+    def criterion(self, inputs, outputs):
+        labels = inputs.labels # [num_keys]
+        batch = inputs.batch # [num_keys]
+        batch_num = batch.max().item() + 1
+
+        pooled_output, logits = outputs
+        contract_loss = 0
+
+        pooled_output = F.normalize(pooled_output, p=2, dim=-1)
+
+        temperature = 0.05
+        ratio = torch.zeros(batch_num).to(pooled_output.device)
+        for i in range(batch_num):
+            mask2 = (batch == i) & (labels == 2)
+            mask1 = (batch == i) & (labels == 1)
+            mask0 = torch.logical_not(mask2 | mask1)
+            if mask2.sum() == 0:
+                continue
+
+            value2 = pooled_output[mask2]
+            value1 = pooled_output[mask1]
+            value0 = pooled_output[mask0]
+
+            sim0 = torch.sum(value1.unsqueeze(0) * value2.unsqueeze(1), 
+                			dim=-1)/temperature  # [num1, num2]
+            sim1 = torch.sum(value0.unsqueeze(0) * value2.unsqueeze(1), 
+                            dim=-1)/temperature  # [num0, num2]
+
+            score1 = torch.clamp_min(torch.sum(torch.exp(sim0), dim=0), 1e-9) # [num2]
+            score0 = torch.clamp_min(torch.sum(torch.exp(sim1), dim=0), 1e-9) # [num2]
+            probs = score1/(score0) # [num2]
+            ratio[i] = torch.clamp(probs.mean(), 1e-9, 1-1e-9)
+        
+        contract_loss = -torch.log(ratio).mean()
+
+        return F.cross_entropy(logits, inputs.labels), contract_loss
+```
+
+
+
+### 4.4 Result
+
+我们选择了 [lier007](https://huggingface.co/lier007)/[xiaobu-embedding](https://huggingface.co/lier007/xiaobu-embedding)  作为我们的待微调的模型，经过对比结果如下：
+
+<img src="assets/image-20241215231632663.png" alt="image-20241215231632663" style="zoom: 33%;" />
+
+最终，经过超参数微调，我们得到最佳结果: 0.8503
+
+<img src="assets/image-20241215234833515.png" alt="image-20241215234833515" style="zoom: 67%;" />
+
+## 5. Summary
+
+本项目旨在解决中文医疗信息检索中Query（搜索词）相关性判断的问题，通过评估查询对之间的主题匹配程度，提升搜索质量。项目的主要工作和成果可总结如下：
+
+##### 1. 数据集与任务定义
+
+使用阿里巴巴夸克医疗事业部提供的CBLUE基准数据集，涵盖训练集、验证集和测试集。相关性评分分为三档（0-2分），分别表示无关或反向相关、部分相关和完全等价。
+
+##### 2. **基线模型构建与优化**
+
+   - **LSTM模型**：初步采用双向LSTM进行句子编码，测试集准确率为0.6999。
+
+   - **Attention机制**：引入交叉注意力增强句子嵌入，提升准确率至0.7707。
+
+   - **预训练语言模型**：
+     - **BERT**：利用`chinese-bert-wwm-ext`模型，测试集准确率提升至0.8371。
+     - **RoBERTa**：采用`chinese-roberta-wwm-ext-large`模型，进一步提升准确率至0.8440，优于BERT模型。
+
+##### 3. **自主设计方法**
+
+   - **数据增强**：基于查询对的标签关系，通过同义传递和子集传递等规则生成新的训练样本，丰富数据多样性。
+   - **对比学习**：参考**SimCSE**，引入对比损失函数，增强模型在嵌入空间中的判别能力。
+   - **模型微调**：选择`lier007/xiaobu-embedding`预训练模型进行微调，结合数据增强和对比学习方法，进一步提升模型性能。
+
+##### 4. **最终成果**
+
+   通过综合优化模型架构和训练策略，从基础的LSTM模型逐步过渡到先进的预训练语言模型，并结合自定义的数据增强和对比学习方法，最终在测试集上达到了**0.8503**的高准确率。
+
+##### 5. **结论与展望**
+
+   本项目通过系统的模型优化和策略改进，显著提升了医学搜索查询相关性的判断准确率，验证了预训练语言模型和对比学习在自然语言处理任务中的有效性。未来，项目可进一步探索更复杂的模型结构、更多样化的数据增强方法以及更高效的训练策略，以期在相关任务中取得更优异的表现。

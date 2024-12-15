@@ -37,15 +37,8 @@ class QKModel(nn.Module):
             nn.ReLU(),
             nn.Linear(hidden_size*2, num_labels)
         )
-        # self.classifier = nn.Linear(hidden_size, num_labels)
-
 
     def forward(self, data):
-        """
-        Parameters
-        ----------
-        
-        """
         input_ids = data.input_ids # [num_keys, max_length]
         attention_mask = data.attention_mask # [num_keys, max_length]
 
@@ -65,9 +58,7 @@ class QKModel(nn.Module):
 
         pooled_output = F.normalize(pooled_output, p=2, dim=-1)
 
-        # sim = F.tanh(outputs)
         temperature = 0.05
-        # exp_score = torch.exp(sim/temperature) # [num_keys]
         ratio = torch.zeros(batch_num).to(pooled_output.device)
         for i in range(batch_num):
             mask2 = (batch == i) & (labels == 2)
@@ -76,96 +67,18 @@ class QKModel(nn.Module):
             if mask2.sum() == 0:
                 continue
 
-            value2 = pooled_output[mask2]
-            value1 = pooled_output[mask1]
-            value0 = pooled_output[mask0]
+            value2 = pooled_output[mask2] # [num2, hidden_size]
+            value1 = pooled_output[mask1] # [num1, hidden_size]
+            value0 = pooled_output[mask0] # [num0, hidden_size]
 
-            score1 = torch.sum(value1.unsqueeze(0) * value2.unsqueeze(1), dim=-1)  # [num2, num1]
-            score0 = torch.sum(value0.unsqueeze(0) * value2.unsqueeze(1), dim=-1)  # [num2, num0]
+            sim0 = torch.sum(value1.unsqueeze(0) * value2.unsqueeze(1), dim=-1)/temperature  # [num1, num2]
+            sim1 = torch.sum(value0.unsqueeze(0) * value2.unsqueeze(1), dim=-1)/temperature  # [num0, num2]
 
-            score1 = torch.clamp_min(torch.sum(torch.exp(score1), dim=-1), 1e-9)
-            score0 = torch.clamp_min(torch.sum(torch.exp(score0), dim=-1), 1e-9)
-            probs = score1/(score0+score1) # [num2]
+            score1 = torch.clamp_min(torch.sum(torch.exp(sim0), dim=0), 1e-9) # [num2]
+            score0 = torch.clamp_min(torch.sum(torch.exp(sim1), dim=0), 1e-9) # [num2]
+            probs = score1/(score0) # [num2]
             ratio[i] = torch.clamp(probs.mean(), 1e-9, 1-1e-9)
         
         contract_loss = -torch.log(ratio).mean()
-        # for i in range(batch_num):
-        #     mask = (batch == i)
-        #     logit = outputs[mask]
-        #     log_prob = F.log_softmax(logit, dim=0)
-        #     label = labels[mask].view(-1,1)
-        #     log_prob = log_prob.gather(1, label).view(-1)
-        #     contract_loss += -log_prob.mean()
-        
 
         return F.cross_entropy(logits, inputs.labels), contract_loss
-
-
-class ContrastiveModel(nn.Module):
-    def __init__(self, model_name, num_labels, temperature=0.05):
-        super(ContrastiveModel, self).__init__()
-        self.encoder = AutoModel.from_pretrained(model_name)
-        hidden_size = self.encoder.config.hidden_size
-        self.score = nn.Linear(hidden_size, 1)
-        self.temperature = temperature
-    
-    def forward(self, data):
-        input_ids = data.input_ids
-        attention_mask = data.attention_mask
-
-        outputs = self.encoder(input_ids, attention_mask)
-        pooled_output = outputs.pooler_output # [num_keys, hidden_size]
-        score = self.score(pooled_output).squeeze(-1) # [num_keys]
-        return score
-
-    def criterion(self, inputs, outputs, type_="train"):
-        outputs = F.tanh(outputs)
-        exp_score = torch.exp(outputs/self.temperature) # [num_keys]
-        labels = inputs.labels
-        batch = inputs.batch
-        # 创建标签掩码
-        batch_num = batch.max().item() + 1
-        ratio = torch.zeros(batch_num)
-        for i in range(batch_num):
-            mask2 = (batch == i) & (labels == 2)
-            mask1 = (batch == i) & (labels == 1)
-            mask0 = (batch == i) & (labels == 0)
-            score2 = exp_score[mask2].sum()
-            score1 = exp_score[mask1].sum()
-            score0 = exp_score[mask0].sum()
-            ratio[i] = (score2 + 1e-9) / (score1 + score0 + 1e-9) + (score1 + 1e-9) / (score0 + 1e-9)
-            # ratio[i] = (score2 + score1+ 1e-9) / (score1 + score0 + 1e-9)
-        result = -torch.log(ratio)
-
-        return result.mean()
-
-    # def criterion(self, inputs, outputs):
-    #     exp_scores = torch.exp(outputs / self.temperature)  # [num_keys]
-    #     labels = inputs.labels
-    #     batch = inputs.batch
-        
-    #     # 获取 batch 的数量
-    #     batch_num = batch.max().item() + 1
-        
-    #     # 创建掩码
-    #     mask2 = (labels == 2)  # 类别2的掩码
-    #     mask1 = (labels == 1)  # 类别1的掩码
-    #     mask0 = (labels == 0)  # 类别0的掩码
-
-    #     # 将掩码与 batch 索引对齐
-    #     mask2_batch = mask2.unsqueeze(1) & (batch.unsqueeze(0) == torch.arange(batch_num).to(batch.device).unsqueeze(1))
-    #     mask1_batch = mask1.unsqueeze(1) & (batch.unsqueeze(0) == torch.arange(batch_num).to(batch.device).unsqueeze(1))
-    #     mask0_batch = mask0.unsqueeze(1) & (batch.unsqueeze(0) == torch.arange(batch_num).to(batch.device).unsqueeze(1))
-
-    #     # 计算每个类别的得分
-    #     score2 = exp_scores[mask2_batch].sum(dim=1)
-    #     score1 = exp_scores[mask0_batch].sum(dim=1)
-    #     score0 = exp_scores[mask1_batch].sum(dim=1)
-        
-    #     # 计算 ratio
-    #     ratio = (score2 + score1) / (score1 + score0)
-
-    #     # 计算结果并返回
-    #     result = -torch.log(ratio)
-        
-    #     return result.mean()
