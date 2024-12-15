@@ -222,11 +222,12 @@ def train_model(model, train_loader, valid_loader, train_args, tokenizer, writer
                 epoch_loss = epoch_loss + train_loss
                 epoch_correct = epoch_correct + train_acc
                 epoch_total += 1
+                batch_loss = epoch_loss/epoch_total
                 if (global_steps+1) % train_args.eval_steps == 0:
                     
                     val_loss, val_acc = evaluate(model, valid_loader, train_args.device)
 
-                    writer.add_scalar("Loss/train", train_loss, global_steps)
+                    writer.add_scalar("Loss/train", batch_loss, global_steps)
                     # writer.add_scalar("Accuracy/train", epoch_correct / epoch_total, global_steps)
                     writer.add_scalar("Loss/eval", val_loss, global_steps)
                     # writer.add_scalar("Accuracy/eval", val_acc, global_steps)
@@ -238,14 +239,15 @@ def train_model(model, train_loader, valid_loader, train_args, tokenizer, writer
                     #     return best_val_acc, best_steps
 
                 # 保存最佳模型
-                if train_loss < best_loss:
-                    best_loss = train_loss
+                
+                if batch_loss < best_loss:
+                    best_loss = batch_loss
                     best_steps = epoch
                     tokenizer.save_pretrained(os.path.join(train_args.output_dir, "pretrained"))
                     best_model_state = model.state_dict().copy()
 
                 epochs_pbar.set_postfix({
-                    "train loss": epoch_loss/epoch_total,
+                    "train loss": batch_loss,
                     # "train acc": epoch_correct/epoch_total,
                     "eval loss": val_loss,
                     # "eval acc": val_acc
