@@ -27,7 +27,7 @@ def train(model, data, optimizer, scheduler, device='cpu', lambda_c=0.0):
     nums = 0
     loss_cross, loss_contract = model.criterion(data, logits)
     loss = loss_cross + lambda_c * loss_contract
-    
+
     correct = (torch.argmax(logits, dim=1) == labels).sum().item()
     correct /= len(labels)
     loss.backward()
@@ -106,7 +106,7 @@ def train_model(model, train_loader, valid_loader, train_args, tokenizer, writer
             for batch in train_loader:
                 global_steps += 1
                 
-                train_loss, train_acc = train(model, batch, optimizer, scheduler, train_args.device)
+                train_loss, train_acc = train(model, batch, optimizer, scheduler, train_args.device, train_args.lambda_c)
                 epoch_loss += train_loss
                 epoch_correct += train_acc
                 epoch_total += 1

@@ -170,7 +170,7 @@ def args_parser():
     parser.add_argument("--epochs", '-n', default=EPOCHS, type=int, help="The total number of training epochs")
     parser.add_argument("--batch-size", '-b', default=BATCH_SIZE, type=int, help="batch size for training")
     parser.add_argument("--scheduler", '-s', default="linear", type=str, help="The scheduler to use for training.", choices=["linear", "cosine", "constant"])
-    parser.add_argument("--lambda_c", default=0.1, type=float, help="The lambda for the contrastive loss")
+    parser.add_argument("--lambda_c", default=0.0, type=float, help="The lambda for the contrastive loss")
 
     parser.add_argument("--learning-rate", '-lr', default=3e-5, type=float, help="The initial learning rate for AdamW.")
     parser.add_argument("--lr-ratio", default=1.0, type=float, help="Pretrained model learning rate ratio")
