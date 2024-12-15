@@ -8,12 +8,147 @@ import random
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
+from collections import defaultdict
 
 from torch.utils.tensorboard import SummaryWriter
 
-from models.utils import *
+from models.utils import (set_seed, 
+                        args_parser, 
+                        create_optimizer_and_scheduler,
+                        DataTrainingArguments,
+                        TrainingArguments
+                        )
 from models.dataset import *
 from models.model import ContrastiveModel
+
+
+def load_data(data_dir, task_name, aug = False):
+    dir_path = os.path.join(data_dir, task_name)
+    train_path = os.path.join(dir_path, f"{task_name}_train.json")
+    dev_path = os.path.join(dir_path, f"{task_name}_dev.json")
+    test_path = os.path.join(dir_path, f"{task_name}_test.json")
+
+    def read_file(file_path):
+        with open(file_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    
+    def preprocess_valid(samples):
+        grouped_data = defaultdict(lambda: [[], []])
+        for sample in samples:
+            label = sample.get("label", None)
+            if label == "NA":
+                continue
+            try:
+                label = int(label)
+            except (ValueError, TypeError):
+                continue
+            query1 = sample["query1"]
+            query2 = sample["query2"]
+            grouped_data[query1][0].append(query2)
+            grouped_data[query1][1].append(label)
+        
+        processed_samples = [{
+            "query": query1,
+            "keys": keys[0],
+            "label": keys[1]
+        } for query1, keys in grouped_data.items()]
+        return processed_samples
+
+    def preprocess_train(samples):
+        grouped_data = defaultdict(lambda: [[], []])
+        for sample in samples:
+            label = sample.get("label", None)
+            if label == "NA":
+                continue
+            try:
+                label = int(label)
+            except (ValueError, TypeError):
+                continue
+            query1 = sample["query1"]
+            query2 = sample["query2"]
+            grouped_data[query1][0].append(query2)
+            grouped_data[query1][1].append(label)
+        
+
+        new_grouped_data = defaultdict(lambda: [[], []])
+        if aug:
+            for query, keys in grouped_data.items():
+                key, label = keys
+                key2, key1, key0 = [], [], []
+                for i in range(len(label)):
+                    if label[i] == 2:
+                        key2.append(key[i])
+                    elif label[i] == 1:
+                        key1.append(key[i])
+                    else:
+                        key0.append(key[i])
+                for i in range(len(key2)):
+                    if query != key2[i]:
+                        new_grouped_data[key2[i]][0].append(query)
+                        new_grouped_data[key2[i]][1].append(2)
+                        for j in range(i+1, len(key2)):
+                            new_grouped_data[key2[i]][0].append(key2[j])
+                            new_grouped_data[key2[i]][1].append(2)
+
+                            new_grouped_data[key2[j]][0].append(key2[i])
+                            new_grouped_data[key2[j]][1].append(2)
+                        
+                        for j in range(len(key1)):
+                            new_grouped_data[key2[i]][0].append(key1[j])
+                            new_grouped_data[key2[i]][1].append(1)
+
+                            new_grouped_data[key1[j]][0].append(key2[i])
+                            new_grouped_data[key1[j]][1].append(0)
+                        
+                        for j in range(len(key0)):
+                            new_grouped_data[key2[i]][0].append(key0[j])
+                            new_grouped_data[key2[i]][1].append(0)
+
+        grouped_data.update(new_grouped_data)
+        for query1, keys in grouped_data.items():
+            find_quary = False
+            for quary2 in keys[0]:
+                if quary2 == query1:
+                    find_quary = True
+                    break
+            
+            if not find_quary:
+                keys[0].append(query1)
+                keys[1].append(2)
+
+        processed_samples = [{
+            "query": query1,
+            "keys": keys[0],
+            "label": keys[1]
+        } for query1, keys in grouped_data.items()]
+        return processed_samples
+
+    def preprocess_test(samples):
+        grouped_data = defaultdict(list)
+        processed_samples = []
+        for sample in samples:
+            processed_samples.append({
+                "query": sample["query1"],
+                "keys": [sample["query2"]],
+                "id": sample["id"]
+            })
+        return processed_samples
+
+    def load_and_preprocess(file_path, type_='train'):
+        data = read_file(file_path)
+        if type_ == 'test':
+            return preprocess_test(data)
+        elif type_ == 'valid':
+            return preprocess_train(data)
+        else:
+            return preprocess_train(data)
+
+
+    return {
+        "train": load_and_preprocess(train_path, type_='train'),
+        "valid": load_and_preprocess(dev_path, type_='valid'),
+        "test": load_and_preprocess(test_path, type_='test')
+    }
 
 def train(model, data, optimizer, scheduler, device):
     model.train()
@@ -37,24 +172,24 @@ def train(model, data, optimizer, scheduler, device):
     return loss.item(), correct
 
 # # 定义评估函数
-# def evaluate(model, dataloader, device):
-#     model.eval()
-#     eval_correct = 0
-#     eval_loss = 0.0
-#     with torch.no_grad():
-#         with tqdm(dataloader, desc="Evaluation", leave=False) as pbar:
-#             for data in dataloader:
-#                 data = data.to(device)
-#                 labels = data.labels
-#                 # 前向传播
-#                 logits = model(data)
-#                 loss = model.criterion(data, logits).item()
-#                 # correct = (torch.argmax(logits, dim=1) == labels).sum().item()
-#                 # eval_correct += correct/len(labels)
-#                 eval_loss += loss 
-#                 pbar.update(1)
+def evaluate(model, dataloader, device):
+    model.eval()
+    eval_correct = 0
+    eval_loss = 0.0
+    with torch.no_grad():
+        with tqdm(dataloader, desc="Evaluation", leave=False) as pbar:
+            for data in dataloader:
+                data = data.to(device)
+                labels = data.labels
+                # 前向传播
+                logits = model(data)
+                loss = model.criterion(data, logits).item()
+                # correct = (torch.argmax(logits, dim=1) == labels).sum().item()
+                # eval_correct += correct/len(labels)
+                eval_loss += loss 
+                pbar.update(1)
                 
-#     return eval_loss/len(dataloader), eval_correct/len(dataloader)
+    return eval_loss/len(dataloader), eval_correct/len(dataloader)
 
 def train_model(model, train_loader, valid_loader, train_args, tokenizer, writer):
     # 定义损失函数和优化器
@@ -70,7 +205,7 @@ def train_model(model, train_loader, valid_loader, train_args, tokenizer, writer
             "eval_loss": [],
             "eval_accuracy": []
         }
-    # val_loss, val_acc = evaluate(model, valid_loader, train_args.device)
+    val_loss, val_acc = evaluate(model, valid_loader, train_args.device)
     # print(f"Initial eval loss: {val_loss})")
 
     with tqdm(range(train_args.num_train_epochs* len(train_loader)), desc="Epochs") as epochs_pbar:
@@ -87,14 +222,13 @@ def train_model(model, train_loader, valid_loader, train_args, tokenizer, writer
                 epoch_loss = epoch_loss + train_loss
                 epoch_correct = epoch_correct + train_acc
                 epoch_total += 1
-                tmp_loss = epoch_loss / epoch_total
                 if (global_steps+1) % train_args.eval_steps == 0:
                     
-                    # val_loss, val_acc = evaluate(model, valid_loader, train_args.device)
+                    val_loss, val_acc = evaluate(model, valid_loader, train_args.device)
 
                     writer.add_scalar("Loss/train", train_loss, global_steps)
                     # writer.add_scalar("Accuracy/train", epoch_correct / epoch_total, global_steps)
-                    # writer.add_scalar("Loss/eval", val_loss, global_steps)
+                    writer.add_scalar("Loss/eval", val_loss, global_steps)
                     # writer.add_scalar("Accuracy/eval", val_acc, global_steps)
 
                     writer.add_scalar("Learning Rate", scheduler.get_last_lr()[0], global_steps)
@@ -104,8 +238,8 @@ def train_model(model, train_loader, valid_loader, train_args, tokenizer, writer
                     #     return best_val_acc, best_steps
 
                 # 保存最佳模型
-                if tmp_loss < best_loss:
-                    best_loss = tmp_loss
+                if train_loss < best_loss:
+                    best_loss = train_loss
                     best_steps = epoch
                     tokenizer.save_pretrained(os.path.join(train_args.output_dir, "pretrained"))
                     best_model_state = model.state_dict().copy()
@@ -113,7 +247,7 @@ def train_model(model, train_loader, valid_loader, train_args, tokenizer, writer
                 epochs_pbar.set_postfix({
                     "train loss": epoch_loss/epoch_total,
                     # "train acc": epoch_correct/epoch_total,
-                    # "eval loss": val_loss,
+                    "eval loss": val_loss,
                     # "eval acc": val_acc
                 })
                 epochs_pbar.update(1)
@@ -177,7 +311,7 @@ def main(args):
     # 使用自定义的 collate_fn 创建 DataLoader
     train_loader = DataLoader(train_dataset, batch_size=train_args.train_batch_size, shuffle=True,             
                             collate_fn=custom_collate_fn)
-    valid_loader = DataLoader(valid_dataset, batch_size=train_args.eval_batch_size, shuffle=False,          
+    valid_loader = DataLoader(valid_dataset, batch_size=train_args.train_batch_size, shuffle=False,          
                              collate_fn=custom_collate_fn)
     # test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False,
     #                         collate_fn=custom_collate_fn)

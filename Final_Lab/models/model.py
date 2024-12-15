@@ -92,6 +92,7 @@ class ContrastiveModel(nn.Module):
             score1 = exp_score[mask1].sum()
             score0 = exp_score[mask0].sum()
             ratio[i] = (score2 + 1e-9) / (score1 + score0 + 1e-9) + (score1 + 1e-9) / (score0 + 1e-9)
+            # ratio[i] = (score2 + score1+ 1e-9) / (score1 + score0 + 1e-9)
         result = -torch.log(ratio)
 
         return result.mean()
