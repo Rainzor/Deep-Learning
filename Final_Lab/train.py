@@ -171,7 +171,10 @@ def main(args):
                             weight_decay=args.weight_decay, 
                             warmup_ratio=args.warmup_ratio,
                             tolerance=args.tolerance,
-                            scheduler=args.scheduler)
+                            scheduler=args.scheduler,
+                            logging_steps=args.log_steps,
+                            eval_steps=args.log_steps
+                            )
 
     timename = time.strftime("%Y-%m-%d-%H-%M", time.localtime())
     model_name = 'QKModel'

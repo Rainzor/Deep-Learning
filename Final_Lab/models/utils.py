@@ -119,7 +119,7 @@ class TrainingArguments:
     )
     
     logging_steps: int = field(
-        default=100,
+        default=50,
         metadata={'help': 'logging states every X updates steps.'}
     )
     eval_steps: int = field(
@@ -170,6 +170,8 @@ def args_parser():
     parser.add_argument("--tag", '-tag', default=None, type=str, help="The tag of the model")
 
     parser.add_argument("--augment","-aug", action="store_true", help="Whether to use argument data")
+
+    parser.add_argument("--log-steps", default=50, type=int, help="logging states every X updates steps.")
 
     return parser.parse_args()
 

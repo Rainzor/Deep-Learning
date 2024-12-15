@@ -382,17 +382,17 @@ def main(args):
                             checkpoint=args.checkpoint,
                             augment=args.augment)
 
-    train_args = TrainingArguments(
-        output_dir=args.output_dir,
-        train_batch_size=args.batch_size,
-        eval_batch_size=args.batch_size,
-        num_train_epochs=args.epochs,
-        learning_rate=args.learning_rate,
-        weight_decay=args.weight_decay,
-        warmup_ratio=args.warmup_ratio,
-        tolerance=args.tolerance,
-        scheduler=args.scheduler
-    )
+    train_args = TrainingArguments(output_dir=args.output_dir, 
+                            num_train_epochs=args.epochs, 
+                            train_batch_size=args.batch_size, 
+                            learning_rate=args.learning_rate, 
+                            weight_decay=args.weight_decay, 
+                            warmup_ratio=args.warmup_ratio,
+                            tolerance=args.tolerance,
+                            scheduler=args.scheduler,
+                            logging_steps=args.log_steps,
+                            eval_steps=args.log_steps
+                            )
 
     data_args.data_dir = os.path.join(data_args.data_dir, data_args.task_name)
     time_str = time.strftime("%Y%m%d-%H%M", time.localtime())

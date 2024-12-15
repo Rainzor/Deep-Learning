@@ -2,7 +2,6 @@
 
 > 卷积神经网络：图像分类
 >
-> SA24229016 王润泽
 
 ## 1. Overview
 
@@ -349,12 +348,12 @@ ResNeXt对比 ResNet 添加了**Cardinality** 维度，实验在相同参数量�
 
 在 **Tiny ImageNet** 训练 **T2T ViT** 的结果和 **ResNeXt** 对比结果如下
 
-<img src="assets/image-20241210190825159.png" alt="image-20241210190825159" style="zoom:50%;" />
+<img src="assets/image-20241215144502821.png" alt="image-20241215144502821" style="zoom: 50%;" />
 
-可以看到最终ViT结果虽然也收敛，但是在验证集上存在严重过拟合的问题，这可能是由于  `TinyImageNet` 的训练数据量不足导致的，故而最终的结果为：
+可以看到最终ViT结果虽然收敛更好，但是在验证集上存在严重过拟合的问题，这可能是由于  `TinyImageNet` 的训练数据量不足导致的，故而最终的结果为：
 
 - `ResNeXt50` Acc: 0.5929, Param: 23.38M
-- `T2T-ViT-T-14` Acc: 0.3948, Param: 21.23M
+- `T2T-ViT-T-14` Acc: 0.4163, Param: 21.23M
 
 ## 4. Conclusion
 
