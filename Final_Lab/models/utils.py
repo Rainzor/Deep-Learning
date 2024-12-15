@@ -84,7 +84,7 @@ class TrainingArguments:
         metadata={'help': 'batch size for training'}
     )
     eval_batch_size: int = field(
-        default=1,
+        default=4,
         metadata={'help': 'batch size for evaluation'}
     )
 
@@ -242,8 +242,30 @@ def load_data(data_dir, task_name, aug = False):
     def read_file(file_path):
         with open(file_path, "r", encoding="utf-8") as f:
             return json.load(f)
+    
+    def preprocess_valid(samples):
+        grouped_data = defaultdict(lambda: [[], []])
+        for sample in samples:
+            label = sample.get("label", None)
+            if label == "NA":
+                continue
+            try:
+                label = int(label)
+            except (ValueError, TypeError):
+                continue
+            query1 = sample["query1"]
+            query2 = sample["query2"]
+            grouped_data[query1][0].append(query2)
+            grouped_data[query1][1].append(label)
+        
+        processed_samples = [{
+            "query": query1,
+            "keys": keys[0],
+            "label": keys[1]
+        } for query1, keys in grouped_data.items()]
+        return processed_samples
 
-    def preprocess_train_dev(samples, type_='train'):
+    def preprocess_train(samples):
         grouped_data = defaultdict(lambda: [[], []])
         for sample in samples:
             label = sample.get("label", None)
@@ -260,7 +282,7 @@ def load_data(data_dir, task_name, aug = False):
         
 
         new_grouped_data = defaultdict(lambda: [[], []])
-        if aug and type_ == 'train':
+        if aug:
             for query, keys in grouped_data.items():
                 key, label = keys
                 key2, key1, key0 = [], [], []
@@ -327,7 +349,10 @@ def load_data(data_dir, task_name, aug = False):
         data = read_file(file_path)
         if type_ == 'test':
             return preprocess_test(data)
-        return preprocess_train_dev(data, type_)
+        elif type_ == 'valid':
+            return preprocess_valid(data)
+        else:
+            return preprocess_train(data)
 
 
     return {

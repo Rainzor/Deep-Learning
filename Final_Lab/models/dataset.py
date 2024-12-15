@@ -76,8 +76,8 @@ class KUAKE_Dataset(Dataset):
                 })
             else:
                 raise ValueError("type must be 'train', 'valid' or 'test'")
-        if self.type == "train":
-            data = self.shuffle(data) 
+        # if self.type == "train":
+        #     data = self.shuffle(data) 
         return data
     def __len__(self):
         return len(self._data)

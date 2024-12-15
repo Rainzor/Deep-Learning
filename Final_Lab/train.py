@@ -218,6 +218,8 @@ def main(args):
     writer.add_scalar("Best Accuracy", best_acc, best_steps)
     writer.close()
     print(f'Training Finished! Best step - {best_steps} - Best accuracy {best_acc}')
+
+    torch.save(model.state_dict(), os.path.join(train_args.output_dir, "model_final.pth"))
     
     best_state_dict = torch.load(os.path.join(train_args.output_dir, f"checkpoint-{best_steps}", "model.pth"), weights_only=True)
     
