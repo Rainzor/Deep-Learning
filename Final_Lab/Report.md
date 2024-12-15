@@ -400,7 +400,16 @@ QueryA是QueryB的语义父集，但反过来，QueryB不是QueryA的语义父�
 
 <img src="assets/image-20241215221943377.png" alt="image-20241215221943377" style="zoom: 33%;" />
 
-论文中，采用entailment语义作为 **Positive Sample**，conradiction语义和其他不相关的样本作为 **Negative Sample**，加上原样本 premise，组合成三元组 $(x,x_+,x_-)$，那么损失函数为：
+论文中，采用
+
+- entailment语义作为 **Positive Sample**，
+
+- conradiction语义和其他的样本作为 **Negative Sample**，
+
+- 原样本为 premise，组合成三元组 $(x,x_+,x_-)$，
+
+那么损失函数为：
+
 $$
--\log\frac{}{}
+-\log\frac{\exp{(sim(h_i,h^+_i)/\tau)}}{\sum_j\left(\exp(sim(h_i,h_j^-))\right)}
 $$
