@@ -223,7 +223,7 @@ def train_model(model, train_loader, valid_loader, train_args, tokenizer, writer
                 epoch_correct = epoch_correct + train_acc
                 epoch_total += 1
                 batch_loss = epoch_loss/epoch_total
-                if (global_steps+1) % len(train_loader) == 0:
+                if (global_steps+1) % len(valid_loader) == 0:
                     
                     val_loss, val_acc = evaluate(model, valid_loader, train_args.device)
 
