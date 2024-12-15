@@ -269,25 +269,27 @@ def load_data(data_dir, task_name, aug = False):
                         key1.append(key[i])
                     else:
                         key0.append(key[i])
-
                 for i in range(len(key2)):
-                    for j in range(i+1, len(key2)):
-                        new_grouped_data[key2[i]][0].append(key2[j])
+                    if query != key2[i]:
+                        new_grouped_data[key2[i]][0].append(query)
                         new_grouped_data[key2[i]][1].append(2)
+                        for j in range(i+1, len(key2)):
+                            new_grouped_data[key2[i]][0].append(key2[j])
+                            new_grouped_data[key2[i]][1].append(2)
 
-                        new_grouped_data[key2[j]][0].append(key2[i])
-                        new_grouped_data[key2[j]][1].append(2)
-                    
-                    for j in range(len(key1)):
-                        new_grouped_data[key2[i]][0].append(key1[j])
-                        new_grouped_data[key2[i]][1].append(1)
+                            new_grouped_data[key2[j]][0].append(key2[i])
+                            new_grouped_data[key2[j]][1].append(2)
+                        
+                        for j in range(len(key1)):
+                            new_grouped_data[key2[i]][0].append(key1[j])
+                            new_grouped_data[key2[i]][1].append(1)
 
-                        new_grouped_data[key1[j]][0].append(key2[i])
-                        new_grouped_data[key1[j]][1].append(0)
-                    
-                    for j in range(len(key0)):
-                        new_grouped_data[key2[i]][0].append(key0[j])
-                        new_grouped_data[key2[i]][1].append(0)
+                            new_grouped_data[key1[j]][0].append(key2[i])
+                            new_grouped_data[key1[j]][1].append(0)
+                        
+                        for j in range(len(key0)):
+                            new_grouped_data[key2[i]][0].append(key0[j])
+                            new_grouped_data[key2[i]][1].append(0)
 
         grouped_data.update(new_grouped_data)
         for query1, keys in grouped_data.items():
@@ -301,8 +303,6 @@ def load_data(data_dir, task_name, aug = False):
                 keys[0].append(query1)
                 keys[1].append(2)
 
-        
-        # 转换为列表形式
         processed_samples = [{
             "query": query1,
             "keys": keys[0],

@@ -20,14 +20,14 @@ def train(model, data, optimizer, scheduler, device):
 
     optimizer.zero_grad()
     data = data.to(device)
-    labals = data.labels
+    labels = data.labels
     correct = 0
     # 前向传播
     logits = model(data)
     nums = 0
     loss = model.criterion(data, logits)
-    # correct = (torch.argmax(logits, dim=1) == labals).sum().item()
-    # correct /= len(labals)
+    # correct = (torch.argmax(logits, dim=1) == labels).sum().item()
+    # correct /= len(labels)
     loss.backward()
     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
 

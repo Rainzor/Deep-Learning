@@ -49,14 +49,14 @@ class QKModel(nn.Module):
         input_ids = data.input_ids # [num_keys, max_length]
         attention_mask = data.attention_mask # [num_keys, max_length]
 
-        outputs = self.encoder(input_ids, attention_mask) # [num_keys, max_length, hidden_size]
+        outputs = self.encoder(input_ids=input_ids, attention_mask=attention_mask) # [num_keys, max_length, hidden_size]
         pooled_output = outputs.pooler_output # [num_keys, hidden_size]
         logits = self.classifier(pooled_output) # [num_keys, num_labels]
 
         return logits
     
     def criterion(self, inputs, outputs):
-        return F.cross_entropy(outputs, inputs.labals)
+        return F.cross_entropy(outputs, inputs.labels)
 
 
 class ContrastiveModel(nn.Module):

@@ -20,14 +20,14 @@ def train(model, data, optimizer, scheduler, device):
 
     optimizer.zero_grad()
     data = data.to(device)
-    labals = data.labels
+    labels = data.labels
 
     # 前向传播
     logits = model(data)
     nums = 0
     loss = model.criterion(data, logits)
-    correct = (torch.argmax(logits, dim=1) == labals).sum().item()
-    correct /= len(labals)
+    correct = (torch.argmax(logits, dim=1) == labels).sum().item()
+    correct /= len(labels)
     loss.backward()
     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
 
@@ -149,6 +149,17 @@ def train_model(model, train_loader, valid_loader, train_args, tokenizer, writer
 
 
 def main(args):
+    print("Model: ", args.model_dir)
+    print("Data Directory: ", args.data_dir)
+    print("Output Directory: ", args.output_dir)
+    print("Task Name: Baseline")
+    print("Batch Size: ", args.batch_size)
+    if args.checkpoint:
+        print("Checkpoint: ", args.checkpoint)
+    if args.augment:
+        print("Using data augmentation")
+    print("Start loading data...")
+
     data_args = DataTrainingArguments(data_dir=args.data_dir,
                             model_dir=args.model_dir,
                             augment=args.augment,
@@ -163,7 +174,7 @@ def main(args):
                             scheduler=args.scheduler)
 
     timename = time.strftime("%Y-%m-%d-%H-%M", time.localtime())
-    model_name = 'bert'
+    model_name = 'QKModel'
     if args.tag:
         timename = f"{args.tag}-{timename}"
     train_args.output_dir = os.path.join(train_args.output_dir, model_name, timename)
