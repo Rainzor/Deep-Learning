@@ -413,3 +413,9 @@ QueryA是QueryB的语义父集，但反过来，QueryB不是QueryA的语义父�
 $$
 -\log\frac{\exp{(sim(h_i,h^+_i)/\tau)}}{\sum_j\left(\exp(sim(h_i,h_j^-))\right)}
 $$
+
+### 4.3 Result
+
+最终，我们选择了 [lier007](https://huggingface.co/lier007)/[xiaobu-embedding ](https://huggingface.co/lier007/xiaobu-embedding) 作为我们的待微调的模型，经过对比结果如下：
+
+<img src="assets/image-20241215231632663.png" alt="image-20241215231632663" style="zoom:50%;" />

@@ -83,9 +83,9 @@ class QKModel(nn.Module):
             score1 = torch.sum(value1.unsqueeze(0) * value2.unsqueeze(1), dim=-1)  # [num2, num1]
             score0 = torch.sum(value0.unsqueeze(0) * value2.unsqueeze(1), dim=-1)  # [num2, num0]
 
-            score1 = torch.sum(torch.exp(score1), dim=-1)  # [num2]
-            score0 = torch.sum(torch.exp(score0), dim=-1)  # [num2]
-            probs = score1/(score0+score1)
+            score1 = torch.clamp_min(torch.sum(torch.exp(score1), dim=-1), 1e-9)
+            score0 = torch.clamp_min(torch.sum(torch.exp(score0), dim=-1), 1e-9)
+            probs = score1/(score0+score1) # [num2]
             ratio[i] = torch.clamp(probs.mean(), 1e-9, 1-1e-9)
         
         contract_loss = -torch.log(ratio).mean()
