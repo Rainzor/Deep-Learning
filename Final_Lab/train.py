@@ -49,7 +49,8 @@ def evaluate(model, dataloader, device):
                 data = data.to(device)
                 labels = data.labels
                 # 前向传播
-                pooled_output, logits = model(data)
+                output = model(data)
+                pooled_output, logits = output
                 loss_cross, loss_contract = model.criterion(data, logits)
                 correct = (torch.argmax(logits, dim=1) == labels).sum().item()
                 eval_correct += correct/len(labels)
