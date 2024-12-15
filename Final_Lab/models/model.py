@@ -66,7 +66,7 @@ class QKModel(nn.Module):
         # sim = F.tanh(outputs)
         temperature = 0.05
         # exp_score = torch.exp(sim/temperature) # [num_keys]
-        ratio = torch.zeros(batch_num).to(outputs.device)
+        ratio = torch.zeros(batch_num).to(pooled_output.device)
         for i in range(batch_num):
             mask2 = (batch == i) & (labels == 2)
             mask1 = (batch == i) & (labels == 1)
