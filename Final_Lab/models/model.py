@@ -71,6 +71,8 @@ class QKModel(nn.Module):
             mask2 = (batch == i) & (labels == 2)
             mask1 = (batch == i) & (labels == 1)
             mask0 = torch.logical_not(mask2 | mask1)
+            if mask2.sum() == 0:
+                continue
 
             value2 = pooled_output[mask2]
             value1 = pooled_output[mask1]
@@ -81,7 +83,6 @@ class QKModel(nn.Module):
 
             score1 = torch.sum(torch.exp(score1), dim=-1)  # [num2]
             score0 = torch.sum(torch.exp(score0), dim=-1)  # [num2]
-
             probs = score1/(score0+score1)
             ratio[i] = torch.sum(probs) + 1e-9
         
