@@ -105,7 +105,7 @@ class Classifier(nn.Module):
 
 #### Pipeline
 
-<img src="assets/image-20241211212216529.png" alt="image-20241211212216529"  />
+<img src="assets/image-20241211212216529.png" alt="image-20241211212216529" style="zoom:50%;" />
 
 ### result
 
@@ -186,3 +186,23 @@ class CrossAttention(nn.Module):
 <img src="assets/image-20241211214208577.png" alt="image-20241211214208577" style="zoom:50%;" />
 
 结果依然不够稳定，在测试集上的分数为：**0.7707**
+
+## 2.3 Bert
+
+BERT (Bidirectional Encoder Representations from Transformers) 是一种双向的预训练语言模型，具有以下特点：
+
+- **Transformer架构**：基于多头自注意力机制的Transformer架构。
+- **双向特性**：通过结合左右上下文，捕获更全面的语言表示。
+- **输入格式**：
+  - 输入文本经过分词后，加入特殊标记 `[CLS]` 和 `[SEP]`，形成模型的输入格式。
+  - `[CLS]` 是整体句子向量表示，用于分类任务。
+  - `[SEP]` 用于分隔句对任务的两个输入。
+
+BERT的预训练目标包括：
+
+- **掩码语言模型（Masked Language Model, MLM）**：随机掩盖部分输入词，预测被掩盖词。
+- **下一句预测（Next Sentence Prediction, NSP）**：预测两个句子是否是连续的。
+
+通过上述目标，BERT能够学习上下文相关的深层语义表示，在下游任务中表现优异.
+
+#### 

@@ -243,7 +243,6 @@ def train_model(model, train_loader, valid_loader, train_args, tokenizer, writer
                 if batch_loss < best_loss:
                     best_loss = batch_loss
                     best_steps = epoch
-                    tokenizer.save_pretrained(os.path.join(train_args.output_dir, "pretrained"))
                     best_model_state = model.state_dict().copy()
 
                 epochs_pbar.set_postfix({

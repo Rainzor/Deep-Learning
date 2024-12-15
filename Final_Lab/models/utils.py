@@ -105,6 +105,10 @@ class TrainingArguments:
         default=3e-5,
         metadata={'help': '"The initial learning rate for AdamW.'}
     )
+    lr_ratio: float = field(
+        default=1.0,
+        metadata={"help": "Pretrained model learning rate ratio"}
+    )
     weight_decay: float = field(
         default=0.0,
         metadata={"help": "Weight decay for AdamW"}
@@ -163,6 +167,7 @@ def args_parser():
     parser.add_argument("--scheduler", '-s', default="linear", type=str, help="The scheduler to use for training.", choices=["linear", "cosine", "constant"])
 
     parser.add_argument("--learning-rate", '-lr', default=3e-5, type=float, help="The initial learning rate for AdamW.")
+    parser.add_argument("--lr-ratio", default=1.0, type=float, help="Pretrained model learning rate ratio")
     parser.add_argument("--weight-decay", '-wd', default=0.0, type=float, help="Weight decay for AdamW")
     parser.add_argument("--warmup-ratio", '-wr', default=0.05, type=float, help="Linear warmup over warmup_ratio fraction of total steps.")
 
@@ -189,24 +194,51 @@ def set_seed(seed=42):
 def create_optimizer_and_scheduler(
     args: TrainingArguments,
     model: nn.Module,
-    num_training_steps: int):
+    num_training_steps: int
+):
+    encoder_parameters = list(model.encoder.named_parameters())
+    classifier_parameters = list(model.classifier.named_parameters())
 
     decay_parameters = get_parameter_names(model, [nn.LayerNorm])
     decay_parameters = [name for name in decay_parameters if "bias" not in name]
+
+    # 为 encoder 创建参数组
+    encoder_group = {
+        "params": [p for n, p in model.encoder.named_parameters() if n in decay_parameters],
+        "weight_decay": args.weight_decay,
+        "lr": args.lr_ratio*args.learning_rate
+    }
+
+    encoder_no_decay_group = {
+        "params": [p for n, p in model.encoder.named_parameters() if n not in decay_parameters],
+        "weight_decay": 0.0,
+        "lr": args.lr_ratio*args.learning_rate
+    }
+
+    # 为 classifier 创建参数组
+    classifier_group = {
+        "params": [p for n, p in model.classifier.named_parameters() if n in decay_parameters],
+        "weight_decay": args.weight_decay,
+        "lr": args.learning_rate
+    }
+
+    classifier_no_decay_group = {
+        "params": [p for n, p in model.classifier.named_parameters() if n not in decay_parameters],
+        "weight_decay": 0.0,
+        "lr": args.learning_rate
+    }
+
+    # 汇总所有参数组
     optimizer_grouped_parameters = [
-        {
-            "params": [p for n, p in model.named_parameters() if n in decay_parameters],
-            "weight_decay": args.weight_decay,
-        },
-        {
-            "params": [p for n, p in model.named_parameters() if n not in decay_parameters],
-            "weight_decay": 0.0,
-        },
+        encoder_group,
+        encoder_no_decay_group,
+        classifier_group,
+        classifier_no_decay_group
     ]
 
     optimizer = AdamW(
         optimizer_grouped_parameters, 
-        lr=args.learning_rate,
+        lr=args.learning_rate, # override lr
         weight_decay=args.weight_decay,
     )
     if args.scheduler == "linear":
@@ -229,6 +261,8 @@ def create_optimizer_and_scheduler(
             optimizer, 
             num_warmup_steps=args.get_warmup_steps(num_training_steps)
         )
+    else:
+        raise ValueError(f"Unsupported scheduler type: {args.scheduler}")
 
     return optimizer, scheduler
 
