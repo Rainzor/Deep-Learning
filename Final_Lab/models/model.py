@@ -54,12 +54,11 @@ class QKModel(nn.Module):
         batch_num = batch.max().item() + 1
 
         pooled_output, logits = outputs
-        contract_loss = 0
+        contract_loss = torch.tensor(0.0, device=pooled_output.device)
 
         pooled_output = F.normalize(pooled_output, p=2, dim=-1) # [num_keys, hidden_size]
 
         temperature = 0.05
-        ratio = torch.zeros(batch_num).to(pooled_output.device)
         for i in range(batch_num):
             mask2 = (batch == i) & (labels == 2)
             mask1 = (batch == i) & (labels == 1)
@@ -77,8 +76,8 @@ class QKModel(nn.Module):
             score0 = torch.sum(torch.exp(sim0), dim=-1) # [num2]
             score1 = torch.sum(torch.exp(sim1), dim=-1) # [num2]
             probs = score1/(score0) # [num2]
-            ratio[i] = torch.clamp(probs.mean(), 1e-9, 1-1e-9)
+            contract_loss = contract_loss + -torch.log(torch.clamp(probs, min=1e-6)).mean()
         
-        contract_loss = -torch.log(ratio).mean()
+        contract_loss = contract_loss/batch_num
 
         return F.cross_entropy(logits, inputs.labels), contract_loss
