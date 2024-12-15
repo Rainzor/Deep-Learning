@@ -23,9 +23,10 @@ def train(model, data, optimizer, scheduler, device='cpu', lambda_c=0.0):
     labels = data.labels
 
     # 前向传播
-    logits = model(data)
+    output = model(data)
+    pooled_output, logits = output
     nums = 0
-    loss_cross, loss_contract = model.criterion(data, logits)
+    loss_cross, loss_contract = model.criterion(data, output)
     loss = loss_cross + lambda_c * loss_contract
 
     correct = (torch.argmax(logits, dim=1) == labels).sum().item()
@@ -48,7 +49,7 @@ def evaluate(model, dataloader, device):
                 data = data.to(device)
                 labels = data.labels
                 # 前向传播
-                logits = model(data)
+                pooled_output, logits = model(data)
                 loss_cross, loss_contract = model.criterion(data, logits)
                 correct = (torch.argmax(logits, dim=1) == labels).sum().item()
                 eval_correct += correct/len(labels)
@@ -68,9 +69,9 @@ def predict(
         with tqdm(test_dataloader, desc="Predicting") as pbar:
             for item in test_dataloader:
                 inputs = item.to(args.device)
-                outputs = model(inputs)
+                pooled_output, logits = model(inputs)
 
-                preds = torch.argmax(outputs.cpu(), dim=-1).numpy()
+                preds = torch.argmax(logits.cpu(), dim=-1).numpy()
                 preds_list.append(preds)
                 pbar.update(1)
 

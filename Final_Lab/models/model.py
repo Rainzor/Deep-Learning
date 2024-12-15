@@ -53,14 +53,14 @@ class QKModel(nn.Module):
         pooled_output = outputs.pooler_output # [num_keys, hidden_size]
         logits = self.classifier(pooled_output) # [num_keys, num_labels]
 
-        return logits
+        return pooled_output, logits
     
     def criterion(self, inputs, outputs):
         labels = inputs.labels # [num_keys]
         batch = inputs.batch # [num_keys]
         batch_num = batch.max().item() + 1
 
-
+        pooled_output = outputs[0]
         contract_loss = 0
 
         # sim = F.tanh(outputs)
@@ -72,9 +72,9 @@ class QKModel(nn.Module):
             mask1 = (batch == i) & (labels == 1)
             mask0 = torch.logical_not(mask2 | mask1)
 
-            value2 = outputs[mask2]
-            value1 = outputs[mask1]
-            value0 = outputs[mask0]
+            value2 = pooled_output[mask2]
+            value1 = pooled_output[mask1]
+            value0 = pooled_output[mask0]
 
             score1 = torch.sum(value1.unsqueeze(0) * value2.unsqueeze(1), dim=-1) / temperature  # [num2, num1]
             score0 = torch.sum(value0.unsqueeze(0) * value2.unsqueeze(1), dim=-1) / temperature  # [num2, num0]
