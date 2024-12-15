@@ -84,7 +84,7 @@ def train_model(model, train_loader, valid_loader, train_args, tokenizer, writer
     best_val_acc = 0.0
     val_loss = 0
     val_acc = 0
-    best_steps = 0
+    best_steps = -1
     log_history = {
             "train_loss": [],
             "train_accuracy": [],
@@ -128,14 +128,8 @@ def train_model(model, train_loader, valid_loader, train_args, tokenizer, writer
                     if val_acc > best_val_acc:
                         best_val_acc = val_acc
                         best_steps = epoch
-                        os.makedirs(train_args.output_dir, exist_ok=True)
-                        save_dir = os.path.join(train_args.output_dir, f"checkpoint-{best_steps}")
-                        os.makedirs(save_dir, exist_ok=True)
-                        
-                        torch.save(model.state_dict(), os.path.join(save_dir, "model.pth"))
+                        best_model_state = model.state_dict().copy()
 
-                        tokenizer.save_pretrained(save_directory=save_dir)
-                
                 epochs_pbar.set_postfix({
                     "train loss": epoch_loss/epoch_total,
                     "train acc": epoch_correct/epoch_total,
@@ -144,6 +138,15 @@ def train_model(model, train_loader, valid_loader, train_args, tokenizer, writer
                 })
                 epochs_pbar.update(1)
 
+            if best_steps == epoch:
+                os.makedirs(train_args.output_dir, exist_ok=True)
+                save_dir = os.path.join(train_args.output_dir, f"checkpoint-{best_steps}")
+                os.makedirs(save_dir, exist_ok=True)
+                        
+                torch.save(best_model_state, os.path.join(save_dir, "model.pth"))
+
+                tokenizer.save_pretrained(save_directory=save_dir)
+                
             print(f"Epoch {global_steps} finished, train loss: {epoch_loss/epoch_total:.4f}, train accuracy: {epoch_correct/epoch_total:.4f}, best eval accuracy: {best_val_acc:.4f}")
     return best_val_acc, best_steps
 
@@ -197,7 +200,7 @@ def main(args):
                             collate_fn=custom_collate_fn)
     valid_loader = DataLoader(valid_dataset, batch_size=train_args.eval_batch_size, shuffle=False,          
                              collate_fn=custom_collate_fn)
-    test_loader = DataLoader(test_dataset, batch_size=train_args.eval_batch_size, shuffle=False,
+    test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False,
                             collate_fn=custom_collate_fn)
 
     model = QKModel(data_args.model_dir, data_args.labels)

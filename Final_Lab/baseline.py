@@ -413,7 +413,7 @@ def main(args):
 
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=train_args.train_batch_size, shuffle=True)
     dev_loader = torch.utils.data.DataLoader(dev_dataset, batch_size=train_args.eval_batch_size, shuffle=False)
-    test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=train_args.eval_batch_size, shuffle=False)
+    test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1, shuffle=False)
 
     model = LLM(data_args.model_dir, data_args.labels).to(train_args.device)
 
