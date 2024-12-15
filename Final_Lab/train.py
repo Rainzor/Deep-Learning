@@ -49,10 +49,10 @@ def evaluate(model, dataloader, device):
                 labels = data.labels
                 # 前向传播
                 logits = model(data)
-                loss_cross, loss_contract = model.criterion(data, logits).item()
+                loss_cross, loss_contract = model.criterion(data, logits)
                 correct = (torch.argmax(logits, dim=1) == labels).sum().item()
                 eval_correct += correct/len(labels)
-                eval_loss += loss_cross
+                eval_loss += loss_cross.item()
                 pbar.update(1)
                 
     return eval_loss/len(dataloader), eval_correct/len(dataloader)
