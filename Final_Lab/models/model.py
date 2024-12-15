@@ -73,7 +73,7 @@ class QKModel(nn.Module):
             mask0 = mask0 | (batch!=i)
             score1 = exp_score[mask1].sum()
             score0 = exp_score[mask0].sum()
-            ratio[i] = score1 / (score0+score1)
+            ratio[i] = score1 / (score0+score1) + 1e-9
         
         contract_loss = -torch.log(ratio).mean()
         # for i in range(batch_num):
