@@ -8,9 +8,9 @@ import numpy as np
 
 
 
-class Bert(nn.Module):
+class LLM(nn.Module):
     def __init__(self, model_dir, num_labels):
-        super(Bert, self).__init__()
+        super(LLM, self).__init__()
         self.bert = AutoModel.from_pretrained(model_dir)
         self.num_labels = num_labels
         self.classifier = nn.Linear(self.bert.config.hidden_size, num_labels)

@@ -37,7 +37,7 @@ from models.utils import (
             set_seed,  
             args_parser,
             create_optimizer_and_scheduler)
-from models.model import Bert
+from models.model import LLM
 
 # 初始化路径和任务参数
 MODEL_DIR = "hfl/chinese-bert-wwm-ext"
@@ -368,6 +368,16 @@ def train_model(model, train_loader, valid_loader, train_args, tokenizer, writer
 def main(args):
     set_seed(42)
 
+    print("Model: ", args.model_dir)
+    print("Data Directory: ", args.data_dir)
+    print("Output Directory: ", args.output_dir)
+    print("Task Name: ", args.task_name)
+    print("Batch Size: ", args.batch_size)
+    if args.checkpoint:
+        print("Checkpoint: ", args.checkpoint)
+    if args.augment:
+        print("Using data augmentation")
+    print("Start loading data...")
     data_args = DataTrainingArguments(data_dir=args.data_dir,
                             model_dir=args.model_dir,
                             checkpoint=args.checkpoint,
@@ -406,7 +416,7 @@ def main(args):
     dev_loader = torch.utils.data.DataLoader(dev_dataset, batch_size=train_args.eval_batch_size, shuffle=False)
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=train_args.eval_batch_size, shuffle=False)
 
-    model = Bert(data_args.model_dir, data_args.labels).to(train_args.device)
+    model = LLM(data_args.model_dir, data_args.labels).to(train_args.device)
 
     if data_args.checkpoint:
         checkpoint_file = os.path.join(data_args.checkpoint, "model.pth")
