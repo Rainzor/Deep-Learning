@@ -60,7 +60,7 @@ def parse_args():
     parser.add_argument('--warmup_ratio', '-wr', type=float, default=0, help="Warmup ratio for scheduler")
     parser.add_argument('--weight_decay', '-wd', type=float, default=0, help="Weight decay for optimizer")
 
-    parser.add_argument('--max_length', '-l', type=int, default=1024, help="Maximum length of input sequence")
+    parser.add_argument('--max_length', '-l', type=int, default=512, help="Maximum length of input sequence")
 
     parser.add_argument('--tag', '-t', type=str, help="Tag for model")
 

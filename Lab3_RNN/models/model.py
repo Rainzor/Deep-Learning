@@ -26,7 +26,7 @@ class TextClassifyRNN(nn.Module):
                 hidden_size=config.hidden_dim,
                 num_layers=config.n_layers,
                 dropout=config.dropout if config.n_layers > 1 else 0,
-                # bidirectional=config.bidirectional,
+                bidirectional=config.bidirectional,
                 batch_first=True
             )
         elif self.model_type == 'lstm':
@@ -35,7 +35,7 @@ class TextClassifyRNN(nn.Module):
                 hidden_size=config.hidden_dim,
                 num_layers=config.n_layers,
                 dropout=config.dropout if config.n_layers > 1 else 0,
-                # bidirectional=config.bidirectional,
+                bidirectional=config.bidirectional,
                 batch_first=True
             )
         else:
