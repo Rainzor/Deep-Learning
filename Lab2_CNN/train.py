@@ -18,7 +18,7 @@ from torch.utils.tensorboard import SummaryWriter
 from models.VGG import VGG
 from models.ResNet import ResNet
 from models.ViT import T2T_ViT
-from dataset import TinyImageNetDataset, RawData
+from dataloader.dataset import TinyImageNetDataset, RawData
 from config import *
 from utils import *
 
@@ -99,7 +99,7 @@ def DataLoaderSplit(raw_data, batch_size, val_ratio=0.2, force_reload=False,work
 
     return train_loader, val_loader, test_loader
 
-def train(model, iterator, optimizer, criterion, device='cpu', scaler=scaler, writer=None):
+def train(model, iterator, optimizer, criterion, device='cpu', scaler=None, writer=None):
     epoch_loss = 0
     epoch_acc = 0
     model.train()

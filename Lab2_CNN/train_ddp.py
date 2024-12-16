@@ -21,7 +21,7 @@ import json
 from models.VGG import VGG
 from models.ResNet import ResNet
 from models.ViT import T2T_ViT
-from dataset import TinyImageNetDataset, RawData
+from dataloader.dataset import TinyImageNetDataset, RawData
 from config import *
 from utils import *
 

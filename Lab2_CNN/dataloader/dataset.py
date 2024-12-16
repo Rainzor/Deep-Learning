@@ -7,7 +7,7 @@ from torch.utils.data import Dataset, DataLoader, random_split
 import torchvision.transforms as transforms
 from multiprocessing import Pool, cpu_count
 from PIL import Image
-from utils import load_image_multiprocess, apply_transform_multiprocess
+from .utils import load_image_multiprocess, apply_transform_multiprocess
 
 class RawData:
     def __init__(self, data_path):
