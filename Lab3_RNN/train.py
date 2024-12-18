@@ -416,6 +416,7 @@ def main():
     best_model_path = checkpoint_callback.best_model_path
     print(f"Best model saved at: {best_model_path}")
 
+    trainer.close()
 
     # Initialize PyTorch Lightning Trainer for Testing (Single GPU)
     trainer_test = pl.Trainer(
@@ -423,7 +424,6 @@ def main():
         accelerator="gpu",     # Use GPU for testing
         devices=1,             # Use only 1 GPU
         num_nodes=1,           # Use only 1 node
-        callbacks=[lr_monitor],  # Optionally include relevant callbacks
     )
 
     # Load the best checkpoint for testing
