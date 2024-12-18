@@ -398,6 +398,7 @@ def main():
 
     # Train the model
     print("Training the model...")
+    time_start = time.time()
     trainer.fit(lightning_model, train_loader, valid_loader)
     print("Training finished.")
 
@@ -420,6 +421,8 @@ def main():
     # Test the model
     print("Testing the model...")
     trainer.test(lightning_model, dataloaders=test_loader)
+    time_cost = time.time() - time_start
+    print(f"Testing finished. Time cost: {time_cost//60:.0f}m {time_cost%60:.0f}s")
 
 if __name__ == "__main__":
     main()
