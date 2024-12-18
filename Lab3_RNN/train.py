@@ -94,7 +94,10 @@ class TextClassifierLightning(pl.LightningModule):
         # Log metrics for each step
         self.log('val/loss', loss, on_step=False, on_epoch=True, sync_dist=True)
         self.log('val/acc', self.val_acc, on_step=False, on_epoch=True, sync_dist=True)
-        
+    
+    def on_test_start(self):
+        self.print("Start testing...")
+
     def test_step(self, batch, batch_idx):
         input_ids = batch['input_ids']
         attention_mask = batch['attention_mask']
@@ -421,8 +424,6 @@ def main():
     lightning_model = TextClassifierLightning.load_from_checkpoint(checkpoint_path=best_model_path)
 
     # Test the model
-    if trainer.is_global_zero:
-        print("Start testing...")
     trainer.test(lightning_model, dataloaders=test_loader)
 
 

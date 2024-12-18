@@ -35,11 +35,11 @@ class TrainConfig:
 class RNNConfig:
     name: str = 'rnn'
     embedding_dim: int = 256
-    hidden_dim: int = 256
-    output_dim: int = 5
-    n_layers: int = 2
+    hidden_dim: int = 512
+    output_dim: int = LABEL_NUM
+    n_layers: int = LAYER_NUM
     bidirectional: bool = False
-    dropout: float = 0.1
+    dropout: float = DROP_RATE
     vocab_size: int = 0
     pool: str = 'last'
     pack: bool = False
