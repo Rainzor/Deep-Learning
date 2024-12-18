@@ -399,24 +399,36 @@ def main():
     
     logger = TensorBoardLogger("logs", name=log_name)
 
-    trainer = pl.Trainer(
-        logger=logger,
-        max_epochs=train_config.epochs,
-        accelerator="gpu",
-        callbacks=[checkpoint_callback, lr_monitor, early_stop_callback],
-        val_check_interval=args.val_cki,
-    )
+    # trainer = pl.Trainer(
+    #     logger=logger,
+    #     max_epochs=train_config.epochs,
+    #     accelerator="gpu",
+    #     callbacks=[checkpoint_callback, lr_monitor, early_stop_callback],
+    #     val_check_interval=args.val_cki,
+    # )
 
-    # Train the model
-    print("Training the model...")
+
     time_start = time.time()
-    trainer.fit(lightning_model, train_loader, valid_loader)
-    print("Training finished.")
+    with Trainer(
+        logger=logger,
+        max_epochs=train_config['epochs'],
+        accelerator="gpu",
+        devices=pl.device_count("gpu"),
+        callbacks=[checkpoint_callback, lr_monitor, early_stop_callback],
+        val_check_interval=0.25,  # 例如，每 25% 的 epoch 进行验证
+        log_every_n_steps=10,
+    ) as trainer:
+        print("Training the model...")
+        trainer.fit(lightning_model, train_loader, valid_loader)
+        print("Training finished.")
+
+    # # Train the model
+    # print("Training the model...")
+    # trainer.fit(lightning_model, train_loader, valid_loader)
+    # print("Training finished.")
 
     best_model_path = checkpoint_callback.best_model_path
     print(f"Best model saved at: {best_model_path}")
-
-    trainer.close()
 
     # Initialize PyTorch Lightning Trainer for Testing (Single GPU)
     trainer_test = pl.Trainer(
