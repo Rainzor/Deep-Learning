@@ -414,17 +414,24 @@ def main():
     print("Training finished.")
 
     best_model_path = os.path.join(output_dir, "best-checkpoint.ckpt")
+    print(f"Best model saved at: {best_model_path}")
 
-    # # Load the best checkpoint for testing
-    lightning_model = TextClassifierLightning.load_from_checkpoint(
-                checkpoint_path=checkpoint_callback.best_model_path,
-                model_config=model_config,
-                train_config=train_config
+
+    # Initialize PyTorch Lightning Trainer for Testing (Single GPU)
+    trainer_test = pl.Trainer(
+        logger=logger,
+        accelerator="gpu",     # Use GPU for testing
+        devices=1,             # Use only 1 GPU
+        num_nodes=1,           # Use only 1 node
+        callbacks=[lr_monitor],  # Optionally include relevant callbacks
     )
+
+    # Load the best checkpoint for testing
+    lightning_model = TextClassifierLightning.load_from_checkpoint(checkpoint_path=best_model_path)
 
     # Test the model
     print("Testing the model...")
-    trainer.test(lightning_model, dataloaders=test_loader)
+    trainer_test.test(lightning_model, dataloaders=test_loader)
 
     time_cost = time.time() - time_start
     print(f"All finished. Time cost: {time_cost//60:.0f}m {time_cost%60:.0f}s")
