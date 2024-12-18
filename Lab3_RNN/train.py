@@ -29,8 +29,12 @@ import warnings
 warnings.filterwarnings("ignore", ".*Consider increasing the value of the `num_workers` argument*")
 
 class TextClassifierLightning(pl.LightningModule):
-    def __init__(self, train_config, model_config=None):
+    def __init__(self, train_config, model_config):
         super(TextClassifierLightning, self).__init__()
+
+        self.print("Model Configuration:")
+        self.print(model_config)
+
         self.save_hyperparameters() # Save all arguments to hparams
 
         if train_config.model == 'custom_rnn' or \
@@ -85,13 +89,14 @@ class TextClassifierLightning(pl.LightningModule):
 
     def on_train_start(self):
         super(self.__class__, self).on_train_start()
-        print(f"Training started ....")
+        self.print(f"Training started ....")
         self.time = time.time()
 
     def on_train_end(self):
-        super(self.__class__, self).on_train_end()
         time_cost = time.time() - self.time
         self.print(f"Training finished. Time cost: {time_cost//60:.0f}m {time_cost%60:.0f}s")
+        
+        super(self.__class__, self).on_train_end()
 
 
     def validation_step(self, batch, batch_idx):
@@ -124,6 +129,10 @@ class TextClassifierLightning(pl.LightningModule):
 
         self.log('test/loss', loss, on_step=False, on_epoch=True, sync_dist=True)
         self.log('test/acc', self.test_acc, on_step=False, on_epoch=True, sync_dist=True)
+    
+    def on_test_start(self):
+        super(self.__class__, self).on_test_start()
+        self.print(f"Testing started ....")
 
     def configure_optimizers(self):
         if self.train_config.optimizer.lower() == 'adam':
@@ -315,10 +324,6 @@ def main():
     model_config.embedding_dim = args.embedding_dim
     model_config.hidden_dim = args.hidden_dim
     model_config.dropout = args.dropout
-
-
-    print("Model Config:")
-    print(model_config)
     
 
     # Initialize datasets
@@ -423,7 +428,6 @@ def main():
     )
 
     # # Train the model
-    time_start = time.time()
     trainer.fit(lightning_model, train_loader, valid_loader)
 
     best_model_path = checkpoint_callback.best_model_path
@@ -433,11 +437,8 @@ def main():
     lightning_model = TextClassifierLightning.load_from_checkpoint(checkpoint_path=best_model_path)
 
     # Test the model
-    print("Testing the model...")
     trainer.test(lightning_model, dataloaders=test_loader)
 
-    time_cost = time.time() - time_start
-    print(f"All finished. Time cost: {time_cost//60:.0f}m {time_cost%60:.0f}s")
 
 if __name__ == "__main__":
     main()
