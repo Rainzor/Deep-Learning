@@ -24,6 +24,10 @@ from models.model import CustomRNNClassifier, RNNClassifier, TransformerClassifi
 from dataloader.data import YelpDataset, collate_fn
 from tqdm import tqdm
 
+import warnings
+
+warnings.filterwarnings("ignore", ".*Consider increasing the value of the `num_workers` argument*")
+
 class TextClassifierLightning(pl.LightningModule):
     def __init__(self, train_config, model_config=None):
         super(TextClassifierLightning, self).__init__()
@@ -396,43 +400,23 @@ def main():
     
     logger = TensorBoardLogger("logs", name=log_name)
 
-    # trainer = pl.Trainer(
-    #     logger=logger,
-    #     max_epochs=train_config.epochs,
-    #     accelerator="gpu",
-    #     callbacks=[checkpoint_callback, lr_monitor, early_stop_callback],
-    #     val_check_interval=args.val_cki,
-    # )
-
-
-    time_start = time.time()
-    with pl.Trainer(
+    trainer = pl.Trainer(
         logger=logger,
         max_epochs=train_config.epochs,
         accelerator="gpu",
         callbacks=[checkpoint_callback, lr_monitor, early_stop_callback],
         val_check_interval=args.val_cki,
-        log_every_n_steps=10,
-    ) as trainer:
-        print("Training the model...")
-        trainer.fit(lightning_model, train_loader, valid_loader)
-        print("Training finished.")
+        log_every_n_steps = 50,
+    )
 
     # # Train the model
-    # print("Training the model...")
-    # trainer.fit(lightning_model, train_loader, valid_loader)
-    # print("Training finished.")
+    print("Training the model...")
+    time_start = time.time()
+    trainer.fit(lightning_model, train_loader, valid_loader)
+    print("Training finished.")
 
     best_model_path = checkpoint_callback.best_model_path
     print(f"Best model saved at: {best_model_path}")
-
-    # Initialize PyTorch Lightning Trainer for Testing (Single GPU)
-    trainer_test = pl.Trainer(
-        logger=logger,
-        accelerator="gpu",     # Use GPU for testing
-        devices=1,             # Use only 1 GPU
-        num_nodes=1,           # Use only 1 node
-    )
 
     # Load the best checkpoint for testing
     lightning_model = TextClassifierLightning.load_from_checkpoint(checkpoint_path=best_model_path)
