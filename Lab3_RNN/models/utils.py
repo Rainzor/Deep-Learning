@@ -64,7 +64,7 @@ def parse_args():
     
     parser.add_argument('--tag', '-t', type=str, help="Tag for model")
     parser.add_argument('--val_cki', type=float, default=0.5, help="Validation checkpoint interval")
-    parser.add_argument('--log_step', type=int, default=10, help="Log interval")
+    parser.add_argument('--log_step', type=int, default=20, help="Log interval")
     parser.add_argument('--seed',type=int, default=42, help="Seed for reproducibility")
 
     parser.add_argument('--epochs','-n', type=int, default=10, help="Number of epochs")
