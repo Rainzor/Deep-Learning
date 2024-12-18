@@ -358,10 +358,9 @@ def main():
     train_config.total_steps = len(train_loader) * train_config.epochs
 
 
-
-
-
     # Initialize the Lightning module
+    pl.seed_everything(args.seed)
+
     lightning_model = TextClassifierLightning(train_config=train_config, model_config=model_config)
 
     # Set up model checkpointing to save the best model based on validation accuracy
