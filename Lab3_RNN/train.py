@@ -104,8 +104,8 @@ class TextClassifierLightning(pl.LightningModule):
         # Update accuracy metric
         self.test_acc(outputs, labels)
 
-        self.log('test/loss', loss, on_step=False, on_epoch=True)
-        self.log('test/acc', self.test_acc, on_step=False, on_epoch=True)
+        self.log('test/loss', loss, on_step=False, on_epoch=True, sync_dist=True)
+        self.log('test/acc', self.test_acc, on_step=False, on_epoch=True, sync_dist=True)
 
     def configure_optimizers(self):
         if self.train_config.optimizer.lower() == 'adam':
@@ -421,8 +421,9 @@ def main():
     # Test the model
     print("Testing the model...")
     trainer.test(lightning_model, dataloaders=test_loader)
+
     time_cost = time.time() - time_start
-    print(f"Testing finished. Time cost: {time_cost//60:.0f}m {time_cost%60:.0f}s")
+    print(f"All finished. Time cost: {time_cost//60:.0f}m {time_cost%60:.0f}s")
 
 if __name__ == "__main__":
     main()
