@@ -31,10 +31,6 @@ warnings.filterwarnings("ignore", ".*Consider increasing the value of the `num_w
 class TextClassifierLightning(pl.LightningModule):
     def __init__(self, train_config, model_config):
         super(TextClassifierLightning, self).__init__()
-
-        self.print("Model Configuration:")
-        self.print(model_config)
-
         self.save_hyperparameters() # Save all arguments to hparams
 
         if train_config.model == 'custom_rnn' or \
@@ -95,7 +91,7 @@ class TextClassifierLightning(pl.LightningModule):
     def on_train_end(self):
         time_cost = time.time() - self.time
         self.print(f"Training finished. Time cost: {time_cost//60:.0f}m {time_cost%60:.0f}s")
-        
+
         super(self.__class__, self).on_train_end()
 
 
@@ -324,7 +320,9 @@ def main():
     model_config.embedding_dim = args.embedding_dim
     model_config.hidden_dim = args.hidden_dim
     model_config.dropout = args.dropout
-    
+
+    print("Model Configuration:")
+    print(model_config)
 
     # Initialize datasets
     train_dataset = YelpDataset(
