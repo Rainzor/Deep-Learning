@@ -119,12 +119,12 @@ rnn_attention_config = RNNConfig(
 
 transformer_config = TransformerConfig(
     name='transformer',
-    embedding_dim=128,
-    output_dim=5,
-    hidden_dim=256,
-    n_layers=2,
-    dropout=0.1,
+    embedding_dim=EMBEDDING_DIM,
+    output_dim=LABEL_NUM,
+    hidden_dim=HIDDEN_DIM,
+    n_layers=LAYER_NUM,
+    dropout=DROP_RATE,
     n_heads=8,
-    dim_feedforward=256,
+    dim_feedforward=HIDDEN_DIM,
     pool='cls'
 )

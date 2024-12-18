@@ -362,7 +362,6 @@ def main():
     )
     train_config.total_steps = len(train_loader) * train_config.epochs
 
-
     # Initialize the Lightning module
     pl.seed_everything(args.seed)
     lightning_model = TextClassifierLightning(train_config=train_config, model_config=model_config)
@@ -412,6 +411,8 @@ def main():
 
     # # Train the model
     if trainer.is_global_zero:
+        print("Training Configuration:")
+        print(train_config)
         print("Model Configuration:")
         print(model_config)
     trainer.fit(lightning_model, train_loader, valid_loader)

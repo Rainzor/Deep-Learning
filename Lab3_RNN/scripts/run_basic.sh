@@ -18,19 +18,19 @@ done
 echo "-- Testing Basic RNN --"
 
 echo "1. Testing RNN"
-python train.py -d /data2/wrz/Datasets/Yelp/ -n $n -b $b -lr $lr -m rnn
+python train.py -d /data2/wrz/Datasets/Yelp/ -n $n -b $b -lr $lr -m rnn --scheduler cosine
 
 echo "2. Testing GRU"
-python train.py -d /data2/wrz/Datasets/Yelp/ -n $n -b $b -lr $lr -m gru
+python train.py -d /data2/wrz/Datasets/Yelp/ -n $n -b $b -lr $lr -m gru --scheduler cosine
 
 echo "3. Testing LSTM"
-python train.py -d /data2/wrz/Datasets/Yelp/ -n $n -b $b -lr $lr -m lstm
+python train.py -d /data2/wrz/Datasets/Yelp/ -n $n -b $b -lr $lr -m lstm --scheduler cosine
 
 echo "4. Testing BiRNN"
-python train.py -d /data2/wrz/Datasets/Yelp/ -n $n -b $b -lr $lr -m rnn --bidirectional --tag bidirect 
+python train.py -d /data2/wrz/Datasets/Yelp/ -n $n -b $b -lr $lr -m rnn --bidirectional --tag bidirect --scheduler cosine
 
 echo "5. Testing BiGRU"
-python train.py -d /data2/wrz/Datasets/Yelp/ -n $n -b $b -lr $lr -m gru --bidirectional --tag bidirect 
+python train.py -d /data2/wrz/Datasets/Yelp/ -n $n -b $b -lr $lr -m gru --bidirectional --tag bidirect --scheduler cosine
 
 echo "6. Testing BiLSTM"
-python train.py -d /data2/wrz/Datasets/Yelp/ -n $n -b $b -lr $lr -m lstm --bidirectional --tag bidirect
+python train.py -d /data2/wrz/Datasets/Yelp/ -n $n -b $b -lr $lr -m lstm --bidirectional --tag bidirect --scheduler cosine
