@@ -368,8 +368,9 @@ def main():
 
     timenow = time.strftime("%Y%m%d-%H-%M")
     if args.tag:
-        timenow = f"{timenow}-{args.tag}"
-    output_dir = os.path.join(train_config.output_path, train_config.model, timenow)
+        output_dir = os.path.join(train_config.output_path, f"{train_config.model}-{args.tag}", timenow)
+    else:
+        output_dir = os.path.join(train_config.output_path, train_config.model, timenow)
     os.makedirs(output_dir, exist_ok=True)
 
     checkpoint_callback = ModelCheckpoint(
@@ -384,15 +385,16 @@ def main():
     lr_monitor = LearningRateMonitor(logging_interval='step')
 
     # Initialize PyTorch Lightning Trainer
-
-    logger = TensorBoardLogger("logs", name=train_config.model)
+    log_name = f"{train_config.model}-{args.tag}" if args.tag else train_config.model
+    
+    logger = TensorBoardLogger("logs", name=log_name)
 
     trainer = pl.Trainer(
         logger=logger,
         max_epochs=train_config.epochs,
         accelerator="gpu",
         callbacks=[checkpoint_callback, lr_monitor],
-        val_check_interval=0.5,
+        val_check_interval=args.val_cki,
     )
 
     # Train the model
@@ -408,6 +410,13 @@ def main():
     #             model_config=model_config,
     #             train_config=train_config
     # )
+
+    trainer = pl.Trainer(
+        devices=1,  # Use a single device for testing
+        num_nodes=1,  # Single node for testing
+        accelerator="gpu",
+        logger=logger,
+    )
 
     # Test the model
     print("Testing the model...")

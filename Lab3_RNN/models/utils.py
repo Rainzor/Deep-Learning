@@ -55,15 +55,17 @@ def parse_args():
     parser.add_argument('--output_path', '-o', type=str, default=OUTPUT_DIR, help="Directory for saving outputs")
     parser.add_argument("--checkpoint", "-c", type=str, help="Directory for saving checkpoints")
     parser.add_argument('--pretrained', type=str, help="Pretrained model for training")
-
+    
+    parser.add_argument('--tag', '-t', type=str, help="Tag for model")
+    parser.add_argument('--val_cki', type=float, default=0.5, help="Validation checkpoint interval")
+    parser.add_argument('--seed',type=int, default=42, help="Seed for reproducibility")
 
     parser.add_argument('--epochs','-n', type=int, default=10, help="Number of epochs")
     parser.add_argument('--learning_rate','-lr' ,type=float, default=LEARNING_RATE, help="Learning rate")
     parser.add_argument('--batch_size', '-b', type=int, default=BATCH_SIZE, help="Batch size")
-
     parser.add_argument('--optimizer', '-opt', type=str, default=OPTIMIZER, help="Optimizer for training")
-    parser.add_argument('--scheduler', '-s', type=str, default=SCHEDULER, help="Scheduler for training")
-    parser.add_argument('--warmup_ratio', '-wr', type=float, default=0, help="Warmup ratio for scheduler")
+    parser.add_argument('--scheduler', type=str, default=SCHEDULER, help="Scheduler for training")
+    parser.add_argument('--warmup_ratio', '-wr', type=float, default=0.1, help="Warmup ratio for scheduler")
     parser.add_argument('--weight_decay', '-wd', type=float, default=0, help="Weight decay for optimizer")
 
     parser.add_argument('--max_length', '-len', type=int, default=512, help="Maximum length of input sequence")
@@ -76,7 +78,6 @@ def parse_args():
     parser.add_argument('--pool', type=str, default='last', help="Pooling method for Classification", choices=['last', 'max', 'mean', 'cls', 'attention'])
     parser.add_argument('--pack', '-pk', action='store_true', help="Use pack_padded_sequence")
 
-    parser.add_argument('--tag', '-t', type=str, help="Tag for model")
 
     # Parse arguments
     args = parser.parse_args()
