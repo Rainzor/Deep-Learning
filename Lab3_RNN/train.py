@@ -193,6 +193,7 @@ def main():
         raise ValueError(f"Unsupported model: {train_config.model}")
     
     model_config.vocab_size = tokenizer.vocab_size
+    model_config.n_layers = args.n_layers
     model_config.pool = args.pool
     model_config.output_dim = 5
     print("Model Config:")
@@ -264,9 +265,9 @@ def main():
         train_config.model == 'gru':
         model = RNNClassifier(model_config)
     elif train_config.model == 'rcnn':
-        model = RCNNClassifier(model_config)
+        model = RNNClassifier(model_config)
     elif train_config.model == 'rnn_attention':
-        model = RNNAttentionClassifier(model_config)
+        model = RNNClassifier(model_config)
     elif train_config.model == 'transformer':
         model = TransformerClassifier(model_config)
     else:
