@@ -19,6 +19,8 @@ class CustomRNNClassifier(nn.Module):
         self.bidirectional = config.bidirectional
         self.num_directions = 2 if self.bidirectional else 1
         self.hidden_dim = (config.hidden_dim // self.num_directions) * self.num_directions
+        
+        self.embedding = nn.Embedding(config.vocab_size, config.embedding_dim, padding_idx=0)
 
         self.model_type = config.name.lower()
         if self.model_type == 'rnn':
@@ -200,16 +202,17 @@ class RNNClassifier(nn.Module):
 
         Args:
             output (Tensor): Output tensor of shape [batch_size, seq_len, num_directions * hidden_size]
-            mask (Tensor, optional): Mask tensor of shape [batch_size, seq_len, 1]
+            mask (Tensor, optional): Mask tensor of shape [batch_size, seq_len]
         
         Returns:
             Tensor: Pooled output tensor of shape [batch_size, hidden_dim]
         """
         
-
         B, L, _ = output.size()
-        lengths = mask.sum(dim=1).long()  if mask is not None else output.new_full((B,), L, dtype=torch.long)    # Shape: [batch_size, 1]
-        lengths = lengths.view(-1) # Shape: [batch_size]
+        if mask is not None:
+            mask = mask.unsqueeze(2)
+            lengths = mask.sum(dim=1).long()
+            lengths = lengths.view(-1)
 
         if self.pooling == 'last':
             if mask is not None:
@@ -339,17 +342,17 @@ class TransformerClassifier(nn.Module):
         self.pos_encoder = PositionalEncoding(config.embedding_dim)
         self.dropout = nn.Dropout(config.dropout)
 
-        self.proj = nn.Linear(config.embedding_dim, config.d_model)
+        self.proj = nn.Linear(config.embedding_dim, config.hidden_dim)
 
         self.encoder = TransformerEncoder(
             num_layers=config.n_layers,
             d_model=config.hidden_dim,
-            nhead=config.num_heads,
+            nhead=config.n_heads,
             dim_feedforward=config.dim_feedforward,
             dropout=config.dropout
         )
 
-        self.decoder = nn.Linear(config.d_model, config.output_dim)
+        self.decoder = nn.Linear(config.hidden_dim, config.output_dim)
 
     def forward(self, input_ids, attention_mask=None):
         embedded = self.embedding(input_ids)

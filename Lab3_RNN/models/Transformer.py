@@ -33,19 +33,19 @@ class PositionalEncoding(nn.Module):
         return x
 
 class MultiHeadSelfAttention(nn.Module):
-    def __init__(self, d_model, num_heads, dropout=0.1):
+    def __init__(self, d_model, nhead, dropout=0.1):
         """
         Parameters:
             d_model: Embedding dimension
-            num_heads: Number of attention heads
+            nhead: Number of attention heads
             dropout: Dropout probability
         """
         super(MultiHeadSelfAttention, self).__init__()
-        assert d_model % num_heads == 0, "d_model must be divisible by num_heads"
+        assert d_model % nhead == 0, "d_model must be divisible by nhead"
         
         self.d_model = d_model
-        self.num_heads = num_heads
-        self.d_k = d_model // num_heads
+        self.nhead = nhead
+        self.d_k = d_model // nhead
         
         # Define linear transformation layers
         self.linear_q = nn.Linear(d_model, d_model)
@@ -68,21 +68,21 @@ class MultiHeadSelfAttention(nn.Module):
         batch_size = query.size(0)
         
         # Linear transformations and split into heads
-        Q = self.linear_q(query).view(batch_size, -1, self.num_heads, self.d_k).transpose(1, 2)  # [batch_size, num_heads, seq_len, d_k]
-        K = self.linear_k(key).view(batch_size, -1, self.num_heads, self.d_k).transpose(1, 2)    # [batch_size, num_heads, seq_len, d_k]
-        V = self.linear_v(value).view(batch_size, -1, self.num_heads, self.d_k).transpose(1, 2)  # [batch_size, num_heads, seq_len, d_k]
+        Q = self.linear_q(query).view(batch_size, -1, self.nhead, self.d_k).transpose(1, 2)  # [batch_size, nhead, seq_len, d_k]
+        K = self.linear_k(key).view(batch_size, -1, self.nhead, self.d_k).transpose(1, 2)    # [batch_size, nhead, seq_len, d_k]
+        V = self.linear_v(value).view(batch_size, -1, self.nhead, self.d_k).transpose(1, 2)  # [batch_size, nhead, seq_len, d_k]
         
         # Compute attention scores
-        scores = torch.matmul(Q, K.transpose(-2, -1)) / math.sqrt(self.d_k)  # [batch_size, num_heads, seq_len, seq_len]
+        scores = torch.matmul(Q, K.transpose(-2, -1)) / math.sqrt(self.d_k)  # [batch_size, nhead, seq_len, seq_len]
         
         if mask is not None:
             scores = scores.masked_fill(mask == 0, -1e9)
         
-        attn = torch.softmax(scores, dim=-1)  # [batch_size, num_heads, seq_len, seq_len]
+        attn = torch.softmax(scores, dim=-1)  # [batch_size, nhead, seq_len, seq_len]
         attn = self.dropout(attn)
         
         # Weighted sum
-        context = torch.matmul(attn, V)  # [batch_size, num_heads, seq_len, d_k]
+        context = torch.matmul(attn, V)  # [batch_size, nhead, seq_len, d_k]
         context = context.transpose(1, 2).contiguous().view(batch_size, -1, self.d_model)  # [batch_size, seq_len, d_model]
         
         # Final linear transformation
@@ -123,18 +123,18 @@ class FeedForward(nn.Module):
         return self.ff(x)
 
 class TransformerEncoderLayer(nn.Module):
-    def __init__(self, d_model, num_heads, d_ff, dropout=0.1, activation='relu'):
+    def __init__(self, d_model, nhead, dim_feedforward, dropout=0.1, activation='relu'):
         """
         Parameters:
             d_model: Embedding dimension
-            num_heads: Number of attention heads
-            d_ff: Hidden layer dimension of the feed-forward network
+            nhead: Number of attention heads
+            dim_feedforward: Hidden layer dimension of the feed-forward network
             dropout: Dropout probability
             activation: Activation function ('relu' or 'gelu')
         """
         super(TransformerEncoderLayer, self).__init__()
-        self.self_attn = MultiHeadSelfAttention(d_model, num_heads, dropout)
-        self.feed_forward = FeedForward(d_model, d_ff, dropout, activation)
+        self.self_attn = MultiHeadSelfAttention(d_model, nhead, dropout)
+        self.feed_forward = FeedForward(d_model, dim_feedforward, dropout, activation)
         
         self.norm1 = nn.LayerNorm(d_model)
         self.norm2 = nn.LayerNorm(d_model)
@@ -163,20 +163,20 @@ class TransformerEncoderLayer(nn.Module):
         return src
 
 class TransformerEncoder(nn.Module):
-    def __init__(self, num_layers, d_model, num_heads, d_ff, dropout=0.1, activation='relu'):
+    def __init__(self, num_layers, d_model, nhead, dim_feedforward, dropout=0.1, activation='relu'):
         """
         Parameters:
             num_layers: Number of encoder layers
             d_model: Embedding dimension
-            num_heads: Number of attention heads
-            d_ff: Hidden layer dimension of the feed-forward network
+            nhead: Number of attention heads
+            dim_feedforward: Hidden layer dimension of the feed-forward network
             dropout: Dropout probability
             activation: Activation function ('relu' or 'gelu')
         """
         super(TransformerEncoder, self).__init__()
         self.d_model = d_model
         self.layers = nn.ModuleList([
-            TransformerEncoderLayer(d_model, num_heads, d_ff, dropout, activation) for _ in range(num_layers)
+            TransformerEncoderLayer(d_model, nhead, dim_feedforward, dropout, activation) for _ in range(num_layers)
         ])
 
     def forward(self, src, src_mask=None):

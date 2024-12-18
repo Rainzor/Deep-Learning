@@ -43,7 +43,7 @@ class RNNConfig:
 @dataclass
 class TransformerConfig(RNNConfig):
     n_heads: int = 8
-    feedforward_dim: int = 256
+    dim_feedforward: int = 256
     pool: str = 'cls'
     
 
@@ -130,7 +130,8 @@ rcnn_config = RNNConfig(
     hidden_dim=256,
     n_layers=2,
     dropout=0.1,
-    bidirectional=True 
+    bidirectional=True,
+    pool='max'
 )
 
 rnn_attention_config = RNNConfig(
@@ -140,7 +141,8 @@ rnn_attention_config = RNNConfig(
     hidden_dim=256,
     n_layers=2,
     dropout=0.1,
-    bidirectional=True 
+    bidirectional=True,
+    pool='attention'
 )
 
 transformer_config = TransformerConfig(
@@ -151,6 +153,6 @@ transformer_config = TransformerConfig(
     n_layers=2,
     dropout=0.1,
     n_heads=8,
-    feedforward_dim=256,
+    dim_feedforward=256,
     pool='cls'
 )
