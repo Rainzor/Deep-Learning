@@ -24,10 +24,6 @@ from models.model import CustomRNNClassifier, RNNClassifier, TransformerClassifi
 from dataloader.data import YelpDataset, collate_fn
 from tqdm import tqdm
 
-import warnings
-
-warnings.filterwarnings("ignore", ".*Consider increasing the value of the `num_workers` argument*")
-
 class TextClassifierLightning(pl.LightningModule):
     def __init__(self, train_config, model_config):
         super(TextClassifierLightning, self).__init__()
@@ -78,21 +74,24 @@ class TextClassifierLightning(pl.LightningModule):
         
         # Log metrics for each step
         # if batch_idx % 50 == 0:
-        self.log('train/loss', loss, on_step=True, on_epoch=False, prog_bar=True)
-        self.log('train/acc', self.train_acc, on_step=True, on_epoch=False, prog_bar=True)
+        self.log('train/loss', loss, on_step=True, on_epoch=False, prog_bar=True, sync_dist=True)
+        self.log('train/acc', self.train_acc, on_step=True, on_epoch=False, prog_bar=True, sync_dist=True)
         
         return loss
 
-    def on_train_start(self):
-        super(self.__class__, self).on_train_start()
-        self.print(f"Training started ....")
-        self.time = time.time()
-
-    def on_train_end(self):
-        time_cost = time.time() - self.time
-        self.print(f"Training finished. Time cost: {time_cost//60:.0f}m {time_cost%60:.0f}s")
-
-        super(self.__class__, self).on_train_end()
+    def setup(self, stage):
+        super(self.__class__, self).setup(stage)
+        if stage == 'fit':
+            self.print(f"Training started ....")
+            self.time = time.time()
+        if stage == 'test':
+            self.print(f"Testing started ....")
+    
+    def teardown(self, stage):
+        if stage == 'fit':
+            time_cost = time.time() - self.time
+            self.print(f"Training finished. Time cost: {time_cost//60:.0f}m {time_cost%60:.0f}s")
+        super(self.__class__, self).teardown(stage)
 
 
     def validation_step(self, batch, batch_idx):
@@ -108,8 +107,8 @@ class TextClassifierLightning(pl.LightningModule):
         self.val_acc(outputs, labels)
 
         # Log metrics for each step
-        self.log('val/loss', loss, on_step=False, on_epoch=True)
-        self.log('val/acc', self.val_acc, on_step=False, on_epoch=True)
+        self.log('val/loss', loss, on_step=False, on_epoch=True, sync_dist=True)
+        self.log('val/acc', self.val_acc, on_step=False, on_epoch=True, sync_dist=True)
         
     def test_step(self, batch, batch_idx):
         input_ids = batch['input_ids']
