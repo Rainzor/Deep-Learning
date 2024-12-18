@@ -71,9 +71,9 @@ class TextClassifierLightning(pl.LightningModule):
         self.train_acc(outputs, labels)  # No need to process the outputs
         
         # Log metrics for each step
-        if batch_idx % 50 == 0:
-            self.log('train/loss', loss, on_step=True, on_epoch=False, prog_bar=True)
-            self.log('train/acc', self.train_acc, on_step=True, on_epoch=False, prog_bar=True)
+        # if batch_idx % 50 == 0:
+        self.log('train/loss', loss, on_step=True, on_epoch=False, prog_bar=True)
+        self.log('train/acc', self.train_acc, on_step=True, on_epoch=False, prog_bar=True)
         
         return loss
 
@@ -337,7 +337,6 @@ def main():
         num_workers=4,
         persistent_workers=True,
         pin_memory=True,
-        # collate_fn=collate_fn
     )
     valid_loader = DataLoader(
         valid_subset,
@@ -346,7 +345,6 @@ def main():
         num_workers=4,
         persistent_workers=True,
         pin_memory=True,
-        # collate_fn=collate_fn
     )
     
     test_loader = DataLoader(
@@ -355,7 +353,6 @@ def main():
         shuffle=False,
         num_workers=4,
         persistent_workers=True,
-        # collate_fn=collate_fn
     )
     train_config.total_steps = len(train_loader) * train_config.epochs
 
@@ -415,7 +412,7 @@ def main():
         accelerator="gpu",
         devices=pl.device_count("gpu"),
         callbacks=[checkpoint_callback, lr_monitor, early_stop_callback],
-        val_check_interval=0.25,  # 例如，每 25% 的 epoch 进行验证
+        val_check_interval=args.val_cki,
         log_every_n_steps=10,
     ) as trainer:
         print("Training the model...")
