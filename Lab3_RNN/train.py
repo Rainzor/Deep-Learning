@@ -59,6 +59,8 @@ class TextClassifierLightning(pl.LightningModule):
         # Loss function
         self.criterion = nn.CrossEntropyLoss()
 
+        self.time = time.time()
+
     def forward(self, input_ids, attention_mask=None):
         return self.model(input_ids, attention_mask)
 
@@ -80,6 +82,17 @@ class TextClassifierLightning(pl.LightningModule):
         self.log('train/acc', self.train_acc, on_step=True, on_epoch=False, prog_bar=True)
         
         return loss
+
+    def on_train_start(self):
+        super(self.__class__, self).on_train_start()
+        print(f"Training started ....")
+        self.time = time.time()
+
+    def on_train_end(self):
+        super(self.__class__, self).on_train_end()
+        time_cost = time.time() - self.time
+        self.print(f"Training finished. Time cost: {time_cost//60:.0f}m {time_cost%60:.0f}s")
+
 
     def validation_step(self, batch, batch_idx):
         input_ids = batch['input_ids']
@@ -410,10 +423,8 @@ def main():
     )
 
     # # Train the model
-    print("Training the model...")
     time_start = time.time()
     trainer.fit(lightning_model, train_loader, valid_loader)
-    print("Training finished.")
 
     best_model_path = checkpoint_callback.best_model_path
     print(f"Best model saved at: {best_model_path}")
@@ -423,7 +434,7 @@ def main():
 
     # Test the model
     print("Testing the model...")
-    trainer_test.test(lightning_model, dataloaders=test_loader)
+    trainer.test(lightning_model, dataloaders=test_loader)
 
     time_cost = time.time() - time_start
     print(f"All finished. Time cost: {time_cost//60:.0f}m {time_cost%60:.0f}s")
