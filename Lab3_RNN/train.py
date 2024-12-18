@@ -406,7 +406,7 @@ def main():
         accelerator="gpu",
         callbacks=[checkpoint_callback, lr_monitor, early_stop_callback],
         val_check_interval=args.val_cki,
-        log_every_n_steps = 1,
+        log_every_n_steps = args.log_step,
     )
 
     # # Train the model
