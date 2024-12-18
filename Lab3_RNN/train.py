@@ -79,21 +79,6 @@ class TextClassifierLightning(pl.LightningModule):
         
         return loss
 
-    def setup(self, stage):
-        super(self.__class__, self).setup(stage)
-        if stage == 'fit':
-            self.print(f"Training started ....")
-            self.time = time.time()
-        if stage == 'test':
-            self.print(f"Testing started ....")
-    
-    def teardown(self, stage):
-        if stage == 'fit':
-            time_cost = time.time() - self.time
-            self.print(f"Training finished. Time cost: {time_cost//60:.0f}m {time_cost%60:.0f}s")
-        super(self.__class__, self).teardown(stage)
-
-
     def validation_step(self, batch, batch_idx):
         input_ids = batch['input_ids']
         attention_mask = batch['attention_mask']
@@ -124,10 +109,6 @@ class TextClassifierLightning(pl.LightningModule):
 
         self.log('test/loss', loss, on_step=False, on_epoch=True, sync_dist=True)
         self.log('test/acc', self.test_acc, on_step=False, on_epoch=True, sync_dist=True)
-    
-    def on_test_start(self):
-        super(self.__class__, self).on_test_start()
-        self.print(f"Testing started ....")
 
     def configure_optimizers(self):
         if self.train_config.optimizer.lower() == 'adam':
@@ -320,8 +301,7 @@ def main():
     model_config.hidden_dim = args.hidden_dim
     model_config.dropout = args.dropout
 
-    print("Model Configuration:")
-    print(model_config)
+
 
     # Initialize datasets
     train_dataset = YelpDataset(
@@ -378,7 +358,6 @@ def main():
 
     # Initialize the Lightning module
     pl.seed_everything(args.seed)
-
     lightning_model = TextClassifierLightning(train_config=train_config, model_config=model_config)
 
     # Set up model checkpointing to save the best model based on validation accuracy
@@ -425,15 +404,25 @@ def main():
     )
 
     # # Train the model
+    if trainer.is_global_zero:
+        print("Start training...")
+        print("Model Configuration:")
+        print(model_config)
+        time_start = time.time()
     trainer.fit(lightning_model, train_loader, valid_loader)
 
     best_model_path = checkpoint_callback.best_model_path
-    print(f"Best model saved at: {best_model_path}")
+    if trainer.is_global_zero:
+        time_cost = time.time() - time_start
+        print(f"Training finished in {time_cost//60:.0f}m {time_cost%60:.0f}s")
+        print(f"Best model saved at: {best_model_path}")
 
     # Load the best checkpoint for testing
     lightning_model = TextClassifierLightning.load_from_checkpoint(checkpoint_path=best_model_path)
 
     # Test the model
+    if trainer.is_global_zero:
+        print("Start testing...")
     trainer.test(lightning_model, dataloaders=test_loader)
 
 
