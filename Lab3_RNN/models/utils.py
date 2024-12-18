@@ -12,7 +12,7 @@ BATCH_SIZE = 256
 OPTIMIZER = 'adam'
 SCHEDULER = 'cosine'
 MAX_LENGTH = 256
-DROP_RATE = 0.5
+DROP_RATE = 0.3
 LAYER_NUM = 2
 EMBEDDING_DIM = 256
 HIDDEN_DIM = 512
@@ -101,9 +101,10 @@ gru_config = RNNConfig(
     bidirectional=False 
 )
 
+# B = 512, lr = 1e-3 
 lstm_config = RNNConfig(
     name='lstm',
-    bidirectional=False 
+    bidirectional=False
 )
 
 rcnn_config = RNNConfig(
