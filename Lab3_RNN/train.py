@@ -410,7 +410,6 @@ def main():
         logger=logger,
         max_epochs=train_config.epochs,
         accelerator="gpu",
-        devices=pl.device_count("gpu"),
         callbacks=[checkpoint_callback, lr_monitor, early_stop_callback],
         val_check_interval=args.val_cki,
         log_every_n_steps=10,
