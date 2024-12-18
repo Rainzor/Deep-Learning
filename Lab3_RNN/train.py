@@ -95,6 +95,10 @@ class TextClassifierLightning(pl.LightningModule):
         self.log('val/loss', loss, on_step=False, on_epoch=True, sync_dist=True)
         self.log('val/acc', self.val_acc, on_step=False, on_epoch=True, sync_dist=True)
     
+    def on_train_start(self):
+        self.print("Start training...")
+        self.time = time.time()
+
     def on_test_start(self):
         self.print("Start testing...")
 
@@ -408,15 +412,13 @@ def main():
 
     # # Train the model
     if trainer.is_global_zero:
-        print("Start training...")
         print("Model Configuration:")
         print(model_config)
-        time_start = time.time()
     trainer.fit(lightning_model, train_loader, valid_loader)
 
     best_model_path = checkpoint_callback.best_model_path
     if trainer.is_global_zero:
-        time_cost = time.time() - time_start
+        time_cost = time.time() - lightning_model.time
         print(f"Training finished in {time_cost//60:.0f}m {time_cost%60:.0f}s")
         print(f"Best model saved at: {best_model_path}")
 

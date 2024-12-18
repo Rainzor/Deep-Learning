@@ -14,6 +14,8 @@ SCHEDULER = 'cosine'
 MAX_LENGTH = 256
 DROP_RATE = 0.3
 LAYER_NUM = 2
+EMBEDDING_DIM = 256
+HIDDEN_DIM = 512
 
 
 @dataclass
@@ -34,8 +36,8 @@ class TrainConfig:
 @dataclass
 class RNNConfig:
     name: str = 'rnn'
-    embedding_dim: int = 256
-    hidden_dim: int = 512
+    embedding_dim: int = EMBEDDING_DIM
+    hidden_dim: int = HIDDEN_DIM
     output_dim: int = LABEL_NUM
     n_layers: int = LAYER_NUM
     bidirectional: bool = False
@@ -76,8 +78,8 @@ def parse_args():
     parser.add_argument('--bidirectional', '-bi', action='store_true', help="Use bidirectional RNN")
     parser.add_argument('--n_layers', '-nl', type=int, default=LAYER_NUM, help="Number of RNN layers")
     parser.add_argument('--dropout', '-do', type=float, default=DROP_RATE, help="Dropout rate")
-    parser.add_argument('--embedding_dim', '-ed', type=int, default=256, help="Embedding dimension")
-    parser.add_argument('--hidden_dim', '-hd', type=int, default=256, help="Hidden dimension")
+    parser.add_argument('--embedding_dim', '-ed', type=int, default=EMBEDDING_DIM, help="Embedding dimension")
+    parser.add_argument('--hidden_dim', '-hd', type=int, default=HIDDEN_DIM, help="Hidden dimension")
     parser.add_argument('--n_heads', '-nh', type=int, default=8, help="Number of attention heads")
     parser.add_argument('--pool', type=str, default='last', help="Pooling method for Classification", choices=['last', 'max', 'mean', 'cls', 'attention'])
     parser.add_argument('--pack', '-pk', action='store_true', help="Use pack_padded_sequence")
