@@ -403,7 +403,7 @@ def main():
         logger=logger,
         max_epochs=train_config.epochs,
         accelerator="gpu",
-        callbacks=[checkpoint_callback, lr_monitor],
+        callbacks=[checkpoint_callback, lr_monitor, early_stop_callback],
         val_check_interval=args.val_cki,
     )
 
@@ -413,7 +413,7 @@ def main():
     trainer.fit(lightning_model, train_loader, valid_loader)
     print("Training finished.")
 
-    best_model_path = os.path.join(output_dir, "best-checkpoint.ckpt")
+    best_model_path = checkpoint_callback.best_model_path
     print(f"Best model saved at: {best_model_path}")
 
 
