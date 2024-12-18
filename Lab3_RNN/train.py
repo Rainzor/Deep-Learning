@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 import torchmetrics
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import TensorBoardLogger
-from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
+from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint, EarlyStopping
 from transformers import AutoTokenizer
 from transformers.optimization import (
     get_linear_schedule_with_warmup,
@@ -27,6 +27,7 @@ from tqdm import tqdm
 class TextClassifierLightning(pl.LightningModule):
     def __init__(self, train_config, model_config=None):
         super(TextClassifierLightning, self).__init__()
+        self.save_hyperparameters() # Save all arguments to hparams
 
         if train_config.model == 'custom_rnn' or \
             train_config.model == 'custom_gru' or \
@@ -290,12 +291,13 @@ def main():
     else:
         raise ValueError(f"Unsupported model: {train_config.model}")
     
+    model_config.output_dim = LABEL_NUM
     model_config.vocab_size = tokenizer.vocab_size
     model_config.n_layers = args.n_layers
     model_config.pool = args.pool
     model_config.embedding_dim = args.embedding_dim
     model_config.hidden_dim = args.hidden_dim
-    model_config.output_dim = 5
+    model_config.dropout = args.dropout
 
 
     print("Model Config:")
@@ -379,9 +381,18 @@ def main():
         save_top_k=1,
         verbose=True,
         filename="best-checkpoint"
+    ) 
+
+    # Set up learning rate monitoring
+    lr_monitor = LearningRateMonitor(logging_interval='step')
+    # Set up early stopping to stop training early if the model is not improving
+    early_stop_callback = EarlyStopping(
+        monitor="val/acc",  # Monitor validation accuracy
+        patience=20,  # Stop after 3 epochs of no improvement
+        mode="max",  # 'max' for maximizing validation accuracy
+        verbose=True  # Print when early stopping happens
     )
 
-    lr_monitor = LearningRateMonitor(logging_interval='step')
 
     # Initialize PyTorch Lightning Trainer
     log_name = f"{train_config.model}-{args.tag}" if args.tag else train_config.model
@@ -405,17 +416,10 @@ def main():
     best_model_path = os.path.join(output_dir, "best-checkpoint.ckpt")
 
     # # Load the best checkpoint for testing
-    # lightning_model = TextClassifierLightning.load_from_checkpoint(
-    #             checkpoint_path=checkpoint_callback.best_model_path,
-    #             model_config=model_config,
-    #             train_config=train_config
-    # )
-
-    trainer = pl.Trainer(
-        devices=1,  # Use a single device for testing
-        num_nodes=1,  # Single node for testing
-        accelerator="gpu",
-        logger=logger,
+    lightning_model = TextClassifierLightning.load_from_checkpoint(
+                checkpoint_path=checkpoint_callback.best_model_path,
+                model_config=model_config,
+                train_config=train_config
     )
 
     # Test the model

@@ -6,10 +6,14 @@ OUTPUT_DIR = './output'
 CHECKPOINT_DIR = None
 MODEL = 'rnn'
 EPOCHS = 1
-LEARNING_RATE = 1e-5
-BATCH_SIZE = 64
+LABEL_NUM = 5
+LEARNING_RATE = 5e-5
+BATCH_SIZE = 256
 OPTIMIZER = 'adam'
-SCHEDULER = 'linear'
+SCHEDULER = 'cosine'
+MAX_LENGTH = 256
+DROP_RATE = 0.3
+LAYER_NUM = 2
 
 
 @dataclass
@@ -68,10 +72,10 @@ def parse_args():
     parser.add_argument('--warmup_ratio', '-wr', type=float, default=0.1, help="Warmup ratio for scheduler")
     parser.add_argument('--weight_decay', '-wd', type=float, default=0, help="Weight decay for optimizer")
 
-    parser.add_argument('--max_length', '-len', type=int, default=512, help="Maximum length of input sequence")
+    parser.add_argument('--max_length', '-len', type=int, default=MAX_LENGTH, help="Maximum length of input sequence")
     parser.add_argument('--bidirectional', '-bi', action='store_true', help="Use bidirectional RNN")
-    parser.add_argument('--n_layers', '-nl', type=int, default=2, help="Number of RNN layers")
-    parser.add_argument('--dropout', '-do', type=float, default=0.1, help="Dropout rate")
+    parser.add_argument('--n_layers', '-nl', type=int, default=LAYER_NUM, help="Number of RNN layers")
+    parser.add_argument('--dropout', '-do', type=float, default=DROP_RATE, help="Dropout rate")
     parser.add_argument('--embedding_dim', '-ed', type=int, default=256, help="Embedding dimension")
     parser.add_argument('--hidden_dim', '-hd', type=int, default=256, help="Hidden dimension")
     parser.add_argument('--n_heads', '-nh', type=int, default=8, help="Number of attention heads")
@@ -86,52 +90,27 @@ def parse_args():
 
 rnn_config = RNNConfig(
     name='rnn',
-    embedding_dim=128,
-    output_dim=5,
-    hidden_dim=256,
-    n_layers=2,
-    dropout=0.1,
     bidirectional=False 
 )
 
 gru_config = RNNConfig(
     name='gru',
-    embedding_dim=128,
-    output_dim=5,
-    hidden_dim=256,
-    n_layers=2,
-    dropout=0.1,
     bidirectional=False 
 )
 
 lstm_config = RNNConfig(
     name='lstm',
-    embedding_dim=128,
-    output_dim=5,
-    hidden_dim=256,
-    n_layers=2,
-    dropout=0.1,
     bidirectional=False 
 )
 
 rcnn_config = RNNConfig(
     name='rcnn',
-    embedding_dim=128,
-    output_dim=5,
-    hidden_dim=256,
-    n_layers=2,
-    dropout=0.1,
     bidirectional=True,
     pool='max'
 )
 
 rnn_attention_config = RNNConfig(
     name='rnn_attention',
-    embedding_dim=128,
-    output_dim=5,
-    hidden_dim=256,
-    n_layers=2,
-    dropout=0.1,
     bidirectional=True,
     pool='attention'
 )
