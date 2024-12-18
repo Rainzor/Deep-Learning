@@ -406,9 +406,9 @@ def main():
 
 
     time_start = time.time()
-    with Trainer(
+    with pl.Trainer(
         logger=logger,
-        max_epochs=train_config['epochs'],
+        max_epochs=train_config.epochs,
         accelerator="gpu",
         devices=pl.device_count("gpu"),
         callbacks=[checkpoint_callback, lr_monitor, early_stop_callback],
