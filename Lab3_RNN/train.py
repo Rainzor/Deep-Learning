@@ -189,12 +189,15 @@ def main():
         model_config = rnn_attention_config
     elif train_config.model == 'transformer':
         model_config = transformer_config
+        model_config.n_heads = args.n_heads
     else:
         raise ValueError(f"Unsupported model: {train_config.model}")
     
     model_config.vocab_size = tokenizer.vocab_size
     model_config.n_layers = args.n_layers
     model_config.pool = args.pool
+    model_config.embedding_dim = args.embedding_dim
+    model_config.hidden_dim = args.hidden_dim
     model_config.output_dim = 5
     print("Model Config:")
     print(model_config)

@@ -13,10 +13,10 @@ echo "4. Testing BiLSTM"
 python train.py -d /data2/wrz/Datasets/Yelp/ -n 1 -b 256 -lr 1e-6 -m lstm --bidirectional
 
 echo "5. Testing RCNN"
-python train.py -d /data2/wrz/Datasets/Yelp/ -n 1 -b 256 -lr 1e-6 -m lstm --pool max
+python train.py -d /data2/wrz/Datasets/Yelp/ -n 1 -b 256 -lr 1e-6 -m lstm --pool max --bidirectional
 
 echo "6. Testing LSTM Attention"
-python train.py -d /data2/wrz/Datasets/Yelp/ -n 1 -b 256 -lr 1e-6 -m lstm --pool attention
+python train.py -d /data2/wrz/Datasets/Yelp/ -n 1 -b 256 -lr 1e-6 -m lstm --pool attention --bidirectional
 
 echo "7. Testing Transformer"
 python train.py -d /data2/wrz/Datasets/Yelp/ -n 1 -b 256 -lr 1e-6 -m transformer
