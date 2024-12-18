@@ -146,6 +146,97 @@ class TextClassifierLightning(pl.LightningModule):
         else:
             return optimizer
 
+def test(train_config, model_config, train_loader, valid_loader, test_loader):
+    # TEST
+    if train_config.model == 'custom_rnn' or \
+        train_config.model == 'custom_gru' or \
+        train_config.model == 'custom_lstm':
+        model = CustomRNNClassifier(model_config)
+    elif train_config.model == 'rnn' or \
+        train_config.model == 'lstm' or \
+        train_config.model == 'gru':
+        model = RNNClassifier(model_config)
+    elif train_config.model == 'rcnn':
+        model = RNNClassifier(model_config)
+    elif train_config.model == 'attention':
+        model = RNNClassifier(model_config)
+    elif train_config.model == 'transformer':
+        model = TransformerClassifier(model_config)
+    else:
+        raise ValueError(f"Unsupported model: {train_config.model}")
+    
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    print("Model Size:", sum(p.numel() for p in model.parameters() if p.requires_grad)//1e6, "M Parameters")
+
+    model.to(device)
+
+    optimizer = optim.Adam(model.parameters(), lr=train_config.learning_rate, weight_decay=train_config.weight_decay)
+    scheduler = get_linear_schedule_with_warmup(
+        optimizer,
+        num_warmup_steps=100,
+        num_training_steps=train_config.total_steps
+    )
+    criterion = nn.CrossEntropyLoss()
+    with tqdm(total=train_config.total_steps, desc="Training") as pbar:
+        model.train()
+        for epoch in range(train_config.epochs):
+            for batch in train_loader:
+                pbar.update(1)
+                optimizer.zero_grad()
+                input_ids = batch['input_ids'].to(device)
+                attention_mask = batch['attention_mask'].to(device)
+                labels = batch['label'].to(device)
+                outputs = model(input_ids, attention_mask)
+                loss = criterion(outputs, labels)
+                loss.backward()
+                optimizer.step()
+                scheduler.step()
+                pbar.set_postfix({'loss': loss.item()})
+                
+    print("Training finished.")
+    
+    def accuracy(outputs, labels):
+        _, preds = torch.max(outputs, dim=1)
+        return torch.sum(preds == labels).item() / len(labels)
+    valid_acc = 0
+    valid_loss = 0
+    with torch.no_grad():
+        with tqdm(total=len(valid_loader), desc="Validation") as pbar:
+            model.eval()
+            for batch in valid_loader:
+                pbar.update(1)
+                input_ids = batch['input_ids'].to(device)
+                attention_mask = batch['attention_mask'].to(device)
+                labels = batch['label'].to(device)
+                outputs = model(input_ids, attention_mask)
+                loss = criterion(outputs, labels)
+                valid_loss += loss.item()
+                valid_acc += accuracy(outputs, labels)
+    valid_loss /= len(valid_loader)
+    valid_acc /= len(valid_loader)
+    print(f"Validation Loss: {valid_loss:.4f}, Validation Accuracy: {valid_acc:.4f}")
+    print("Validation finished.")
+
+    test_acc = 0
+    test_loss = 0
+    with torch.no_grad():
+        with tqdm(total=len(test_loader), desc="Testing") as pbar:
+            model.eval()
+            for batch in test_loader:
+                pbar.update(1)
+                input_ids = batch['input_ids'].to(device)
+                attention_mask = batch['attention_mask'].to(device)
+                labels = batch['label'].to(device)
+                outputs = model(input_ids, attention_mask)
+                loss = criterion(outputs, labels)
+                test_loss += loss.item()
+                test_acc += accuracy(outputs, labels)
+
+    test_loss /= len(test_loader)
+    test_acc /= len(test_loader)
+    print(f"Test Loss: {test_loss:.4f}, Test Accuracy: {test_acc:.4f}")
+    print("Testing finished.")
 
 
 def main():
@@ -174,10 +265,12 @@ def main():
         train_config.model == 'custom_rnn':
         model_config = rnn_config
         model_config.pack = args.pack
+        model_config.bidirectional = args.bidirectional
     elif train_config.model == 'gru' or \
         train_config.model == 'custom_gru':
         model_config = gru_config
         model_config.pack = args.pack
+        model_config.bidirectional = args.bidirectional
     elif train_config.model == 'lstm' or \
         train_config.model == 'custom_lstm':
         model_config = lstm_config
@@ -199,6 +292,8 @@ def main():
     model_config.embedding_dim = args.embedding_dim
     model_config.hidden_dim = args.hidden_dim
     model_config.output_dim = 5
+
+
     print("Model Config:")
     print(model_config)
     
@@ -258,151 +353,61 @@ def main():
     )
     train_config.total_steps = len(train_loader) * train_config.epochs
 
-    # TEST
-    if train_config.model == 'custom_rnn' or \
-        train_config.model == 'custom_gru' or \
-        train_config.model == 'custom_lstm':
-        model = CustomRNNClassifier(model_config)
-    elif train_config.model == 'rnn' or \
-        train_config.model == 'lstm' or \
-        train_config.model == 'gru':
-        model = RNNClassifier(model_config)
-    elif train_config.model == 'rcnn':
-        model = RNNClassifier(model_config)
-    elif train_config.model == 'rnn_attention':
-        model = RNNClassifier(model_config)
-    elif train_config.model == 'transformer':
-        model = TransformerClassifier(model_config)
-    else:
-        raise ValueError(f"Unsupported model: {train_config.model}")
-    
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    print("Model Size:", sum(p.numel() for p in model.parameters() if p.requires_grad)//1e6, "M Parameters")
 
-    model.to(device)
 
-    optimizer = optim.Adam(model.parameters(), lr=train_config.learning_rate, weight_decay=train_config.weight_decay)
-    scheduler = get_linear_schedule_with_warmup(
-        optimizer,
-        num_warmup_steps=100,
-        num_training_steps=train_config.total_steps
+
+    # Initialize the Lightning module
+    lightning_model = TextClassifierLightning(train_config=train_config, model_config=model_config)
+
+    # Set up model checkpointing to save the best model based on validation accuracy
+
+    timenow = time.strftime("%Y%m%d-%H-%M")
+    if args.tag:
+        timenow = f"{timenow}-{args.tag}"
+    output_dir = os.path.join(train_config.output_path, train_config.model, timenow)
+    os.makedirs(output_dir, exist_ok=True)
+
+    checkpoint_callback = ModelCheckpoint(
+        dirpath=output_dir,
+        monitor="val/acc",
+        mode="max",
+        save_top_k=1,
+        verbose=True,
+        filename="best-checkpoint"
     )
-    criterion = nn.CrossEntropyLoss()
-    with tqdm(total=train_config.total_steps, desc="Training") as pbar:
-        model.train()
-        for epoch in range(train_config.epochs):
-            for batch in train_loader:
-                pbar.update(1)
-                optimizer.zero_grad()
-                input_ids = batch['input_ids'].to(device)
-                attention_mask = batch['attention_mask']
-                attention_mask = attention_mask.to(device) if attention_mask is not None else None
-                labels = batch['label'].to(device)
-                outputs = model(input_ids, attention_mask)
-                loss = criterion(outputs, labels)
-                loss.backward()
-                optimizer.step()
-                scheduler.step()
-                pbar.set_postfix({'loss': loss.item()})
-                
+
+    lr_monitor = LearningRateMonitor(logging_interval='step')
+
+    # Initialize PyTorch Lightning Trainer
+
+    logger = TensorBoardLogger("logs", name=train_config.model)
+
+    trainer = pl.Trainer(
+        logger=logger,
+        max_epochs=train_config.epochs,
+        accelerator="gpu",
+        callbacks=[checkpoint_callback, lr_monitor],
+        val_check_interval=0.5,
+    )
+
+    # Train the model
+    print("Training the model...")
+    trainer.fit(lightning_model, train_loader, valid_loader)
     print("Training finished.")
-    
-    def accuracy(outputs, labels):
-        _, preds = torch.max(outputs, dim=1)
-        return torch.sum(preds == labels).item() / len(labels)
-    valid_acc = 0
-    valid_loss = 0
-    with torch.no_grad():
-        with tqdm(total=len(valid_loader), desc="Validation") as pbar:
-            model.eval()
-            for batch in valid_loader:
-                pbar.update(1)
-                input_ids = batch['input_ids'].to(device)
-                attention_mask = batch['attention_mask']
-                attention_mask = attention_mask.to(device) if attention_mask is not None else None
-                labels = batch['label'].to(device)
-                outputs = model(input_ids, attention_mask)
-                loss = criterion(outputs, labels)
-                valid_loss += loss.item()
-                valid_acc += accuracy(outputs, labels)
-    valid_loss /= len(valid_loader)
-    valid_acc /= len(valid_loader)
-    print(f"Validation Loss: {valid_loss:.4f}, Validation Accuracy: {valid_acc:.4f}")
-    print("Validation finished.")
 
-    test_acc = 0
-    test_loss = 0
-    with torch.no_grad():
-        with tqdm(total=len(test_loader), desc="Testing") as pbar:
-            model.eval()
-            for batch in test_loader:
-                pbar.update(1)
-                input_ids = batch['input_ids'].to(device)
-                attention_mask = batch['attention_mask']
-                attention_mask = attention_mask.to(device) if attention_mask is not None else None
-                labels = batch['label'].to(device)
-                outputs = model(input_ids, attention_mask)
-                loss = criterion(outputs, labels)
-                test_loss += loss.item()
-                test_acc += accuracy(outputs, labels)
+    best_model_path = os.path.join(output_dir, "best-checkpoint.ckpt")
 
-    test_loss /= len(test_loader)
-    test_acc /= len(test_loader)
-    print(f"Test Loss: {test_loss:.4f}, Test Accuracy: {test_acc:.4f}")
-    print("Testing finished.")
-
-
-
-    # # Initialize the Lightning module
-    # lightning_model = TextClassifierLightning(train_config=train_config, model_config=model_config)
-
-    # # Set up model checkpointing to save the best model based on validation accuracy
-
-    # timenow = time.strftime("%Y%m%d-%H-%M")
-    # output_dir = os.path.join(train_config.output_path, train_config.model, timenow)
-    # os.makedirs(output_dir, exist_ok=True)
-
-    # checkpoint_callback = ModelCheckpoint(
-    #     dirpath=output_dir,
-    #     monitor="val/acc",
-    #     mode="max",
-    #     save_top_k=1,
-    #     verbose=True,
-    #     filename="best-checkpoint"
+    # # Load the best checkpoint for testing
+    # lightning_model = TextClassifierLightning.load_from_checkpoint(
+    #             checkpoint_path=checkpoint_callback.best_model_path,
+    #             model_config=model_config,
+    #             train_config=train_config
     # )
 
-    # lr_monitor = LearningRateMonitor(logging_interval='step')
-
-    # # Initialize PyTorch Lightning Trainer
-
-    # logger = TensorBoardLogger("logs", name=train_config.model)
-
-    # trainer = pl.Trainer(
-    #     logger=logger,
-    #     max_epochs=train_config.epochs,
-    #     accelerator="gpu",
-    #     callbacks=[checkpoint_callback, lr_monitor],
-    #     val_check_interval=0.5,
-    # )
-
-    # # Train the model
-    # print("Training the model...")
-    # trainer.fit(lightning_model, train_loader, valid_loader)
-    # print("Training finished.")
-
-    # best_model_path = os.path.join(output_dir, "best-checkpoint.ckpt")
-
-    # # # Load the best checkpoint for testing
-    # # lightning_model = TextClassifierLightning.load_from_checkpoint(
-    # #             checkpoint_path=checkpoint_callback.best_model_path,
-    # #             model_config=model_config,
-    # #             train_config=train_config
-    # # )
-
-    # # Test the model
-    # print("Testing the model...")
-    # trainer.test(lightning_model, dataloaders=test_loader)
+    # Test the model
+    print("Testing the model...")
+    trainer.test(lightning_model, dataloaders=test_loader)
 
 if __name__ == "__main__":
     main()
