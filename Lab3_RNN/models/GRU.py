@@ -3,26 +3,40 @@ import torch.nn as nn
 from torch.nn import Parameter
 import math
 
-class RNNCell(nn.Module):
+class GRUCell(nn.Module):
     def __init__(self, input_size, hidden_size):
-        super(RNNCell, self).__init__()
+        """
+        Initialize the GRU cell.
+
+        Args:
+            input_size (int): The number of expected features in the input.
+            hidden_size (int): The number of features in the hidden state.
+        """
+        super(GRUCell, self).__init__()
         
         self.input_size = input_size
         self.hidden_size = hidden_size
         
-        # Weights for input-to-hidden and hidden-to-hidden connections
-        self.W_ih = nn.Parameter(torch.Tensor(hidden_size, input_size))  # Weight for input to hidden
-        self.W_hh = nn.Parameter(torch.Tensor(hidden_size, hidden_size))  # Weight for hidden to hidden
+        # Update gate parameters
+        self.W_iz = nn.Parameter(torch.Tensor(hidden_size, input_size))
+        self.W_hz = nn.Parameter(torch.Tensor(hidden_size, hidden_size))
+        self.b_z = nn.Parameter(torch.Tensor(hidden_size))
         
-        # Bias terms for input-to-hidden and hidden-to-hidden connections
-        self.b_ih = nn.Parameter(torch.Tensor(hidden_size))  # Bias for input to hidden
-        self.b_hh = nn.Parameter(torch.Tensor(hidden_size))  # Bias for hidden to hidden
+        # Reset gate parameters
+        self.W_ir = nn.Parameter(torch.Tensor(hidden_size, input_size))
+        self.W_hr = nn.Parameter(torch.Tensor(hidden_size, hidden_size))
+        self.b_r = nn.Parameter(torch.Tensor(hidden_size))
+        
+        # New gate parameters
+        self.W_in = nn.Parameter(torch.Tensor(hidden_size, input_size))
+        self.W_hn = nn.Parameter(torch.Tensor(hidden_size, hidden_size))
+        self.b_n = nn.Parameter(torch.Tensor(hidden_size))
         
         self.reset_parameters()
 
     def reset_parameters(self):
         """
-        Initialize weights using the same method as PyTorch's RNN.
+        Initialize weights and biases using the same method as PyTorch's GRU.
         """
         stdv = 1.0 / math.sqrt(self.hidden_size)
         for weight in self.parameters():
@@ -30,26 +44,53 @@ class RNNCell(nn.Module):
 
     def forward(self, x, h_prev):
         """
+        Forward pass for the GRU cell.
+
         Args:
-        - x: Current input at time t (batch_size, input_size)
-        - h_prev: Previous hidden state (batch_size, hidden_size)
+            x (Tensor): Current input at time t (batch_size, input_size)
+            h_prev (Tensor): Previous hidden state (batch_size, hidden_size)
         
         Returns:
-        - h_next: Current hidden state (batch_size, hidden_size)
+            h_next (Tensor): Next hidden state (batch_size, hidden_size)
         """
-
-        h_next = torch.tanh(
-            torch.mm(x, self.W_ih.t()) + self.b_ih +
-            torch.mm(h_prev, self.W_hh.t()) + self.b_hh
-            )
-
+        # Update gate
+        z_t = torch.sigmoid(
+            torch.mm(x, self.W_iz.t()) + self.b_z +
+            torch.mm(h_prev, self.W_hz.t()) + self.b_z
+        )
+        
+        # Reset gate
+        r_t = torch.sigmoid(
+            torch.mm(x, self.W_ir.t()) + self.b_r +
+            torch.mm(h_prev, self.W_hr.t()) + self.b_r
+        )
+        
+        # New gate
+        n_t = torch.tanh(
+            torch.mm(x, self.W_in.t()) + self.b_n +
+            r_t * (torch.mm(h_prev, self.W_hn.t()) + self.b_n)
+        )
+        
+        # Next hidden state
+        h_next = (1 - z_t) * n_t + z_t * h_prev
+        
         return h_next
 
-
-class RNN(nn.Module):
+class GRU(nn.Module):
     def __init__(self, input_size, hidden_size, num_layers=1, 
                  batch_first=False, dropout=0.0, bidirectional=False):
-        super(RNN, self).__init__()
+        """
+        Initialize the GRU module.
+
+        Args:
+            input_size (int): The number of expected features in the input.
+            hidden_size (int): The number of features in the hidden state.
+            num_layers (int): Number of recurrent layers.
+            batch_first (bool): If True, input and output tensors are provided as (batch, seq, feature).
+            dropout (float): If non-zero, introduces a Dropout layer on the outputs of each GRU layer except the last layer.
+            bidirectional (bool): If True, becomes a bidirectional GRU.
+        """
+        super(GRU, self).__init__()
         
         self.input_size = input_size
         self.hidden_size = hidden_size
@@ -59,12 +100,12 @@ class RNN(nn.Module):
         self.bidirectional = bidirectional
         self.num_directions = 2 if bidirectional else 1
         
-        # Initialize multiple layers of RNNCell for each direction
+        # Initialize multiple layers of GRUCell for each direction
         self.cells = nn.ModuleList()
         for layer in range(num_layers):
             for direction in range(self.num_directions):
                 layer_input_size = input_size if layer == 0 else hidden_size * self.num_directions
-                self.cells.append(RNNCell(layer_input_size, hidden_size))
+                self.cells.append(GRUCell(layer_input_size, hidden_size))
         
         # Dropout layer to be applied between layers (except after the last layer)
         self.dropout_layer = nn.Dropout(p=self.dropout)
@@ -74,26 +115,28 @@ class RNN(nn.Module):
 
     def reset_parameters(self):
         """
-        Initialize weights for the entire RNN using the same method as PyTorch's RNN.
+        Initialize weights for the entire GRU using the same method as PyTorch's GRU.
         """
         for cell in self.cells:
             cell.reset_parameters()
 
     def forward(self, x, h0=None):
         """
+        Forward pass for the GRU.
+
         Args:
-        - x: Input tensor 
-             (batch_size, seq_len, input_size) if batch_first=True, 
-             or (seq_len, batch_size, input_size) if batch_first=False
-        - h0: Initial hidden state 
-             (num_layers * num_directions, batch_size, hidden_size), or None (initialized to zero)
+            x (Tensor): Input tensor 
+                 (batch_size, seq_len, input_size) if batch_first=True, 
+                 or (seq_len, batch_size, input_size) if batch_first=False
+            h0 (Tensor, optional): Initial hidden state 
+                 (num_layers * num_directions, batch_size, hidden_size), or None (initialized to zero)
         
         Returns:
-        - output: Output for each time step 
-                  (batch_size, seq_len, hidden_size * num_directions) if batch_first=True,
-                  or (seq_len, batch_size, hidden_size * num_directions) if batch_first=False
-        - hn: Final hidden state for each layer and direction 
-              (num_layers * num_directions, batch_size, hidden_size)
+            output (Tensor): Output for each time step 
+                      (batch_size, seq_len, hidden_size * num_directions) if batch_first=True,
+                      or (seq_len, batch_size, hidden_size * num_directions) if batch_first=False
+            hn (Tensor): Final hidden state for each layer and direction 
+                  (num_layers * num_directions, batch_size, hidden_size)
         """
         if self.batch_first:
             batch_size, seq_len, _ = x.size()
@@ -130,10 +173,16 @@ class RNN(nn.Module):
             forward_output = []
             backward_output = []
             
+            # Determine the input for the current layer
+            if layer == 0:
+                layer_input = x
+            else:
+                layer_input = outputs  # Output from the previous layer
+            
             # Forward direction
             h_forward = h_t[layer][0]
             for t in range(seq_len):
-                input_t = x[:, t, :] if layer == 0 else outputs[:, t, :]
+                input_t = layer_input[:, t, :]  # (batch_size, input_size)
                 h_forward = forward_cell(input_t, h_forward)
                 forward_output.append(h_forward.unsqueeze(1))  # (batch_size, 1, hidden_size)
             
@@ -141,7 +190,7 @@ class RNN(nn.Module):
             if self.bidirectional:
                 h_backward = h_t[layer][1]
                 for t in reversed(range(seq_len)):
-                    input_t = x[:, t, :] if layer == 0 else outputs[:, t, :]
+                    input_t = layer_input[:, t, :]  # (batch_size, input_size)
                     h_backward = backward_cell(input_t, h_backward)
                     backward_output.insert(0, h_backward.unsqueeze(1))  # Prepend to maintain order
             

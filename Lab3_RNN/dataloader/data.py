@@ -116,7 +116,7 @@ class YelpDataset(Dataset):
                 'input_ids': encoding['input_ids'].squeeze(0),
                 'attention_mask': encoding['attention_mask'].squeeze(0),
                 'label': torch.tensor(label, dtype=torch.long)
-            }
+            }  
         else:
             input_ids = self.data['input_ids'][idx]
             attention_mask = self.data['attention_mask'][idx]
@@ -126,3 +126,19 @@ class YelpDataset(Dataset):
                 'attention_mask': attention_mask,
                 'label':  label
             }
+
+def collate_fn(batch):
+    
+    lengths = [torch.sum(item['attention_mask']) for item in batch]
+    sorted_lengths, sorted_idx = torch.sort(torch.tensor(lengths), descending=True)
+    batch_sorted = [batch[i] for i in sorted_idx]
+
+    input_ids = torch.stack([item['input_ids'] for item in batch_sorted])
+    attention_mask = torch.stack([item['attention_mask'] for item in batch_sorted])
+    label = torch.stack([item['label'] for item in batch_sorted])
+
+    return {
+        'input_ids': input_ids,
+        'attention_mask': attention_mask,
+        'label': label
+    }

@@ -28,18 +28,24 @@ class TrainConfig:
     weight_decay: float = 0
 
 @dataclass
-class ModelConfig:
-    name = 'rnn'
-    embedding_dim: int = 100
+class RNNConfig:
+    name: str = 'rnn'
+    embedding_dim: int = 256
     hidden_dim: int = 256
     output_dim: int = 5
-    n_blocks: int = 1
     n_layers: int = 2
     bidirectional: bool = False
-    residual: bool = False
-    dropout: float = 0
+    dropout: float = 0.1
     vocab_size: int = 0
+    pool: str = 'last'
+    pack: bool = False
 
+@dataclass
+class TransformerConfig(RNNConfig):
+    n_heads: int = 8
+    feedforward_dim: int = 256
+    pool: str = 'cls'
+    
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Text Classification with RNN")
@@ -60,7 +66,15 @@ def parse_args():
     parser.add_argument('--warmup_ratio', '-wr', type=float, default=0, help="Warmup ratio for scheduler")
     parser.add_argument('--weight_decay', '-wd', type=float, default=0, help="Weight decay for optimizer")
 
-    parser.add_argument('--max_length', '-l', type=int, default=512, help="Maximum length of input sequence")
+    parser.add_argument('--max_length', '-len', type=int, default=512, help="Maximum length of input sequence")
+    parser.add_argument('--bidirectional', '-bi', action='store_true', help="Use bidirectional RNN")
+    parser.add_argument('--n_layers', '-nl', type=int, default=2, help="Number of RNN layers")
+    parser.add_argument('--dropout', '-do', type=float, default=0.1, help="Dropout rate")
+    parser.add_argument('--embedding_dim', '-ed', type=int, default=256, help="Embedding dimension")
+    parser.add_argument('--hidden_dim', '-hd', type=int, default=256, help="Hidden dimension")
+    parser.add_argument('--n_heads', '-nh', type=int, default=8, help="Number of attention heads")
+    parser.add_argument('--pool', type=str, default='last', help="Pooling method for Classification", choices=['last', 'max', 'mean', 'cls', 'attention'])
+    parser.add_argument('--pack', '-pk', action='store_true', help="Use pack_padded_sequence")
 
     parser.add_argument('--tag', '-t', type=str, help="Tag for model")
 
@@ -69,12 +83,74 @@ def parse_args():
     return args
 
 
-rnn_config = ModelConfig(
-    embedding_dim=100,
+rnn_config = RNNConfig(
+    name='rnn',
+    embedding_dim=128,
     output_dim=5,
     hidden_dim=256,
     n_layers=2,
-    n_blocks=1,
-    dropout=0.5,
+    dropout=0.1,
     bidirectional=False 
+)
+
+gru_config = RNNConfig(
+    name='gru',
+    embedding_dim=128,
+    output_dim=5,
+    hidden_dim=256,
+    n_layers=2,
+    dropout=0.1,
+    bidirectional=False 
+)
+
+lstm_config = RNNConfig(
+    name='lstm',
+    embedding_dim=128,
+    output_dim=5,
+    hidden_dim=256,
+    n_layers=2,
+    dropout=0.1,
+    bidirectional=False 
+)
+
+bilstm_config = RNNConfig(
+    name='lstm',
+    embedding_dim=128,
+    output_dim=5,
+    hidden_dim=256,
+    n_layers=2,
+    dropout=0.1,
+    bidirectional=True 
+)
+
+rcnn_config = RNNConfig(
+    name='rcnn',
+    embedding_dim=128,
+    output_dim=5,
+    hidden_dim=256,
+    n_layers=2,
+    dropout=0.1,
+    bidirectional=True 
+)
+
+rnn_attention_config = RNNConfig(
+    name='rnn_attention',
+    embedding_dim=128,
+    output_dim=5,
+    hidden_dim=256,
+    n_layers=2,
+    dropout=0.1,
+    bidirectional=True 
+)
+
+transformer_config = TransformerConfig(
+    name='transformer',
+    embedding_dim=128,
+    output_dim=5,
+    hidden_dim=256,
+    n_layers=2,
+    dropout=0.1,
+    n_heads=8,
+    feedforward_dim=256,
+    pool='cls'
 )
