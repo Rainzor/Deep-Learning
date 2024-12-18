@@ -36,6 +36,10 @@ class TextClassifierLightning(pl.LightningModule):
             train_config.model == 'lstm' or \
             train_config.model == 'gru':
             self.model = RNNClassifier(model_config)
+        elif train_config.model == 'rcnn':
+            self.model = RNNClassifier(model_config)
+        elif train_config.model == 'attention':
+            self.model = RNNClassifier(model_config)
         elif train_config.model == 'transformer':
             self.model = TransformerClassifier(model_config)
         else:

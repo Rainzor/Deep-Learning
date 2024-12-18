@@ -113,16 +113,6 @@ lstm_config = RNNConfig(
     bidirectional=False 
 )
 
-bilstm_config = RNNConfig(
-    name='lstm',
-    embedding_dim=128,
-    output_dim=5,
-    hidden_dim=256,
-    n_layers=2,
-    dropout=0.1,
-    bidirectional=True 
-)
-
 rcnn_config = RNNConfig(
     name='rcnn',
     embedding_dim=128,
