@@ -421,7 +421,6 @@ def main():
     if trainer.is_global_zero:
         time_cost = time.time() - lightning_model.time
         # hyperparams = {"train_config": train_config, "model_config": model_config}
-        logger.log_hyperparams(hyperparams)
         logger.log_metrics({"hp_metric": checkpoint_callback.best_model_score})
         print(f"Training finished in {time_cost//60:.0f}m {time_cost%60:.0f}s")
         print(f"Best model saved at: {best_model_path}")
