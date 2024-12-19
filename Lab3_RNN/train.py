@@ -389,7 +389,7 @@ def main():
     # Set up early stopping to stop training early if the model is not improving
     early_stop_callback = EarlyStopping(
         monitor="val/acc",  # Monitor validation accuracy
-        patience=20,  # Stop after 3 epochs of no improvement
+        patience=10,  # Stop after 3 epochs of no improvement
         mode="max",  # 'max' for maximizing validation accuracy
         verbose=True  # Print when early stopping happens
     )
