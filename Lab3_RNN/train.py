@@ -25,7 +25,7 @@ from dataloader.data import YelpDataset, collate_fn
 from tqdm import tqdm
 
 class TextClassifierLightning(pl.LightningModule):
-    def __init__(self, train_config, model_config):
+    def __init__(self, train_config, model_config, args = None):
         super(TextClassifierLightning, self).__init__()
         self.save_hyperparameters() # Save all arguments to hparams
 
@@ -256,7 +256,6 @@ def test(train_config, model_config, train_loader, valid_loader, test_loader):
 def main():
     # Parse command-line arguments
     args = parse_args()
-    pl.seed_everything(args.seed)
     # Create TrainConfig from parsed arguments
     train_config = TrainConfig(
         data_path=args.data_path,
@@ -364,7 +363,8 @@ def main():
     train_config.total_steps = len(train_loader) * train_config.epochs
 
     # Initialize the Lightning module
-    lightning_model = TextClassifierLightning(train_config=train_config, model_config=model_config)
+    lightning_model = TextClassifierLightning(train_config=train_config, model_config=model_config, args=args)
+    pl.seed_everything(args.seed)
 
     # Set up model checkpointing to save the best model based on validation accuracy
 
@@ -398,7 +398,7 @@ def main():
     # Initialize PyTorch Lightning Trainer
     log_name = f"{train_config.model}-{args.tag}" if args.tag else train_config.model
     
-    logger = TensorBoardLogger("logs", name=log_name)
+    logger = TensorBoardLogger("logs", name=log_name, version=timenow)
 
     trainer = pl.Trainer(
         logger=logger,
@@ -420,6 +420,9 @@ def main():
     best_model_path = checkpoint_callback.best_model_path
     if trainer.is_global_zero:
         time_cost = time.time() - lightning_model.time
+        # hyperparams = {"train_config": train_config, "model_config": model_config}
+        logger.log_hyperparams(hyperparams)
+        logger.log_metrics({"hp_metric": checkpoint_callback.best_model_score})
         print(f"Training finished in {time_cost//60:.0f}m {time_cost%60:.0f}s")
         print(f"Best model saved at: {best_model_path}")
 
