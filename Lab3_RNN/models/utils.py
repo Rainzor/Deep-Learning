@@ -30,7 +30,7 @@ class TrainConfig:
     batch_size: int = field(default=BATCH_SIZE)
     optimizer: str = field(default=OPTIMIZER)
     scheduler: str = field(default=SCHEDULER)
-    num_cycles: int = 1
+    num_cycles: int = 0.5
     min_lr: float = 0
     warmup_ratio: float = 0.1
     weight_decay: float = 0
