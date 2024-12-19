@@ -436,8 +436,9 @@ def main():
         mode="max",
         save_top_k=1,
         verbose=True,
-        filename="best-checkpoint"
-    ) 
+        filename="best-checkpoint",
+        save_last=True,
+    )
 
     # Set up learning rate monitoring
     lr_monitor = LearningRateMonitor(logging_interval='step')
@@ -483,9 +484,9 @@ def main():
         # logger.log_hyperparams(hyperparams, metrics=metrics)
         print(f"Training finished in {time_cost//60:.0f}m {time_cost%60:.0f}s")
         print(f"Best model saved at: {best_model_path}")
-        last_model_path = os.path.join(output_dir, "last-checkpoint.ckpt")
-        lightning_model.save_checkpoint(last_model_path)
-        print(f"Last model saved at: {last_model_path}")
+        print(f"Last model saved at: {checkpoint_callback.last_model_path}")
+
+
 
     # Load the best checkpoint for testing
     lightning_model = TextClassifierLightning.load_from_checkpoint(checkpoint_path=best_model_path)
