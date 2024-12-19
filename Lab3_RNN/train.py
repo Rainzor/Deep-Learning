@@ -155,7 +155,7 @@ class TextClassifierLightning(pl.LightningModule):
                 optimizer,
                 num_warmup_steps=warmup_steps,
                 num_training_steps=total_steps,
-                num_cycles=train_config.num_cycles
+                num_cycles=self.train_config.num_cycles
             )
         else:
             scheduler = None
