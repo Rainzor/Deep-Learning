@@ -135,14 +135,30 @@ class TextClassifierLightning(pl.LightningModule):
         total_steps = self.train_config.total_steps
 
         warmup_steps = min(self.train_config.warmup_ratio * total_steps, 100)
-        assert self.train_config.scheduler.lower() in ['linear', 'cosine', 'constant', 'polynomial','none'], f"Unsupported scheduler: {self.train_config.scheduler}"
-        if self.train_config.scheduler.lower() != 'none':
+        scheduler_name = self.train_config.scheduler.lower()
+        assert scheduler_name in ['linear', \
+                                'cosine', \
+                                'cosine_with_restarts', \
+                                'constant', \
+                                'polynomial',\
+                                'none'], \
+                f"Unsupported scheduler: {self.train_config.scheduler}"
+        if scheduler_name not in ['none', 'cosine_with_restarts']:
             scheduler = get_scheduler(
                 name=self.train_config.scheduler,
                 optimizer=optimizer,
                 num_warmup_steps=warmup_steps,
                 num_training_steps=total_steps
             )
+        elif scheduler_name == 'cosine_with_restarts':
+            scheduler = get_cosine_schedule_with_warmup(
+                optimizer,
+                num_warmup_steps=warmup_steps,
+                num_training_steps=total_steps,
+                num_cycles=train_config.num_cycles
+            )
+        else:
+            scheduler = None
 
         # if self.train_config.scheduler.lower() == 'linear':
         #     scheduler = get_linear_schedule_with_warmup(
@@ -288,6 +304,7 @@ def main():
         batch_size=args.batch_size,
         optimizer=args.optimizer,
         scheduler=args.scheduler,
+        num_cycles=args.num_cycles,
         warmup_ratio=args.warmup_ratio,
         weight_decay=args.weight_decay
     )
