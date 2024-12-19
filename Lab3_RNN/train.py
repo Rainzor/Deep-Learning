@@ -12,10 +12,12 @@ import pytorch_lightning as pl
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint, EarlyStopping
 from transformers import AutoTokenizer
+from transformers import get_scheduler
 from transformers.optimization import (
     get_linear_schedule_with_warmup,
     get_cosine_schedule_with_warmup,
-    get_constant_schedule_with_warmup
+    get_constant_schedule_with_warmup,
+    get_polynomial_decay_schedule_with_warmup
 )
 
 
@@ -133,25 +135,41 @@ class TextClassifierLightning(pl.LightningModule):
         total_steps = self.train_config.total_steps
 
         warmup_steps = min(self.train_config.warmup_ratio * total_steps, 100)
-        if self.train_config.scheduler.lower() == 'linear':
-            scheduler = get_linear_schedule_with_warmup(
-                optimizer,
+        assert self.train_config.scheduler.lower() in ['linear', 'cosine', 'constant', 'polynomial','none'], f"Unsupported scheduler: {self.train_config.scheduler}"
+        if self.train_config.scheduler.lower() != 'none':
+            scheduler = get_scheduler(
+                name=self.train_config.scheduler,
+                optimizer=optimizer,
                 num_warmup_steps=warmup_steps,
                 num_training_steps=total_steps
             )
-        elif self.train_config.scheduler.lower() == 'cosine':
-            scheduler = get_cosine_schedule_with_warmup(
-                optimizer,
-                num_warmup_steps=warmup_steps,
-                num_training_steps=total_steps
-            )
-        elif self.train_config.scheduler.lower() == 'constant':
-            scheduler = get_constant_schedule_with_warmup(
-                optimizer,
-                num_warmup_steps=warmup_steps
-            )
-        else:
-            raise ValueError(f"Unsupported scheduler: {self.train_config.scheduler}")
+
+        # if self.train_config.scheduler.lower() == 'linear':
+        #     scheduler = get_linear_schedule_with_warmup(
+        #         optimizer,
+        #         num_warmup_steps=warmup_steps,
+        #         num_training_steps=total_steps
+        #     )
+        # elif self.train_config.scheduler.lower() == 'cosine':
+        #     scheduler = get_cosine_schedule_with_warmup(
+        #         optimizer,
+        #         num_warmup_steps=warmup_steps,
+        #         num_training_steps=total_steps
+        #     )
+        # elif self.train_config.scheduler.lower() == 'constant':
+        #     scheduler = get_constant_schedule_with_warmup(
+        #         optimizer,
+        #         num_warmup_steps=warmup_steps
+        #     )
+        # elif self.train_config.scheduler.lower() == 'polynomial':
+        #     scheduler = get_polynomial_decay_schedule_with_warmup(
+        #         optimizer,
+        #         num_warmup_steps=warmup_steps,
+        #         num_training_steps=total_steps,
+        #         lr_end=1e-7
+        #     )
+        # else:
+        #     raise ValueError(f"Unsupported scheduler: {self.train_config.scheduler}")
 
         if scheduler:
             scheduler_config = {
@@ -397,7 +415,7 @@ def main():
     # Set up early stopping to stop training early if the model is not improving
     early_stop_callback = EarlyStopping(
         monitor="val/acc",  # Monitor validation accuracy
-        patience=args.patience,  # Stop after 3 epochs of no improvement
+        patience=args.patience,  # Stop after patience epochs of no improvement
         mode="max",  # 'max' for maximizing validation accuracy
         divergence_threshold=0.1,
         verbose=True  # Print when early stopping happens
