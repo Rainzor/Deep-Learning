@@ -23,12 +23,12 @@ python train.py -d /data2/wrz/Datasets/Yelp/ -n 250 -b 512 -lr 1e-4 -m rnn --sch
 echo "--RNN Passed--"
 
 echo "2. Testing GRU"
-python train.py -d /data2/wrz/Datasets/Yelp/ -n 150 -b 512 -lr 1e-3 -m gru --scheduler cosine --min_lr 1e-4 --patience 50 --num_cycles $cycle
+python train.py -d /data2/wrz/Datasets/Yelp/ -n 150 -b 512 -lr 1e-3 -m gru --scheduler cosine --min_lr 1e-4 --patience 30 --num_cycles $cycle
 
 echo "--GRU Passed--"
 
 echo "3. Testing LSTM"
-python train.py -d /data2/wrz/Datasets/Yelp/ -n 100 -b 512 -lr 1e-3 -m lstm --scheduler cosine --min_lr 1e-4 --patience 50 --num_cycles $cycle
+python train.py -d /data2/wrz/Datasets/Yelp/ -n 100 -b 512 -lr 1e-3 -m lstm --scheduler cosine --min_lr 1e-4 --patience 20 --num_cycles $cycle
 
 echo "--LSTM Passed--"
 
@@ -40,11 +40,11 @@ python train.py -d /data2/wrz/Datasets/Yelp/ -n 250 -b 512 -lr 1e-4 -m rnn --sch
 echo "--BiRNN Passed--"
 
 echo "5. Testing BiGRU"
-python train.py -d /data2/wrz/Datasets/Yelp/ -n 150 -b 512 -lr 1e-3 -m gru --scheduler cosine --min_lr 1e-4 --patience 50 --bidirectional --tag bidirect --num_cycles $cycle
+python train.py -d /data2/wrz/Datasets/Yelp/ -n 150 -b 512 -lr 1e-3 -m gru --scheduler cosine --min_lr 1e-4 --patience 30 --bidirectional --tag bidirect --num_cycles $cycle
 
 echo "--BiGRU Passed--"
 
 echo "6. Testing BiLSTM"
-python train.py -d /data2/wrz/Datasets/Yelp/ -n 100 -b 512 -lr 1e-3 -m lstm --scheduler cosine --min_lr 1e-4 --patience 50 --bidirectional --tag bidirect --num_cycles $cycle
+python train.py -d /data2/wrz/Datasets/Yelp/ -n 100 -b 512 -lr 1e-3 -m lstm --scheduler cosine --min_lr 1e-4 --patience 20 --bidirectional --tag bidirect --num_cycles $cycle
 
 echo "--BiLSTM Passed--"
