@@ -293,6 +293,8 @@ def test(train_config, model_config, train_loader, valid_loader, test_loader):
 def main():
     # Parse command-line arguments
     args = parse_args()
+    torch.manual_seed(114514)
+    
     # Create TrainConfig from parsed arguments
     train_config = TrainConfig(
         data_path=args.data_path,
