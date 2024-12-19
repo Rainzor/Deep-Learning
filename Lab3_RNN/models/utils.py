@@ -30,7 +30,7 @@ class TrainConfig:
     batch_size: int = field(default=BATCH_SIZE)
     optimizer: str = field(default=OPTIMIZER)
     scheduler: str = field(default=SCHEDULER)
-    num_cycles: int = 0.5
+    num_cycles: float = 0.5
     min_lr: float = 0
     warmup_ratio: float = 0.1
     weight_decay: float = 0
@@ -76,7 +76,7 @@ def parse_args():
     parser.add_argument('--batch_size', '-b', type=int, default=BATCH_SIZE, help="Batch size")
     parser.add_argument('--optimizer', '-opt', type=str, default=OPTIMIZER, help="Optimizer for training")
     parser.add_argument('--scheduler', type=str, default=SCHEDULER, help="Scheduler for training")
-    parser.add_argument('--num_cycles', type=int, default=1, help="Number of cycles for scheduler")
+    parser.add_argument('--num_cycles', type=float, default=0.5, help="Number of cycles for scheduler")
     parser.add_argument('--min_lr', type=float, default=0, help="Minimum learning rate for scheduler")
     parser.add_argument('--warmup_ratio', '-wr', type=float, default=0.1, help="Warmup ratio for scheduler")
     parser.add_argument('--weight_decay', '-wd', type=float, default=0, help="Weight decay for optimizer")
