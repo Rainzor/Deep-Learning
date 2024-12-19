@@ -163,7 +163,7 @@ class TextClassifierLightning(pl.LightningModule):
                 optimizer=optimizer,
                 num_warmup_steps=warmup_steps,
                 num_training_steps=total_steps,
-                **scheduler_specific_kwargs
+                scheduler_specific_kwargs= scheduler_specific_kwargs
             )
         else:
             scheduler = None
