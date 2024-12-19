@@ -59,7 +59,7 @@ def parse_args():
     parser.add_argument('--data_path', '-d', type=str, default=DATA_DIR, help="Directory for data")
     parser.add_argument('--model', '-m', type=str, default=MODEL, help="Model for training")
     parser.add_argument('--output_path', '-o', type=str, default=OUTPUT_DIR, help="Directory for saving outputs")
-    parser.add_argument("--checkpoint", "-c", type=str, help="Directory for saving checkpoints")
+    parser.add_argument("--checkpoint", "-ckp", type=str, help="Directory for saving checkpoints")
     parser.add_argument('--pretrained', type=str, help="Pretrained model for training")
     
     parser.add_argument('--tag', '-t', type=str, help="Tag for model")
@@ -101,7 +101,7 @@ gru_config = RNNConfig(
     bidirectional=False 
 )
 
-# B = 512, lr = 1e-3 
+# -n 100 -b 512 -lr 1e-3
 lstm_config = RNNConfig(
     name='lstm',
     bidirectional=False

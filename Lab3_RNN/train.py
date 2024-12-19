@@ -363,7 +363,12 @@ def main():
     train_config.total_steps = len(train_loader) * train_config.epochs
 
     # Initialize the Lightning module
-    lightning_model = TextClassifierLightning(train_config=train_config, model_config=model_config, args=args)
+    if train_config.checkpoint_path:
+        checkpioint_file = os.path.join(train_config.checkpoint_path, "best-checkpoint.ckpt")
+        print(f"Loading checkpoint model from {checkpioint_file}")
+        lightning_model = TextClassifierLightning.load_from_checkpoint(checkpoint_path=checkpioint_file, train_config=train_config, model_config=model_config, args=args)
+    else:
+        lightning_model = TextClassifierLightning(train_config=train_config, model_config=model_config, args=args)
     pl.seed_everything(args.seed)
 
     # Set up model checkpointing to save the best model based on validation accuracy
