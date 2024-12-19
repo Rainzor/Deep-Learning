@@ -98,6 +98,7 @@ class TextClassifierLightning(pl.LightningModule):
     def on_train_start(self):
         self.print("Start training...")
         self.time = time.time()
+        self.logger.log_hyperparams(self.hparams, { "hp/test_loss": 0, "hp/test_acc": 0})
 
     def on_test_start(self):
         self.print("Start testing...")
@@ -116,6 +117,8 @@ class TextClassifierLightning(pl.LightningModule):
 
         self.log('test/loss', loss, on_step=False, on_epoch=True, sync_dist=True)
         self.log('test/acc', self.test_acc, on_step=False, on_epoch=True, sync_dist=True)
+        self.log('hp/test_loss', loss, on_step=False, on_epoch=True, sync_dist=True)
+        self.log('hp/test_acc', self.test_acc, on_step=False, on_epoch=True, sync_dist=True)
 
     def configure_optimizers(self):
         if self.train_config.optimizer.lower() == 'adam':
@@ -403,7 +406,7 @@ def main():
     # Initialize PyTorch Lightning Trainer
     log_name = f"{train_config.model}-{args.tag}" if args.tag else train_config.model
     
-    logger = TensorBoardLogger("logs", name=log_name, version=timenow)
+    logger = TensorBoardLogger("logs", name=log_name, version=timenow, default_hp_metric=False)
 
     trainer = pl.Trainer(
         logger=logger,
@@ -425,8 +428,9 @@ def main():
     best_model_path = checkpoint_callback.best_model_path
     if trainer.is_global_zero:
         time_cost = time.time() - lightning_model.time
-        # hyperparams = {"train_config": train_config, "model_config": model_config}
-        logger.log_metrics({"hp_metric": checkpoint_callback.best_model_score})
+        # hyperparams = {"train_config": train_config, "model_config": model_config, "args": args}
+        # metrics = {"best_val_acc": checkpoint_callback.best_model_score.item()}
+        # logger.log_hyperparams(hyperparams, metrics=metrics)
         print(f"Training finished in {time_cost//60:.0f}m {time_cost%60:.0f}s")
         print(f"Best model saved at: {best_model_path}")
 
