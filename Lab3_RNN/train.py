@@ -380,9 +380,9 @@ def main():
     print(f"Number of test samples: {len(test_dataset)}")
     
     # Split training data into train and validation sets
-    split_ratio = 0.8
-    train_size = int(split_ratio * len(train_dataset))
-    valid_size = len(train_dataset) - train_size
+    split_ratio = args.val_ratio
+    valid_size = min(int(split_ratio * len(train_dataset)), len(test_dataset)*2)
+    train_size = len(train_dataset) - valid_size
     train_subset, valid_subset = torch.utils.data.random_split(train_dataset, [train_size, valid_size])
     
     # Create DataLoaders
@@ -471,6 +471,8 @@ def main():
         print(train_config)
         print("Model Configuration:")
         print(model_config)
+
+    # ==================Train==================
     trainer.fit(lightning_model, train_loader, valid_loader)
 
     best_model_path = checkpoint_callback.best_model_path

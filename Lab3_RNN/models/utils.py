@@ -70,6 +70,7 @@ def parse_args():
     parser.add_argument('--patience', type=int, default=10, help="Patience for early stopping")
     
     parser.add_argument('--seed',type=int, default=42, help="Seed for reproducibility")
+    parser.add_argument('--val_ratio', type=float, default=0.1, help="Validation ratio")
 
     parser.add_argument('--epochs','-n', type=int, default=10, help="Number of epochs")
     parser.add_argument('--learning_rate','-lr' ,type=float, default=LEARNING_RATE, help="Learning rate")
