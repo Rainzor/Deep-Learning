@@ -17,8 +17,8 @@ done
 
 echo "-- Testing Basic RNN --"
 
-# echo "1. Testing RNN"
-# python train.py -d /data2/wrz/Datasets/Yelp/ -n $n -b $b -lr 1e-4 -m rnn --scheduler cosine --dropout $dropout
+echo "1. Testing RNN"
+python train.py -d /data2/wrz/Datasets/Yelp/ -n 250 -b 512 -lr 1e-4 -m rnn --scheduler cosine  --patience 100
 
 echo "--RNN Passed--"
 
@@ -28,7 +28,7 @@ python train.py -d /data2/wrz/Datasets/Yelp/ -n $n -b $b -lr 1e-4 -m gru --sched
 echo "--GRU Passed--"
 
 echo "3. Testing LSTM"
-python train.py -d /data2/wrz/Datasets/Yelp/ -n $n -b $b -lr 2e-3 -m lstm --scheduler cosine --dropout $dropout
+python train.py -d /data2/wrz/Datasets/Yelp/ -n 100 -b 512 -lr 1e-3 -m lstm --scheduler cosine --patience 20
 
 echo "--LSTM Passed--"
 
