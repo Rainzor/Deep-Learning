@@ -147,7 +147,7 @@ class TextClassifierLightning(pl.LightningModule):
                 f"Unsupported scheduler: {self.train_config.scheduler}"
         if scheduler_name not in ['none', 'cosine','cosine_with_restarts']:
             scheduler = get_scheduler(
-                name=self.train_config.scheduler,
+                name=scheduler_name.scheduler,
                 optimizer=optimizer,
                 num_warmup_steps=warmup_steps,
                 num_training_steps=total_steps
@@ -160,7 +160,7 @@ class TextClassifierLightning(pl.LightningModule):
                 scheduler_specific_kwargs['min_lr'] = self.train_config.min_lr
                 scheduler_name = 'cosine_with_min_lr'
             scheduler = get_scheduler(
-                name=self.train_config.scheduler,
+                name=scheduler_name,
                 optimizer=optimizer,
                 num_warmup_steps=warmup_steps,
                 num_training_steps=total_steps,
