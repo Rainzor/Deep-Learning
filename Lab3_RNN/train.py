@@ -157,7 +157,7 @@ class TextClassifierLightning(pl.LightningModule):
                 'num_cycles': self.train_config.num_cycles
             }
             if scheduler_name == 'cosine':
-                scheduler_specific_kwargs['min_lr'] = self.train_config.lr_min
+                scheduler_specific_kwargs['min_lr'] = self.train_config.min_lr
             scheduler = get_scheduler(
                 name=self.train_config.scheduler,
                 optimizer=optimizer,
