@@ -23,7 +23,7 @@ echo "-- Testing Basic RNN --"
 echo "--RNN Passed--"
 
 echo "2. Testing GRU"
-python train.py -d /data2/wrz/Datasets/Yelp/ -n $n -b $b -lr 1e-4 -m gru --scheduler cosine
+python train.py -d /data2/wrz/Datasets/Yelp/ -n $n -b $b -lr 1e-4 -m gru --scheduler linear --dropout $dropout
 
 echo "--GRU Passed--"
 
@@ -40,7 +40,7 @@ echo "-- Testing Bidirectional --"
 echo "--BiRNN Passed--"
 
 echo "5. Testing BiGRU"
-python train.py -d /data2/wrz/Datasets/Yelp/ -n $n -b $b -lr 1e-4 -m gru --bidirectional --tag bidirect --scheduler cosine --dropout $dropout
+python train.py -d /data2/wrz/Datasets/Yelp/ -n $n -b $b -lr 1e-4 -m gru --bidirectional --tag bidirect --scheduler linear --dropout $dropout
 
 echo "--BiGRU Passed--"
 
