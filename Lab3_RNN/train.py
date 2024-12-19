@@ -115,8 +115,8 @@ class TextClassifierLightning(pl.LightningModule):
         # Update accuracy metric
         self.test_acc(outputs, labels)
 
-        self.log('test/loss', loss, on_step=False, on_epoch=True, sync_dist=True)
-        self.log('test/acc', self.test_acc, on_step=False, on_epoch=True, sync_dist=True)
+        # self.log('test/loss', loss, on_step=False, on_epoch=True, sync_dist=True)
+        # self.log('test/acc', self.test_acc, on_step=False, on_epoch=True, sync_dist=True)
         self.log('hp/test_loss', loss, on_step=False, on_epoch=True, sync_dist=True)
         self.log('hp/test_acc', self.test_acc, on_step=False, on_epoch=True, sync_dist=True)
 
