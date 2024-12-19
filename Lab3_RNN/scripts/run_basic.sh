@@ -18,7 +18,8 @@ done
 echo "-- Testing Basic RNN --"
 
 echo "1. Testing RNN"
-python train.py -d /data2/wrz/Datasets/Yelp/ -n 250 -b 512 -lr 1e-4 -m rnn --scheduler cosine  --patience 100
+# 4 gpu
+python train.py -d /data2/wrz/Datasets/Yelp/ -n 250 -b 512 -lr 1e-4 -m rnn --scheduler cosine --num_cycles 2 --min_lr 5e-6 --patience 100
 
 echo "--RNN Passed--"
 

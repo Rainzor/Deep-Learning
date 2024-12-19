@@ -31,6 +31,7 @@ class TrainConfig:
     optimizer: str = field(default=OPTIMIZER)
     scheduler: str = field(default=SCHEDULER)
     num_cycles: int = 1
+    min_lr: float = 0
     warmup_ratio: float = 0.1
     weight_decay: float = 0
 
@@ -67,6 +68,7 @@ def parse_args():
     parser.add_argument('--val_cki', type=float, default=0.5, help="Validation checkpoint interval")
     parser.add_argument('--log_step', type=int, default=20, help="Log interval")
     parser.add_argument('--patience', type=int, default=10, help="Patience for early stopping")
+    
     parser.add_argument('--seed',type=int, default=42, help="Seed for reproducibility")
 
     parser.add_argument('--epochs','-n', type=int, default=10, help="Number of epochs")
@@ -75,6 +77,7 @@ def parse_args():
     parser.add_argument('--optimizer', '-opt', type=str, default=OPTIMIZER, help="Optimizer for training")
     parser.add_argument('--scheduler', type=str, default=SCHEDULER, help="Scheduler for training")
     parser.add_argument('--num_cycles', type=int, default=1, help="Number of cycles for scheduler")
+    parser.add_argument('--min_lr', type=float, default=0, help="Minimum learning rate for scheduler")
     parser.add_argument('--warmup_ratio', '-wr', type=float, default=0.1, help="Warmup ratio for scheduler")
     parser.add_argument('--weight_decay', '-wd', type=float, default=0, help="Weight decay for optimizer")
 

@@ -16,6 +16,8 @@ from transformers import get_scheduler
 from transformers.optimization import (
     get_linear_schedule_with_warmup,
     get_cosine_schedule_with_warmup,
+    get_cosine_with_min_lr_schedule_with_warmup,
+    get_cosine_with_hard_restarts_schedule_with_warmup,
     get_constant_schedule_with_warmup,
     get_polynomial_decay_schedule_with_warmup
 )
@@ -143,19 +145,25 @@ class TextClassifierLightning(pl.LightningModule):
                                 'polynomial',\
                                 'none'], \
                 f"Unsupported scheduler: {self.train_config.scheduler}"
-        if scheduler_name not in ['none', 'cosine_with_restarts']:
+        if scheduler_name not in ['none', 'cosine','cosine_with_restarts']:
             scheduler = get_scheduler(
                 name=self.train_config.scheduler,
                 optimizer=optimizer,
                 num_warmup_steps=warmup_steps,
                 num_training_steps=total_steps
             )
-        elif scheduler_name == 'cosine_with_restarts':
-            scheduler = get_cosine_schedule_with_warmup(
-                optimizer,
+        elif scheduler_name in ['cosine', 'cosine_with_restarts']:
+            scheduler_specific_kwargs = {
+                'num_cycles': self.train_config.num_cycles
+            }
+            if scheduler_name == 'cosine':
+                scheduler_specific_kwargs['min_lr'] = self.train_config.lr_min
+            scheduler = get_scheduler(
+                name=self.train_config.scheduler,
+                optimizer=optimizer,
                 num_warmup_steps=warmup_steps,
                 num_training_steps=total_steps,
-                num_cycles=self.train_config.num_cycles
+                **scheduler_specific_kwargs
             )
         else:
             scheduler = None
@@ -307,6 +315,7 @@ def main():
         optimizer=args.optimizer,
         scheduler=args.scheduler,
         num_cycles=args.num_cycles,
+        min_lr=args.min_lr,
         warmup_ratio=args.warmup_ratio,
         weight_decay=args.weight_decay
     )
