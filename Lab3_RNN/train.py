@@ -57,7 +57,7 @@ class TextClassifierLightning(pl.LightningModule):
         self.test_acc = torchmetrics.Accuracy(task="multiclass", num_classes=model_config.output_dim)
 
         # Loss function
-        self.criterion = nn.CrossEntropyLoss(train_config.smooth)
+        self.criterion = nn.CrossEntropyLoss(label_smoothing=train_config.smooth)
 
         self.time = time.time()
 
