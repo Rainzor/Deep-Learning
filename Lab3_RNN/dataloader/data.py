@@ -21,24 +21,24 @@ class YelpDataset(Dataset):
         :param tokenizer_name: Name of the tokenizer to use
         :param max_length: Maximum length for padding and truncation
         """
+        self.is_train = train
         self.data_path = os.path.join(data_dir, 'train.json') if train else os.path.join(data_dir, 'test.json')
         self.raw_data = self._read_json(self.data_path)
         self.tokenizer = tokenizer
         self.max_length = max_length
         self.data = None
-        if reload_:
-            if train:
-                save_path = os.path.join(data_dir, 'train.pt')
+        self.save_path = os.path.join(data_dir, 'train.pt') if train else os.path.join(data_dir, 'test.pt')
+
+        if not os.path.exists(self.save_path) or reload_:
+            if not reload_:
+                print("Preprocessed data not found, it is first time to preprocess the data")
             else:
-                save_path = os.path.join(data_dir, 'test.pt')
-            if not os.path.exists(save_path):
-                print("Preprocessed data not found, preprocessing...")
-                self.data = self._preprocess(self.raw_data)
-                torch.save(self.data, save_path)
-                print(f"Preprocessed data saved to {save_path}")
-            else:
-                self.data = torch.load(save_path,weights_only=False)
-                print(f"Preprocessed data loaded from {save_path}")
+                print("Force to reload the data")
+            self.data = self._preprocess(self.raw_data)
+            torch.save(self.data, self.save_path)
+            print(f"Preprocessed data saved to {self.save_path}")
+        
+        self.data = torch.load(self.save_path)
     
     def _read_json(self, file_path):
         """
@@ -48,9 +48,15 @@ class YelpDataset(Dataset):
         :return: List of data instances
         """
         data = []
+        if self.is_train:
+            start = 1000
+        else:
+            start = 0
         with open(file_path, 'r', encoding='utf-8') as f:
             for line_num, line in enumerate(f, 1):
                 try:
+                    if line_num < start: # skip the first 1000 lines for training data
+                        continue
                     rdata = json.loads(line)
                     text = rdata.get('text', None)
                     star = rdata.get('stars', None)

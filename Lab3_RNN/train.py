@@ -366,7 +366,7 @@ def main():
         tokenizer=tokenizer,
         train=True,
         max_length=args.max_length,
-        reload_=True
+        reload_=args.reload
     )
     print(f"Number of training samples: {len(train_dataset)}")
 
@@ -375,7 +375,7 @@ def main():
         tokenizer=tokenizer,
         train=False,
         max_length=args.max_length,
-        reload_=True
+        reload_=args.reload
     )
     print(f"Number of test samples: {len(test_dataset)}")
     
