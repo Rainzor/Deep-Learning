@@ -302,7 +302,7 @@ def test(train_config, model_config, train_loader, valid_loader, test_loader):
 def main():
     # Parse command-line arguments
     args = parse_args()
-    # torch.manual_seed(114514)
+    pl.seed_everything(args.seed)
     
     # Create TrainConfig from parsed arguments
     train_config = TrainConfig(
@@ -419,7 +419,6 @@ def main():
         lightning_model = TextClassifierLightning.load_from_checkpoint(checkpoint_path=checkpioint_file, train_config=train_config, model_config=model_config, args=args)
     else:
         lightning_model = TextClassifierLightning(train_config=train_config, model_config=model_config, args=args)
-    pl.seed_everything(args.seed)
 
     # Set up model checkpointing to save the best model based on validation accuracy
 
