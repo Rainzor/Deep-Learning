@@ -381,7 +381,8 @@ def main():
     
     # Split training data into train and validation sets
     split_ratio = args.val_ratio
-    valid_size = min(int(split_ratio * len(train_dataset)), len(test_dataset)*2)
+    valid_size = int(split_ratio * len(train_dataset))
+    # valid_size = min(int(split_ratio * len(train_dataset)), len(test_dataset)*2)
     train_size = len(train_dataset) - valid_size
     train_subset, valid_subset = torch.utils.data.random_split(train_dataset, [train_size, valid_size])
     
