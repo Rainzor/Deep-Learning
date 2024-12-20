@@ -34,6 +34,7 @@ class TrainConfig:
     min_lr: float = 0
     warmup_ratio: float = 0.1
     weight_decay: float = 0
+    smooth: float = 0
 
 @dataclass
 class RNNConfig:
@@ -82,6 +83,7 @@ def parse_args():
     parser.add_argument('--min_lr', type=float, default=0, help="Minimum learning rate for scheduler")
     parser.add_argument('--warmup_ratio', '-wr', type=float, default=0.1, help="Warmup ratio for scheduler")
     parser.add_argument('--weight_decay', '-wd', type=float, default=0, help="Weight decay for optimizer")
+    parser.add_argument('--smooth', type=float, default=0.1, help="Label smoothing factor")
 
     parser.add_argument('--max_length', '-len', type=int, default=MAX_LENGTH, help="Maximum length of input sequence")
     parser.add_argument('--bidirectional', '-bi', action='store_true', help="Use bidirectional RNN")

@@ -57,7 +57,7 @@ class TextClassifierLightning(pl.LightningModule):
         self.test_acc = torchmetrics.Accuracy(task="multiclass", num_classes=model_config.output_dim)
 
         # Loss function
-        self.criterion = nn.CrossEntropyLoss()
+        self.criterion = nn.CrossEntropyLoss(train_config.smooth)
 
         self.time = time.time()
 
@@ -168,34 +168,7 @@ class TextClassifierLightning(pl.LightningModule):
             )
         else:
             scheduler = None
-
-        # if self.train_config.scheduler.lower() == 'linear':
-        #     scheduler = get_linear_schedule_with_warmup(
-        #         optimizer,
-        #         num_warmup_steps=warmup_steps,
-        #         num_training_steps=total_steps
-        #     )
-        # elif self.train_config.scheduler.lower() == 'cosine':
-        #     scheduler = get_cosine_schedule_with_warmup(
-        #         optimizer,
-        #         num_warmup_steps=warmup_steps,
-        #         num_training_steps=total_steps
-        #     )
-        # elif self.train_config.scheduler.lower() == 'constant':
-        #     scheduler = get_constant_schedule_with_warmup(
-        #         optimizer,
-        #         num_warmup_steps=warmup_steps
-        #     )
-        # elif self.train_config.scheduler.lower() == 'polynomial':
-        #     scheduler = get_polynomial_decay_schedule_with_warmup(
-        #         optimizer,
-        #         num_warmup_steps=warmup_steps,
-        #         num_training_steps=total_steps,
-        #         lr_end=1e-7
-        #     )
-        # else:
-        #     raise ValueError(f"Unsupported scheduler: {self.train_config.scheduler}")
-
+            
         if scheduler:
             scheduler_config = {
                 'scheduler': scheduler,
@@ -318,7 +291,8 @@ def main():
         num_cycles=args.num_cycles,
         min_lr=args.min_lr,
         warmup_ratio=args.warmup_ratio,
-        weight_decay=args.weight_decay
+        weight_decay=args.weight_decay,
+        smooth=args.smooth,
     )
 
     # Initialize tokenizer
