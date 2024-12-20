@@ -38,7 +38,8 @@ class YelpDataset(Dataset):
             torch.save(self.data, self.save_path)
             print(f"Preprocessed data saved to {self.save_path}")
         
-        self.data = torch.load(self.save_path)
+        self.data = torch.load(self.save_path, weights_only=False)
+        
     
     def _read_json(self, file_path):
         """
