@@ -79,7 +79,7 @@ class CustomRNNClassifier(nn.Module):
 
 
 class RNNClassifier(nn.Module):
-    def __init__(self, config: RNNConfig):
+    def __init__(self, config: RNNConfig, pretrained_model=None):
         super(RNNClassifier, self).__init__()
 
         self.bidirectional = config.bidirectional
@@ -94,12 +94,19 @@ class RNNClassifier(nn.Module):
         assert self.pooling in ['mean', 'max', 'last','attention'], "Pooling must be either 'mean', 'max', 'last' or 'attention'"
 
         # Embedding layer
-        self.embedding = nn.Embedding(config.vocab_size, config.embedding_dim, padding_idx=0)
+        if pretrained_model is None:
+            self.embedding = nn.Embedding(config.vocab_size, config.embedding_dim, padding_idx=0)
+            self.embedding_dim = config.embedding_dim
+        else:
+            pretrained_embedding = pretrained_model.get_input_embeddings().weight
+            self.embedding = nn.Embedding.from_pretrained(pretrained_embedding, freeze=False, padding_idx=0)
+            self.embedding_dim = pretrained_embedding.size(1)
+            
 
         # Encoder: Choose between RNN, GRU, and LSTM
         if self.model_type == 'rnn':
             self.encoder = nn.RNN(
-                input_size=config.embedding_dim,
+                input_size=self.embedding_dim,
                 hidden_size=self.hidden_dim // self.num_directions,
                 num_layers=config.n_layers,
                 dropout=config.dropout if config.n_layers > 1 else 0,
@@ -108,7 +115,7 @@ class RNNClassifier(nn.Module):
             )
         elif self.model_type == 'gru':
             self.encoder = nn.GRU(
-                input_size=config.embedding_dim,
+                input_size=self.embedding_dim,
                 hidden_size=self.hidden_dim // self.num_directions,
                 num_layers=config.n_layers,
                 dropout=config.dropout if config.n_layers > 1 else 0,
@@ -117,7 +124,7 @@ class RNNClassifier(nn.Module):
             )
         elif self.model_type == 'lstm':
             self.encoder = nn.LSTM(
-                input_size=config.embedding_dim,
+                input_size=self.embedding_dim,
                 hidden_size=self.hidden_dim // self.num_directions,
                 num_layers=config.n_layers,
                 dropout=config.dropout if config.n_layers > 1 else 0,
@@ -251,7 +258,7 @@ class RNNClassifier(nn.Module):
         return pooled
 
 class TransformerClassifier(nn.Module):
-    def __init__(self, config: TransformerConfig):
+    def __init__(self, config: TransformerConfig, pretrained_model=None):
         super(TransformerClassifier, self).__init__()
 
         self.pooling = config.pool.lower()
@@ -260,12 +267,17 @@ class TransformerClassifier(nn.Module):
             self.pooling = 'cls'
         if self.pooling not in ['cls', 'mean', 'max']:
             raise ValueError(f"Only support 'cls', 'mean' and 'max', got '{config.pool}'")
-
-        self.embedding = nn.Embedding(config.vocab_size, config.embedding_dim)
+        if pretrained_model is None:
+            self.embedding = nn.Embedding(config.vocab_size, config.embedding_dim)
+            self.embedding_dim = config.embedding_dim
+        else:
+            pretrained_embedding = pretrained_model.get_input_embeddings().weight
+            self.embedding = nn.Embedding.from_pretrained(pretrained_embedding, freeze=False, padding_idx=0)
+            self.embedding_dim = pretrained_embedding.size(1)
         self.pos_encoder = PositionalEncoding(config.embedding_dim)
         self.dropout = nn.Dropout(config.dropout)
 
-        self.proj = nn.Linear(config.embedding_dim, config.hidden_dim)
+        self.proj = nn.Linear(self.embedding_dim, config.hidden_dim)
 
         self.encoder = TransformerEncoder(
             num_layers=config.n_layers,

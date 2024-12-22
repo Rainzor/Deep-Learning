@@ -41,7 +41,6 @@ echo "-- Testing Bidirectional --"
 # 0.544
 python train.py -d /data2/wrz/Datasets/Yelp/  -n 50 -b $b -lr 2e-4 -m rnn --min_lr 1e-12 --patience 20 --tag test --num_cycles $cycle --val_ratio 0.05 --dropout 0.5 --weight_decay 1e-5 --smooth 0.1 --bidirectional                                           
 
-
 echo "--BiRNN Passed--"
 
 echo "5. Testing BiGRU"
@@ -67,3 +66,6 @@ echo "8. Testing BiLSTM with MeanPooling"
 python train.py -d /data2/wrz/Datasets/Yelp/ -n 40 -b $b -lr 3e-3 -m lstm --min_lr 5e-4 --patience 20 --num_cycles $cycle  --val_ratio 0.05 --dropout 0.5 --weight_decay 1e-4 --bidirectional --pool mean
 
 echo "9. Testing BiLSTM with Attention"
+# 0.652
+python train.py -d /data2/wrz/Datasets/Yelp/ -n 30 -b $b -lr 5e-3 -m lstm --min_lr 1e-8 --patience 20 --num_cycles $cycle  --val_ratio 0.05 --dropout 0.5 --weight_decay 1e-4 --bidirectional --pool attention --min_warmup 10
+

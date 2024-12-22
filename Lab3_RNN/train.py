@@ -11,7 +11,7 @@ import torchmetrics
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint, EarlyStopping
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, AutoModel
 from transformers import get_scheduler
 from transformers.optimization import (
     get_linear_schedule_with_warmup,
@@ -29,24 +29,24 @@ from dataloader.data import YelpDataset, collate_fn
 from tqdm import tqdm
 
 class TextClassifierLightning(pl.LightningModule):
-    def __init__(self, train_config, model_config, args = None):
+    def __init__(self, train_config, model_config, args = None, pretrained_model = None):
         super(TextClassifierLightning, self).__init__()
-        self.save_hyperparameters() # Save all arguments to hparams
+        self.save_hyperparameters(ignore=['pretrained_model'])
 
         if train_config.model == 'custom_rnn' or \
             train_config.model == 'custom_gru' or \
             train_config.model == 'custom_lstm':
-            self.model = CustomRNNClassifier(model_config)
+            self.model = CustomRNNClassifier(model_config, pretrained_model)
         elif train_config.model == 'rnn' or \
             train_config.model == 'lstm' or \
             train_config.model == 'gru':
-            self.model = RNNClassifier(model_config)
+            self.model = RNNClassifier(model_config, pretrained_model)
         elif train_config.model == 'rcnn':
-            self.model = RNNClassifier(model_config)
+            self.model = RNNClassifier(model_config, pretrained_model)
         elif train_config.model == 'attention':
-            self.model = RNNClassifier(model_config)
+            self.model = RNNClassifier(model_config, pretrained_model)
         elif train_config.model == 'transformer':
-            self.model = TransformerClassifier(model_config)
+            self.model = TransformerClassifier(model_config, pretrained_model)
         else:
             raise ValueError(f"Unsupported model: {train_config.model}")
         self.train_config = train_config
@@ -294,10 +294,15 @@ def main():
         min_warmup=args.min_warmup,
         weight_decay=args.weight_decay,
         smooth=args.smooth,
+        pretrained=args.pretrained,
     )
 
     # Initialize tokenizer
     tokenizer = AutoTokenizer.from_pretrained('google-bert/bert-base-uncased')
+    if train_config.pretrained:
+        pretrained_model = AutoModel.from_pretrained('google-bert/bert-base-uncased')
+    else:
+        pretrained_model = None
 
     # Define ModelConfig, including vocab_size from tokenizer
     if train_config.model == 'rnn' or \
@@ -392,9 +397,9 @@ def main():
     if train_config.checkpoint_path:
         checkpioint_file = os.path.join(train_config.checkpoint_path, "best-checkpoint.ckpt")
         print(f"Loading checkpoint model from {checkpioint_file}")
-        lightning_model = TextClassifierLightning.load_from_checkpoint(checkpoint_path=checkpioint_file, train_config=train_config, model_config=model_config, args=args)
+        lightning_model = TextClassifierLightning.load_from_checkpoint(checkpoint_path=checkpioint_file, train_config=train_config, model_config=model_config, args=args, pretrained_model=pretrained_model)
     else:
-        lightning_model = TextClassifierLightning(train_config=train_config, model_config=model_config, args=args)
+        lightning_model = TextClassifierLightning(train_config=train_config, model_config=model_config, args=args, pretrained_model=pretrained_model)
 
     # Set up model checkpointing to save the best model based on validation accuracy
 

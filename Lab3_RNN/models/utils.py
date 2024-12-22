@@ -36,6 +36,7 @@ class TrainConfig:
     min_warmup: int = 100
     weight_decay: float = 0
     smooth: float = 0
+    pretrained: bool = False
 
 @dataclass
 class RNNConfig:
@@ -64,7 +65,7 @@ def parse_args():
     parser.add_argument('--model', '-m', type=str, default=MODEL, help="Model for training")
     parser.add_argument('--output_path', '-o', type=str, default=OUTPUT_DIR, help="Directory for saving outputs")
     parser.add_argument("--checkpoint", "-ckp", type=str, help="Directory for saving checkpoints")
-    parser.add_argument('--pretrained', type=str, help="Pretrained model for training")
+    parser.add_argument('--pretrained', action='store_true', help="Use pretrained model")
     
     parser.add_argument('--tag', '-t', type=str, help="Tag for model")
     parser.add_argument('--val_cki', type=float, default=0.5, help="Validation checkpoint interval")
