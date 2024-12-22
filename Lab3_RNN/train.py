@@ -301,6 +301,7 @@ def main():
     tokenizer = AutoTokenizer.from_pretrained('google-bert/bert-base-uncased')
     if train_config.pretrained:
         pretrained_model = AutoModel.from_pretrained('google-bert/bert-base-uncased')
+        print("Pretrained model loaded.")
     else:
         pretrained_model = None
 
