@@ -284,7 +284,7 @@ class TransformerClassifier(nn.Module):
             d_model=config.hidden_dim,
             nhead=config.n_heads,
             dim_feedforward=config.dim_feedforward,
-            dropout=config.dropout
+            dropout=config.dropout_attn,
         )
 
         self.decoder = nn.Linear(config.hidden_dim, config.output_dim)
@@ -296,15 +296,23 @@ class TransformerClassifier(nn.Module):
 
         x = self.proj(embedded.transpose(0, 1)).transpose(0, 1)
 
-        output = self.encoder(x) # Shape: [batch_size, seq_len, d_model]
+        output = self.encoder(x, src_mask=attention_mask)
 
         if self.pooling == 'cls':
             cls_output = output[:, 0, :]  # [batch_size, d_model]
             pooled = cls_output
         elif self.pooling == 'mean':
-            pooled = output.mean(dim=1)    # [batch_size, d_model]
+            if attention_mask is not None:
+                mask = attention_mask.unsqueeze(2).float()
+                output = output * mask
+                pooled = output.sum(dim=1) / mask.sum(dim=1)
+            else:
+                pooled = output.mean(dim=1)
         elif self.pooling == 'max':
-            pooled, _ = output.max(dim=1)  # [batch_size, d_model]
+            if attention_mask is not None:
+                mask = attention_mask.unsqueeze(2).float()
+                output = output.masked_fill(mask == 0, -1e9)
+            pooled, _ = output.max(dim=1)
 
         logits = self.decoder(pooled)  # Shape: [batch_size, output_dim]
 

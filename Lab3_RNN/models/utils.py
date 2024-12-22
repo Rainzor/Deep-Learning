@@ -57,6 +57,7 @@ class TransformerConfig(RNNConfig):
     n_heads: int = 8
     dim_feedforward: int = 256
     pool: str = 'cls'
+    dropout_attn: float = 0.1
     
 
 def parse_args():
