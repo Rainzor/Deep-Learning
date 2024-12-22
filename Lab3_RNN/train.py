@@ -129,8 +129,8 @@ class TextClassifierLightning(pl.LightningModule):
         lr_main = self.train_config.learning_rate       # 主体学习率
         lr_embed = self.train_config.learning_rate_embed
 
-        embedding_params = list(self.model.embeddings.parameters())
-        other_params = [p for n, p in self.model.named_parameters() if 'embeddings' not in n]
+        embedding_params = list(self.model.embedding.parameters())
+        other_params = [p for n, p in self.model.named_parameters() if 'embedding' not in n]
         if lr_embed > 0:
             param_groups = [
                 {'params': embedding_params, 'lr': lr_embed},
