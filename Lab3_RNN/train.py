@@ -136,12 +136,16 @@ class TextClassifierLightning(pl.LightningModule):
                 {'params': embedding_params, 'lr': lr_embed},
                 {'params': other_params, 'lr': lr_main}
             ]
-        else:
+        elif lr_embed == 0:
             param_groups = [
                 {'params': self.model.parameters(), 'lr': lr_main}
             ]
             for p in embedding_params:
                 p.requires_grad = False
+        elif lr_embed < 0:
+            param_groups = [
+                {'params': self.model.parameters(), 'lr': lr_main}
+            ]
 
         if self.train_config.optimizer.lower() == 'adam':
             optimizer = optim.Adam(param_groups,
