@@ -125,12 +125,36 @@ class TextClassifierLightning(pl.LightningModule):
         self.log('hp/test_acc', self.test_acc, on_step=False, on_epoch=True, sync_dist=True)
 
     def configure_optimizers(self):
+
+        lr_main = self.train_config.learning_rate       # 主体学习率
+        lr_embed = self.train_config.learning_rate_embed
+
+        embedding_params = list(self.model.embeddings.parameters())
+        other_params = [p for n, p in self.model.named_parameters() if 'embeddings' not in n]
+        if lr_embed > 0:
+            param_groups = [
+                {'params': embedding_params, 'lr': lr_embed},
+                {'params': other_params, 'lr': lr_main}
+            ]
+        else:
+            param_groups = [
+                {'params': self.model.parameters(), 'lr': lr_main}
+            ]
+            for p in embedding_params:
+                p.requires_grad = False
+
         if self.train_config.optimizer.lower() == 'adam':
-            optimizer = optim.Adam(self.model.parameters(), lr=self.train_config.learning_rate, weight_decay=self.train_config.weight_decay)
+            optimizer = optim.Adam(param_groups,
+                                lr=lr_main,
+                                weight_decay=self.train_config.weight_decay)
         elif self.train_config.optimizer.lower() == 'sgd':
-            optimizer = optim.SGD(self.model.parameters(), lr=self.train_config.learning_rate, weight_decay=self.train_config.weight_decay)
+            optimizer = optim.SGD(param_groups,
+                                lr=self.train_config.learning_rate, 
+                                weight_decay=self.train_config.weight_decay)
         else:
             raise ValueError(f"Unsupported optimizer: {self.train_config.optimizer}")
+        
+        
 
         # Set up the scheduler
         scheduler = None

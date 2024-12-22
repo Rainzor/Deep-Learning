@@ -27,6 +27,7 @@ class TrainConfig:
     epochs: int = field(default=EPOCHS)
     total_steps: int = field(default=0)
     learning_rate: float = field(default=LEARNING_RATE)
+    learning_rate_embed: float = field(default=LEARNING_RATE)
     batch_size: int = field(default=BATCH_SIZE)
     optimizer: str = field(default=OPTIMIZER)
     scheduler: str = field(default=SCHEDULER)
@@ -78,6 +79,7 @@ def parse_args():
 
     parser.add_argument('--epochs','-n', type=int, default=10, help="Number of epochs")
     parser.add_argument('--learning_rate','-lr' ,type=float, default=LEARNING_RATE, help="Learning rate")
+    parser.add_argument('--learning_rate_embed', type=float, default=LEARNING_RATE, help="Learning rate for embedding layer")
     parser.add_argument('--batch_size', '-b', type=int, default=BATCH_SIZE, help="Batch size")
     parser.add_argument('--optimizer', '-opt', type=str, default=OPTIMIZER, help="Optimizer for training")
     parser.add_argument('--scheduler', type=str, default=SCHEDULER, help="Scheduler for training")

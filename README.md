@@ -12,3 +12,4 @@
 
 ## 3. RNN
 
+Word Embedding + RNN+ FC
