@@ -99,7 +99,7 @@ class RNNClassifier(nn.Module):
             self.embedding_dim = config.embedding_dim
         else:
             pretrained_embedding = pretrained_model.get_input_embeddings().weight
-            self.embedding = nn.Embedding.from_pretrained(pretrained_embedding, freeze=True, padding_idx=0)
+            self.embedding = nn.Embedding.from_pretrained(pretrained_embedding, freeze=False, padding_idx=0)
             self.embedding_dim = pretrained_embedding.size(1)
             
 
@@ -272,7 +272,7 @@ class TransformerClassifier(nn.Module):
             self.embedding_dim = config.embedding_dim
         else:
             pretrained_embedding = pretrained_model.get_input_embeddings().weight
-            self.embedding = nn.Embedding.from_pretrained(pretrained_embedding, freeze=True, padding_idx=0)
+            self.embedding = nn.Embedding.from_pretrained(pretrained_embedding, freeze=False, padding_idx=0)
             self.embedding_dim = pretrained_embedding.size(1)
         self.pos_encoder = PositionalEncoding(config.embedding_dim)
         self.dropout = nn.Dropout(config.dropout)
