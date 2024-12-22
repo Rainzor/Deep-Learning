@@ -478,7 +478,7 @@ def main():
 
 
     # Load the best checkpoint for testing
-    lightning_model = TextClassifierLightning.load_from_checkpoint(checkpoint_path=best_model_path)
+    lightning_model = TextClassifierLightning.load_from_checkpoint(checkpoint_path=best_model_path, pretrained_model=pretrained_model)
 
     # Test the model
     trainer.test(lightning_model, dataloaders=test_loader)
