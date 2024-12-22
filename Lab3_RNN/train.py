@@ -136,7 +136,7 @@ class TextClassifierLightning(pl.LightningModule):
         scheduler = None
         total_steps = self.train_config.total_steps
 
-        warmup_steps = min(self.train_config.warmup_ratio * total_steps, 100)
+        warmup_steps = min(self.train_config.warmup_ratio * total_steps, self.train_config.min_warmup)
         scheduler_name = self.train_config.scheduler.lower()
         assert scheduler_name in ['linear', \
                                 'cosine', \
@@ -291,6 +291,7 @@ def main():
         num_cycles=args.num_cycles,
         min_lr=args.min_lr,
         warmup_ratio=args.warmup_ratio,
+        min_warmup=args.min_warmup,
         weight_decay=args.weight_decay,
         smooth=args.smooth,
     )
@@ -424,6 +425,14 @@ def main():
         divergence_threshold=0.1,
         verbose=True  # Print when early stopping happens
     )
+
+    # early_stop_callback_loss = EarlyStopping(
+    #     monitor="val/loss",  # Monitor validation accuracy
+    #     patience=args.patience,  # Stop after patience epochs of no improvement
+    #     mode="min",  # 'max' for maximizing validation accuracy
+    #     divergence_threshold=0.1,
+    #     verbose=True  # Print when early stopping happens
+    # )
 
 
     # Initialize PyTorch Lightning Trainer

@@ -33,6 +33,7 @@ class TrainConfig:
     num_cycles: float = 0.5
     min_lr: float = 0
     warmup_ratio: float = 0.1
+    min_warmup: int = 100
     weight_decay: float = 0
     smooth: float = 0
 
@@ -82,6 +83,7 @@ def parse_args():
     parser.add_argument('--num_cycles', type=float, default=0.5, help="Number of cycles for scheduler")
     parser.add_argument('--min_lr', type=float, default=0, help="Minimum learning rate for scheduler")
     parser.add_argument('--warmup_ratio', '-wr', type=float, default=0.1, help="Warmup ratio for scheduler")
+    parser.add_argument('--min_warmup', type=int, default=100, help="Minimum warmup steps for scheduler")
     parser.add_argument('--weight_decay', '-wd', type=float, default=0, help="Weight decay for optimizer")
     parser.add_argument('--smooth', type=float, default=0.1, help="Label smoothing factor")
 

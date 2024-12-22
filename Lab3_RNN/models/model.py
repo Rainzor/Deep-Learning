@@ -256,6 +256,7 @@ class TransformerClassifier(nn.Module):
 
         self.pooling = config.pool.lower()
         if self.pooling == 'last':
+            print("Warning: 'last' pooling is deprecated, using 'cls' pooling instead")
             self.pooling = 'cls'
         if self.pooling not in ['cls', 'mean', 'max']:
             raise ValueError(f"Only support 'cls', 'mean' and 'max', got '{config.pool}'")
