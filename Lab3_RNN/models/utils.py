@@ -141,7 +141,7 @@ transformer_config = TransformerConfig(
     hidden_dim=HIDDEN_DIM,
     n_layers=LAYER_NUM,
     dropout=DROP_RATE,
-    n_heads=8,
+    n_heads=4,
     dim_feedforward=HIDDEN_DIM,
     pool='cls'
 )
