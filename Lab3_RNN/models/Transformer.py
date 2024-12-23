@@ -146,11 +146,14 @@ class TransformerEncoderLayer(nn.Module):
         """
         Parameters:
             src: Input, shape [batch_size, seq_len, d_model]
-            src_mask: Mask tensor, shape [batch_size, 1, 1, seq_len] or [batch_size, 1, seq_len, seq_len]
+            src_mask: Mask tensor, shape [batch_size, seq_len]
         Returns:
             Output of the encoder layer, shape [batch_size, seq_len, d_model]
         """
         # Self-attention sublayer
+        B,L,D = src.size()
+        src_mask = src_mask.unsqueeze(1).unsqueeze(2)  # [batch_size, 1, 1, seq_len]
+        src_mask = src_mask.expand(B, 1, L, L)  # [batch_size, 1, seq_len, seq_len]
         attn_output = self.self_attn(src, src, src, src_mask)
         src = src + self.dropout1(attn_output)
         src = self.norm1(src)

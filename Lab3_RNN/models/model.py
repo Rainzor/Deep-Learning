@@ -217,7 +217,7 @@ class RNNClassifier(nn.Module):
         
         B, L, _ = output.size()
         if mask is not None:
-            mask = mask.unsqueeze(2)
+            mask = mask.unsqueeze(2) # Shape: [batch_size, seq_len, 1]
             lengths = mask.sum(dim=1).long()
             lengths = lengths.view(-1)
 
@@ -290,6 +290,18 @@ class TransformerClassifier(nn.Module):
         self.decoder = nn.Linear(config.hidden_dim, config.output_dim)
 
     def forward(self, input_ids, attention_mask=None):
+        '''
+        Args:
+            input_ids (Tensor): Input tensor of shape [batch_size, seq_len]
+            attention_mask (Tensor, optional): Mask tensor of shape [batch_size, seq_len]
+                                               where 1 indicates real tokens and 0 indicates padding.
+                                               Defaults to None 
+        Returns:
+            Tensor: Output tensor of shape [batch_size, output_dim]
+        '''
+
+
+
         embedded = self.embedding(input_ids)
         embedded = self.pos_encoder(embedded)
         embedded = self.dropout(embedded)
