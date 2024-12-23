@@ -308,7 +308,7 @@ class TransformerClassifier(nn.Module):
 
         x = self.proj(embedded.transpose(0, 1)).transpose(0, 1)
 
-        output = self.encoder(x, src_mask=attention_mask)
+        output = self.encoder(x, src_mask=attention_mask) # Shape: [batch_size, seq_len, d_model]
 
         if self.pooling == 'cls':
             cls_output = output[:, 0, :]  # [batch_size, d_model]

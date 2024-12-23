@@ -27,7 +27,8 @@ class YelpDataset(Dataset):
         self.tokenizer = tokenizer
         self.max_length = max_length
         self.data = None
-        self.save_path = os.path.join(data_dir, 'train.pt') if train else os.path.join(data_dir, 'test.pt')
+        self.save_path = os.path.join(data_dir, 'train') if train else os.path.join(data_dir, 'test')
+        self.save_path += f'_maxlen_{max_length}.pt'
 
         if not os.path.exists(self.save_path) or reload_:
             if not reload_:
