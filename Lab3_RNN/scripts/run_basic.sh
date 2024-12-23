@@ -50,8 +50,8 @@ python train.py -d /data2/wrz/Datasets/Yelp/ -n 20 -b $b -lr 1e-3 -m gru --min_l
 echo "--BiGRU Passed--"
 
 echo "6. Testing BiLSTM"
-# 0.652
-python train.py -d /data2/wrz/Datasets/Yelp/ -n 20 -b $b -lr 2e-3 -m lstm --min_lr 1e-5 --patience 10 --tag bidirect --num_cycles $cycle --val_ratio 0.05 --dropout 0.5 --weight_decay 1e-5 --bidirectional
+# 0.664
+python train.py -d /data2/wrz/Datasets/Yelp/ -n 20 -b $b -lr 2e-3 -m lstm --min_lr 1e-5 --patience 10 --tag bidirect --num_cycles $cycle --val_ratio 0.05 --dropout 0.5 --bidirectional --max_length 512
 
 # 0.665 pretrain embedding
 python train.py -d /data2/wrz/Datasets/Yelp/ -n 20 -b 256 -lr 5e-3 -m lstm --patience 10 --num_cycles 2 --val_ratio 0.05 --dropout 0.5 --weight_decay 1e-5 --tag bidirect-pretrained --bidirectional --pretrained
