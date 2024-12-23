@@ -139,10 +139,7 @@ class RNNClassifier(nn.Module):
 
         if self.pooling == 'attention':
             self.attention = nn.Linear(self.hidden_dim, 1, bias=False)
-        if self.pooling == 'max':
-            self.decoder = nn.Linear(self.hidden_dim+self.embedding_dim, config.output_dim)
-        else:
-            self.decoder = nn.Linear(self.hidden_dim, config.output_dim)
+        self.decoder = nn.Linear(self.hidden_dim, config.output_dim)
 
     def forward(self, input_ids, attention_mask=None):
         """
@@ -191,10 +188,6 @@ class RNNClassifier(nn.Module):
         else:
             output_unpacked = packed_output  # Shape: [batch_size, seq_len, num_directions * hidden_size]
         
-        if self.pooling == 'max':
-            embedded_unpacked = embedded_sorted
-            # Concatenate the output of RNN/GRU/LSTM with the embedding
-            output_unpacked = torch.cat((output_unpacked, embedded_unpacked), dim=-1) # Shape: [batch_size_sorted, seq_len, num_directions * hidden_size + embedding_dim]
 
         pooled = self._pooling(output_unpacked, attention_mask_sorted)  # Shape: [batch_size_sorted, hidden_dim]
 
@@ -247,7 +240,6 @@ class RNNClassifier(nn.Module):
             Recurrent Convolutional Neural Network (RCNN) for text classification.
             https://dl.acm.org/doi/10.5555/2886521.2886636
             '''
-            output = F.relu(output)
             if mask is not None:
                 output = output.masked_fill(mask == 0, -1e9)
             pooled, _ = torch.max(output, dim=1)
