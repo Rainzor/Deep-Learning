@@ -17,7 +17,7 @@ done
 echo "-- Testing Basic RNN --"
 
 echo "1. Testing RNN"
-python train.py -d /data2/wrz/Datasets/Yelp/  -n 50 -b $b -lr 1e-4 -m rnn --min_lr 1e-6 --patience 20 --tag test --num_cycles $cycle --val_ratio 0.05 --dropout 0.5 --weight_decay 1e-5 --smooth 0.1                                                   
+python train.py -d /data2/wrz/Datasets/Yelp/  -n 50 -b $b -lr 1e-4 -m rnn --min_lr 1e-6 --patience 20 --num_cycles $cycle --val_ratio 0.05 --dropout 0.5 --weight_decay 1e-5 --smooth 0.1                                                   
 echo "0.569"
 
 echo "--RNN Passed--"
@@ -38,7 +38,7 @@ echo "--LSTM Passed--"
 echo "-- Testing Bidirectional --"
 
 # echo "4. Testing BiRNN"
-python train.py -d /data2/wrz/Datasets/Yelp/  -n 50 -b $b -lr 2e-4 -m rnn --min_lr 1e-12 --patience 20 --tag test --num_cycles $cycle --val_ratio 0.05 --dropout 0.5 --weight_decay 1e-5 --smooth 0.1 --bidirectional                                           
+python train.py -d /data2/wrz/Datasets/Yelp/  -n 50 -b $b -lr 2e-4 -m rnn --min_lr 1e-12 --patience 20 --num_cycles $cycle --val_ratio 0.05 --dropout 0.5 --weight_decay 1e-5 --smooth 0.1 --bidirectional --tag bidirect                                           
 echo "0.544"
 
 echo "--BiRNN Passed--"
