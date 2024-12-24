@@ -28,6 +28,8 @@ from models.model import CustomRNNClassifier, RNNClassifier, TransformerClassifi
 from dataloader.data import YelpDataset, collate_fn
 from tqdm import tqdm
 
+torch.cuda.empty_cache()
+
 class TextClassifierLightning(pl.LightningModule):
     def __init__(self, train_config, model_config, args = None, pretrained_model = None):
         super(TextClassifierLightning, self).__init__()
