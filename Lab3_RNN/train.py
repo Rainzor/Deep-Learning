@@ -25,7 +25,7 @@ from transformers.optimization import (
 
 from models.utils import *
 from models.model import CustomRNNClassifier, RNNClassifier, TransformerClassifier
-from dataloader.data import YelpDataset, collate_fn
+from dataloader.data import YelpDataset
 from tqdm import tqdm
 
 import gensim
@@ -326,13 +326,14 @@ def main():
         warmup_ratio=args.warmup_ratio,
         min_warmup=args.min_warmup,
         weight_decay=args.weight_decay,
-        smooth=args.smooth
+        smooth=args.smooth,
+        pretrained=args.pretrained
     )
 
     # Initialize tokenizer
     tokenizer = AutoTokenizer.from_pretrained('google-bert/bert-base-uncased')
     pretrained_embedding = None
-    if train_config.pretrained:
+    if args.pretrained:
         word2vec_output_file = os.path.join(train_config.data_path, 'glove.6B.300d.word2vec.txt')
         pretrained_embedding_path = os.path.join(train_config.data_path, 'pretrained_embedding.pt')
         if not os.path.exists(pretrained_embedding_path):

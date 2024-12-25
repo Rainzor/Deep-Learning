@@ -84,7 +84,7 @@ class YelpDataset(Dataset):
                 # Tokenize, pad and truncate the text
                 encoding = self.tokenizer(
                     text,
-                    add_special_tokens=False,  # Add [CLS] and [SEP]
+                    add_special_tokens=True,  # Add [CLS] and [SEP]
                     truncation=True,  # Truncate text if it exceeds max_length
                     padding='max_length',  # Pad text to max_length
                     max_length=self.max_length,
@@ -113,7 +113,7 @@ class YelpDataset(Dataset):
             label = self.raw_data[idx].star-1
             encoding = self.tokenizer(
                 text,
-                add_special_tokens=False,
+                add_special_tokens=True,
                 truncation=True,
                 padding='max_length',
                 max_length=self.max_length,
@@ -134,19 +134,3 @@ class YelpDataset(Dataset):
                 'attention_mask': attention_mask,
                 'label':  label
             }
-
-def collate_fn(batch):
-    
-    lengths = [torch.sum(item['attention_mask']) for item in batch]
-    sorted_lengths, sorted_idx = torch.sort(torch.tensor(lengths), descending=True)
-    batch_sorted = [batch[i] for i in sorted_idx]
-
-    input_ids = torch.stack([item['input_ids'] for item in batch_sorted])
-    attention_mask = torch.stack([item['attention_mask'] for item in batch_sorted])
-    label = torch.stack([item['label'] for item in batch_sorted])
-
-    return {
-        'input_ids': input_ids,
-        'attention_mask': attention_mask,
-        'label': label
-    }

@@ -269,8 +269,6 @@ class TransformerClassifier(nn.Module):
             self.pooling = 'cls'
         if self.pooling not in ['cls', 'mean', 'max']:
             raise ValueError(f"Only support 'cls', 'mean' and 'max', got '{config.pool}'")
-        if config.pool == 'cls':
-            self.cls_token = Parameter(torch.randn(config.hidden_dim))
 
         if pretrained_model is None:
             self.embedding = nn.Embedding(config.vocab_size, config.embedding_dim)
@@ -310,9 +308,6 @@ class TransformerClassifier(nn.Module):
         embedded = self.embedding(input_ids)
         embedded = self.pos_encoder(embedded)
         embedded = self.dropout(embedded)
-        if self.pooling == 'cls':
-            embedded = torch.cat([self.cls_token.expand(embedded.size(0), -1), embedded], dim=1)
-            attention_mask = torch.cat([torch.ones(embedded.size(0), 1).to(embedded.device), attention_mask], dim=1) if attention_mask is not None else None
 
         x = self.proj(embedded.transpose(0, 1)).transpose(0, 1)
 
