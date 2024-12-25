@@ -260,7 +260,7 @@ class RNNClassifier(nn.Module):
         return pooled
 
 class TransformerClassifier(nn.Module):
-    def __init__(self, config: TransformerConfig, pretrained_model=None):
+    def __init__(self, config: TransformerConfig, pretrained=None):
         super(TransformerClassifier, self).__init__()
 
         self.pooling = config.pool.lower()
