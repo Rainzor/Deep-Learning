@@ -101,7 +101,7 @@ class RNNClassifier(nn.Module):
             self.embedding_dim = pretrained.size(1)
             self.embedding = nn.Embedding(config.vocab_size, self.embedding_dim, padding_idx=0)
             self.embedding.weight.data.copy_(pretrained)
-            self.embedding.weight.requires_grad = False
+            self.embedding.weight.requires_grad = True
             
 
         # Encoder: Choose between RNN, GRU, and LSTM
@@ -270,13 +270,16 @@ class TransformerClassifier(nn.Module):
         if self.pooling not in ['cls', 'mean', 'max']:
             raise ValueError(f"Only support 'cls', 'mean' and 'max', got '{config.pool}'")
 
-        if pretrained_model is None:
-            self.embedding = nn.Embedding(config.vocab_size, config.embedding_dim)
+        # Embedding layer
+        if pretrained is None:
+            self.embedding = nn.Embedding(config.vocab_size, config.embedding_dim, padding_idx=0)
             self.embedding_dim = config.embedding_dim
         else:
-            pretrained_embedding = pretrained_model.get_input_embeddings().weight
-            self.embedding = nn.Embedding.from_pretrained(pretrained_embedding, freeze=False, padding_idx=0)
-            self.embedding_dim = pretrained_embedding.size(1)
+            self.embedding_dim = pretrained.size(1)
+            self.embedding = nn.Embedding(config.vocab_size, self.embedding_dim, padding_idx=0)
+            self.embedding.weight.data.copy_(pretrained)
+            self.embedding.weight.requires_grad = True
+
         self.pos_encoder = PositionalEncoding(config.embedding_dim)
         self.dropout = nn.Dropout(config.dropout)
 

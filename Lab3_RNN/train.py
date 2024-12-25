@@ -11,7 +11,7 @@ import torchmetrics
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint, EarlyStopping
-from transformers import AutoTokenizer, AutoModel
+from transformers import AutoTokenizer
 from transformers import get_scheduler
 from transformers.optimization import (
     get_linear_schedule_with_warmup,
@@ -362,7 +362,7 @@ def main():
             torch.save(pretrained_embedding, pretrained_embedding_path)
             print(f"Pretrained word embeddings saved to {pretrained_embedding_path}")
         else:
-            pretrained_embedding = torch.load(pretrained_embedding_path)
+            pretrained_embedding = torch.load(pretrained_embedding_path,weights_only=False)
             print(f"Pretrained word embeddings loaded from {pretrained_embedding_path}")
 
     

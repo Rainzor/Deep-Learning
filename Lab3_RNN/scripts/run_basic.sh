@@ -56,8 +56,9 @@ echo "0.652"
 python train.py -d /data2/wrz/Datasets/Yelp/ -n 20 -b 256 -lr 2e-3 -m lstm --patience 10 --tag bidirect-512 --num_cycles $cycle --val_ratio 0.05 --dropout 0.3 --bidirectional --max_length 512 --weight_decay 1e-6
 echo "0.661"
 
-# 0.665 pretrain embedding
-# python train.py -d /data2/wrz/Datasets/Yelp/ -n 20 -b 256 -lr 5e-3 -m lstm --patience 10 --num_cycles 2 --val_ratio 0.05 --dropout 0.5 --weight_decay 1e-5 --tag bidirect-pretrained --bidirectional --pretrained
+
+python train.py -d /data2/wrz/Datasets/Yelp/ -n 20 -b 256 -lr 5e-3 -m lstm --patience 10 --num_cycles 2 --val_ratio 0.05 --tag bidirect-pretrained --bidirectional --pretrained
+echo "0.664"
 
 echo "--BiLSTM Passed--"
 
@@ -69,6 +70,7 @@ echo "0.649"
 
 python train.py -d /data2/wrz/Datasets/Yelp/ -n 20 -b 256 -lr 4e-3 -m lstm --patience 10 --num_cycles $cycle  --val_ratio 0.05 --max_length 512 --dropout 0.3 --weight_decay 1e-4 --bidirectional --pool max --tag max-512 
 echo "0.660"
+
 
 echo "8. Testing BiLSTM with MeanPooling"
 python train.py -d /data2/wrz/Datasets/Yelp/ -n 40 -b $b -lr 3e-3 -m lstm --min_lr 5e-4 --patience 20 --num_cycles $cycle  --val_ratio 0.05 --dropout 0.5 --weight_decay 1e-4 --bidirectional --pool mean --tag mean
