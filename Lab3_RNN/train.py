@@ -318,6 +318,7 @@ def main():
         checkpoint_path=args.checkpoint,
         epochs=args.epochs,
         learning_rate=args.learning_rate,
+        learning_rate_embed=args.learning_rate_embed,
         batch_size=args.batch_size,
         optimizer=args.optimizer,
         scheduler=args.scheduler,
