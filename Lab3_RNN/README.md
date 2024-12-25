@@ -133,10 +133,12 @@ class RNNCell(nn.Module):
 门控循环单元（Gated Recurrent Unit, GRU）是RNN的一种改进，旨在解决传统RNN在处理长序列时的梯度消失问题。GRU通过引入重置门（reset gate）和更新门（update gate）来控制信息的流动，从而更有效地捕捉重要的序列信息。
 
 更新方式如下：
+
 $$
 \hat{H}_t =\tanh(X_tW_{xh}+(R_t\odot H_{t-1})W_{hh}+b_h)\\
 H_t=Z_t \odot H_{t-1}+(1-Z_t)\odot \hat{H}_t
 $$
+
 <img src="assets/image-20241225162540053.png" alt="image-20241225162540053" style="zoom:33%;" />
 
 ```python
@@ -172,15 +174,19 @@ class GRUCell(nn.Module):
 
 长短期记忆网络（Long Short-Term Memory, LSTM）是另一种改进的RNN结构，旨在更有效地捕捉长距离依赖关系。LSTM通过引入记忆元（memory cell）以及输入门（input gate）、遗忘门（forget gate）和输出门（output gate）来控制信息的流动，从而解决传统RNN的梯度消失问题。
 
-在门控循环单元GRU中，有一种机制来控制输入和遗忘（或跳过）。 类似地，在长短期记忆网络中，也有两个门用于这样的目的： 输入门$I_t$控制采用多少来自 $\hat{C}_t$ 的新数据， 而遗忘门$F_t$控制保留多少过去的记忆元 $C_{t-1}$ 的内容。 使用按元素乘法，得出：
+在门控循环单元GRU中，有一种机制来控制输入和遗忘（或跳过）。 类似地，在长短期记忆网络中，也有两个门用于这样的目的： 输入门 $I_t $控制采用多少来自 $\hat{C}_t$ 的新数据， 而遗忘门$F_t$ 控制保留多少过去的记忆元 $C_{t-1}$ 的内容。 使用按元素乘法，得出：
+
 $$
 \hat{C}_t=\tanh(X_tW_{xc}+H_{t-1}W_{hc}+b_c)\\
 C_t=F_t\odot C_{t-1}+I_t\odot \hat{C}_t
 $$
+
 最后，隐状态 $H_t$ 由输出门 $O_t$ 来控制：
+
 $$
 H_t=O_t\odot \tanh(C_t)
 $$
+
 <img src="assets/image-20241225165305491.png" alt="image-20241225165305491" style="zoom:33%;" />
 
 ```python
@@ -454,12 +460,9 @@ output = self.decoder(pooled)
 最后的为了探索RNN模型的上限，修改了文本截取长度，尽可能的保留原始文本，根据表1 Accuarcy的数据可以看到，选择文本长度 **256, 512** 比较，当保留较长文本信息后，对最终结果的准确度有较大提升
 
 
-
 <img src="assets/image-20241226000928990.png" alt="image-20241226000928990" style="zoom: 67%;" />
 
 得到最佳Accuarcy 为: **0.661**
-
-
 
 ## 4. 总结
 
