@@ -331,7 +331,7 @@ def main():
     )
 
     # Initialize tokenizer
-    tokenizer = AutoTokenizer.from_pretrained('google-bert/bert-base-uncased')
+    tokenizer = AutoTokenizer.from_pretrained(args.tokenizer)
     pretrained_embedding = None
     if args.pretrained:
         word2vec_output_file = os.path.join(train_config.data_path, 'glove.6B.300d.word2vec.txt')
