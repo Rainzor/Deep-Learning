@@ -97,9 +97,11 @@ class YelpDataset(Dataset):
 #### 2.2.1 RNN
 
 传统的RNN结构为了处理序列的文本信息，引入了隐状态 $H_t$ 的概念，用于存储前 $t$ 的时间步所学到的信息，更新方式如下：
+
 $$
 H_t=\tanh(X_tW_{xh}+H_{t-1}W_{hh}+b_h)
 $$
+
 这些变量捕获并保留了序列直到其当前时间步的历史信息， 就如当前时间步下神经网络的状态或记忆， 因此这样的隐藏变量被称为*隐状态*（hidden state）
 
 <img src="assets/image-20241225161726818.png" alt="image-20241225161726818" style="zoom: 33%;" />
