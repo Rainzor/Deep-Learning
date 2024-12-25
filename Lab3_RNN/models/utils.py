@@ -65,6 +65,7 @@ def parse_args():
 
     parser.add_argument('--data_path', '-d', type=str, default=DATA_DIR, help="Directory for data")
     parser.add_argument('--model', '-m', type=str, default=MODEL, help="Model for training")
+    parser.add_argument('--tokenizer', '-tk', type=str, default='google-bert/bert-base-uncased', help="Tokenizer for text data")
     parser.add_argument('--output_path', '-o', type=str, default=OUTPUT_DIR, help="Directory for saving outputs")
     parser.add_argument("--checkpoint", "-ckp", type=str, help="Directory for saving checkpoints")
     parser.add_argument('--pretrained', action='store_true', help="Use pretrained model")
