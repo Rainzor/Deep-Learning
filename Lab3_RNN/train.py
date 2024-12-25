@@ -28,27 +28,30 @@ from models.model import CustomRNNClassifier, RNNClassifier, TransformerClassifi
 from dataloader.data import YelpDataset, collate_fn
 from tqdm import tqdm
 
+import gensim
+from gensim.scripts.glove2word2vec import glove2word2vec
+
 torch.cuda.empty_cache()
 
 class TextClassifierLightning(pl.LightningModule):
-    def __init__(self, train_config, model_config, args = None, pretrained_model = None):
+    def __init__(self, train_config, model_config, args = None, pretrained_embedding = None):
         super(TextClassifierLightning, self).__init__()
-        self.save_hyperparameters(ignore=['pretrained_model'])
+        self.save_hyperparameters(ignore=['pretrained_embedding'])
 
         if train_config.model == 'custom_rnn' or \
             train_config.model == 'custom_gru' or \
             train_config.model == 'custom_lstm':
-            self.model = CustomRNNClassifier(model_config, pretrained_model)
+            self.model = CustomRNNClassifier(model_config, pretrained_embedding)
         elif train_config.model == 'rnn' or \
             train_config.model == 'lstm' or \
             train_config.model == 'gru':
-            self.model = RNNClassifier(model_config, pretrained_model)
+            self.model = RNNClassifier(model_config, pretrained_embedding)
         elif train_config.model == 'rcnn':
-            self.model = RNNClassifier(model_config, pretrained_model)
+            self.model = RNNClassifier(model_config, pretrained_embedding)
         elif train_config.model == 'attention':
-            self.model = RNNClassifier(model_config, pretrained_model)
+            self.model = RNNClassifier(model_config, pretrained_embedding)
         elif train_config.model == 'transformer':
-            self.model = TransformerClassifier(model_config, pretrained_model)
+            self.model = TransformerClassifier(model_config, pretrained_embedding)
         else:
             raise ValueError(f"Unsupported model: {train_config.model}")
         self.train_config = train_config
@@ -323,17 +326,45 @@ def main():
         warmup_ratio=args.warmup_ratio,
         min_warmup=args.min_warmup,
         weight_decay=args.weight_decay,
-        smooth=args.smooth,
-        pretrained=args.pretrained,
+        smooth=args.smooth
     )
 
     # Initialize tokenizer
     tokenizer = AutoTokenizer.from_pretrained('google-bert/bert-base-uncased')
+    pretrained_embedding = None
     if train_config.pretrained:
-        pretrained_model = AutoModel.from_pretrained('google-bert/bert-base-uncased')
-        print("Pretrained model loaded.")
-    else:
-        pretrained_model = None
+        word2vec_output_file = os.path.join(train_config.data_path, 'glove.6B.300d.word2vec.txt')
+        pretrained_embedding_path = os.path.join(train_config.data_path, 'pretrained_embedding.pt')
+        if not os.path.exists(pretrained_embedding_path):
+            if not os.path.exists(word2vec_output_file):
+                glove_file = os.path.join(train_config.data_path, 'glove.6B.300d.txt')
+                if not os.path.exists(glove_file):
+                    print("Downloading GloVe embeddings...")
+                    os.system(f"wget http://nlp.stanford.edu/data/glove.6B.zip -P {train_config.data_path}")
+                    os.system(f"unzip {train_config.data_path}/glove.6B.zip -d {train_config.data_path}")
+                glove2word2vec(glove_file, word2vec_output_file)
+            print("Loading pretrained word embeddings...")
+            word_vectors = gensim.models.KeyedVectors.load_word2vec_format(word2vec_output_file, binary=False)
+            embedding_dim = word_vectors.vector_size
+            pretrained_embedding = torch.randn(tokenizer.vocab_size, embedding_dim)
+            for i, token in tokenizer.get_vocab().items():
+                if word in ['[PAD]', '[CLS]', '[SEP]', '[UNK]', '[MASK]']:
+                    pretrained_embedding[i] = torch.zeros(embedding_dim)
+                    continue
+                
+                if word.startswith('##'):
+                    pretrained_embedding[i] = torch.randn(embedding_dim)
+                elif word in word_vectors:
+                    pretrained_embedding[i] = torch.tensor(word_vectors[word])
+                else:
+                    pretrained_embedding[i] = torch.randn(embedding_dim)
+            torch.save(pretrained_embedding, pretrained_embedding_path)
+            print(f"Pretrained word embeddings saved to {pretrained_embedding_path}")
+        else:
+            pretrained_embedding = torch.load(pretrained_embedding_path)
+            print(f"Pretrained word embeddings loaded from {pretrained_embedding_path}")
+
+    
 
     # Define ModelConfig, including vocab_size from tokenizer
     if train_config.model == 'rnn' or \
@@ -428,9 +459,9 @@ def main():
     if train_config.checkpoint_path:
         checkpioint_file = os.path.join(train_config.checkpoint_path, "best-checkpoint.ckpt")
         print(f"Loading checkpoint model from {checkpioint_file}")
-        lightning_model = TextClassifierLightning.load_from_checkpoint(checkpoint_path=checkpioint_file, train_config=train_config, model_config=model_config, args=args, pretrained_model=pretrained_model)
+        lightning_model = TextClassifierLightning.load_from_checkpoint(checkpoint_path=checkpioint_file, train_config=train_config, model_config=model_config, args=args, pretrained_embedding=pretrained_embedding)
     else:
-        lightning_model = TextClassifierLightning(train_config=train_config, model_config=model_config, args=args, pretrained_model=pretrained_model)
+        lightning_model = TextClassifierLightning(train_config=train_config, model_config=model_config, args=args, pretrained_embedding=pretrained_embedding)
 
     # Set up model checkpointing to save the best model based on validation accuracy
 
@@ -508,7 +539,7 @@ def main():
 
 
     # Load the best checkpoint for testing
-    lightning_model = TextClassifierLightning.load_from_checkpoint(checkpoint_path=best_model_path, pretrained_model=pretrained_model)
+    lightning_model = TextClassifierLightning.load_from_checkpoint(checkpoint_path=best_model_path, pretrained_embedding=pretrained_embedding)
 
     # Test the model
     trainer.test(lightning_model, dataloaders=test_loader)

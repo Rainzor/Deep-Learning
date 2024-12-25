@@ -71,10 +71,10 @@ python train.py -d /data2/wrz/Datasets/Yelp/ -n 20 -b 256 -lr 4e-3 -m lstm --pat
 echo "0.660"
 
 echo "8. Testing BiLSTM with MeanPooling"
-python train.py -d /data2/wrz/Datasets/Yelp/ -n 40 -b $b -lr 3e-3 -m lstm --min_lr 5e-4 --patience 20 --num_cycles $cycle  --val_ratio 0.05 --dropout 0.5 --weight_decay 1e-4 --bidirectional --pool mean
+python train.py -d /data2/wrz/Datasets/Yelp/ -n 40 -b $b -lr 3e-3 -m lstm --min_lr 5e-4 --patience 20 --num_cycles $cycle  --val_ratio 0.05 --dropout 0.5 --weight_decay 1e-4 --bidirectional --pool mean --tag mean
 echo "0.653"
 
-python train.py -d /data2/wrz/Datasets/Yelp/ -n 40 -b 256 -lr 3e-3 -m lstm --patience 10 --num_cycles $cycle --val_ratio 0.05 --max_length 512 --dropout 0.3 --weight_decay 1e-4 --bidirectional --tag mean --pool mean-512
+python train.py -d /data2/wrz/Datasets/Yelp/ -n 40 -b 256 -lr 3e-3 -m lstm --patience 10 --num_cycles $cycle --val_ratio 0.05 --max_length 512 --dropout 0.3 --weight_decay 1e-4 --bidirectional --tag mean-512 --pool mean
 echo "0.659"
 
 echo "9. Testing BiLSTM with Attention"

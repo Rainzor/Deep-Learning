@@ -79,7 +79,7 @@ class CustomRNNClassifier(nn.Module):
 
 
 class RNNClassifier(nn.Module):
-    def __init__(self, config: RNNConfig, pretrained_model=None):
+    def __init__(self, config: RNNConfig, pretrained=None):
         super(RNNClassifier, self).__init__()
 
         self.bidirectional = config.bidirectional
@@ -94,13 +94,14 @@ class RNNClassifier(nn.Module):
         assert self.pooling in ['mean', 'max', 'last','attention'], "Pooling must be either 'mean', 'max', 'last' or 'attention'"
 
         # Embedding layer
-        if pretrained_model is None:
+        if pretrained is None:
             self.embedding = nn.Embedding(config.vocab_size, config.embedding_dim, padding_idx=0)
             self.embedding_dim = config.embedding_dim
         else:
-            pretrained_embedding = pretrained_model.get_input_embeddings().weight
-            self.embedding = nn.Embedding.from_pretrained(pretrained_embedding, freeze=False, padding_idx=0)
-            self.embedding_dim = pretrained_embedding.size(1)
+            self.embedding_dim = pretrained.size(1)
+            self.embedding = nn.Embedding(config.vocab_size, self.embedding_dim, padding_idx=0)
+            self.embedding.weight.data.copy_(pretrained)
+            self.embedding.weight.requires_grad = False
             
 
         # Encoder: Choose between RNN, GRU, and LSTM
@@ -268,6 +269,9 @@ class TransformerClassifier(nn.Module):
             self.pooling = 'cls'
         if self.pooling not in ['cls', 'mean', 'max']:
             raise ValueError(f"Only support 'cls', 'mean' and 'max', got '{config.pool}'")
+        if config.pool == 'cls':
+            self.cls_token = Parameter(torch.randn(config.hidden_dim))
+
         if pretrained_model is None:
             self.embedding = nn.Embedding(config.vocab_size, config.embedding_dim)
             self.embedding_dim = config.embedding_dim
@@ -306,6 +310,9 @@ class TransformerClassifier(nn.Module):
         embedded = self.embedding(input_ids)
         embedded = self.pos_encoder(embedded)
         embedded = self.dropout(embedded)
+        if self.pooling == 'cls':
+            embedded = torch.cat([self.cls_token.expand(embedded.size(0), -1), embedded], dim=1)
+            attention_mask = torch.cat([torch.ones(embedded.size(0), 1).to(embedded.device), attention_mask], dim=1) if attention_mask is not None else None
 
         x = self.proj(embedded.transpose(0, 1)).transpose(0, 1)
 

@@ -84,7 +84,7 @@ class YelpDataset(Dataset):
                 # Tokenize, pad and truncate the text
                 encoding = self.tokenizer(
                     text,
-                    add_special_tokens=True,  # Add [CLS] and [SEP]
+                    add_special_tokens=False,  # Add [CLS] and [SEP]
                     truncation=True,  # Truncate text if it exceeds max_length
                     padding='max_length',  # Pad text to max_length
                     max_length=self.max_length,
@@ -113,7 +113,7 @@ class YelpDataset(Dataset):
             label = self.raw_data[idx].star-1
             encoding = self.tokenizer(
                 text,
-                add_special_tokens=True,
+                add_special_tokens=False,
                 truncation=True,
                 padding='max_length',
                 max_length=self.max_length,
