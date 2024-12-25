@@ -52,6 +52,21 @@ class RNNConfig:
     pool: str = 'last'
     pack: bool = False
 
+
+
+best_config = RNNConfig(
+    name='lstm',
+    embedding_dim=256,
+    hidden_dim=512,
+    output_dim=5,
+    n_layers=2,
+    dropout=0.3,
+    bidirectional=True,
+    pool='last',
+    pack=False
+)
+
+
 @dataclass
 class TransformerConfig(RNNConfig):
     n_heads: int = 8

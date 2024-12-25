@@ -5,46 +5,24 @@ import math
 
 class RNNCell(nn.Module):
     def __init__(self, input_size, hidden_size):
-        super(RNNCell, self).__init__()
-        
-        self.input_size = input_size
+        super().__init__()
         self.hidden_size = hidden_size
-        
-        # Weights for input-to-hidden and hidden-to-hidden connections
-        self.W_ih = nn.Parameter(torch.Tensor(hidden_size, input_size))  # Weight for input to hidden
-        self.W_hh = nn.Parameter(torch.Tensor(hidden_size, hidden_size))  # Weight for hidden to hidden
-        
-        # Bias terms for input-to-hidden and hidden-to-hidden connections
-        self.b_ih = nn.Parameter(torch.Tensor(hidden_size))  # Bias for input to hidden
-        self.b_hh = nn.Parameter(torch.Tensor(hidden_size))  # Bias for hidden to hidden
-        
+        # Combined weight for input and hidden states
+        self.W = nn.Parameter(torch.Tensor(hidden_size, input_size + hidden_size))
+        self.bias = nn.Parameter(torch.Tensor(hidden_size))
         self.reset_parameters()
 
     def reset_parameters(self):
-        """
-        Initialize weights using the same method as PyTorch's RNN.
-        """
         stdv = 1.0 / math.sqrt(self.hidden_size)
-        for weight in self.parameters():
-            nn.init.uniform_(weight, -stdv, stdv)
+        nn.init.uniform_(self.W, -stdv, stdv)
+        nn.init.uniform_(self.bias, -stdv, stdv)
 
     def forward(self, x, h_prev):
-        """
-        Args:
-        - x: Current input at time t (batch_size, input_size)
-        - h_prev: Previous hidden state (batch_size, hidden_size)
-        
-        Returns:
-        - h_next: Current hidden state (batch_size, hidden_size)
-        """
-
-        h_next = torch.tanh(
-            torch.mm(x, self.W_ih.t()) + self.b_ih +
-            torch.mm(h_prev, self.W_hh.t()) + self.b_hh
-            )
-
+        # Concatenate input and previous hidden state
+        combined = torch.cat((x, h_prev), dim=1)
+        # Linear transformation followed by tanh activation
+        h_next = torch.tanh(F.linear(combined, self.W, self.bias))
         return h_next
-
 
 class RNN(nn.Module):
     def __init__(self, input_size, hidden_size, num_layers=1, 

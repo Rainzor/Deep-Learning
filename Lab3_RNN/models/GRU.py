@@ -2,80 +2,40 @@ import torch
 import torch.nn as nn
 from torch.nn import Parameter
 import math
-
 class GRUCell(nn.Module):
     def __init__(self, input_size, hidden_size):
-        """
-        Initialize the GRU cell.
-
-        Args:
-            input_size (int): The number of expected features in the input.
-            hidden_size (int): The number of features in the hidden state.
-        """
-        super(GRUCell, self).__init__()
-        
-        self.input_size = input_size
+        super().__init__()
         self.hidden_size = hidden_size
         
-        # Update gate parameters
-        self.W_iz = nn.Parameter(torch.Tensor(hidden_size, input_size))
-        self.W_hz = nn.Parameter(torch.Tensor(hidden_size, hidden_size))
-        self.b_z = nn.Parameter(torch.Tensor(hidden_size))
-        
-        # Reset gate parameters
-        self.W_ir = nn.Parameter(torch.Tensor(hidden_size, input_size))
-        self.W_hr = nn.Parameter(torch.Tensor(hidden_size, hidden_size))
-        self.b_r = nn.Parameter(torch.Tensor(hidden_size))
-        
-        # New gate parameters
-        self.W_in = nn.Parameter(torch.Tensor(hidden_size, input_size))
-        self.W_hn = nn.Parameter(torch.Tensor(hidden_size, hidden_size))
-        self.b_n = nn.Parameter(torch.Tensor(hidden_size))
+        # Combine weights for update, reset, and new gates
+        self.W_ih = nn.Parameter(torch.Tensor(3 * hidden_size, input_size))
+        self.W_hh = nn.Parameter(torch.Tensor(3 * hidden_size, hidden_size))
+        self.bias = nn.Parameter(torch.Tensor(3 * hidden_size))
         
         self.reset_parameters()
 
     def reset_parameters(self):
-        """
-        Initialize weights and biases using the same method as PyTorch's GRU.
-        """
         stdv = 1.0 / math.sqrt(self.hidden_size)
-        for weight in self.parameters():
-            nn.init.uniform_(weight, -stdv, stdv)
+        nn.init.uniform_(self.W_ih, -stdv, stdv)
+        nn.init.uniform_(self.W_hh, -stdv, stdv)
+        nn.init.uniform_(self.bias, -stdv, stdv)
 
     def forward(self, x, h_prev):
-        """
-        Forward pass for the GRU cell.
-
-        Args:
-            x (Tensor): Current input at time t (batch_size, input_size)
-            h_prev (Tensor): Previous hidden state (batch_size, hidden_size)
+        # Linear transformations
+        gates = F.linear(x, self.W_ih, self.bias) + F.linear(h_prev, self.W_hh)
         
-        Returns:
-            h_next (Tensor): Next hidden state (batch_size, hidden_size)
-        """
-        # Update gate
-        z_t = torch.sigmoid(
-            torch.mm(x, self.W_iz.t()) + self.b_z +
-            torch.mm(h_prev, self.W_hz.t()) + self.b_z
-        )
+        # Split into update, reset, and new gates
+        z_t, r_t, n_t = gates.chunk(3, dim=1)
         
-        # Reset gate
-        r_t = torch.sigmoid(
-            torch.mm(x, self.W_ir.t()) + self.b_r +
-            torch.mm(h_prev, self.W_hr.t()) + self.b_r
-        )
+        # Apply activations
+        z_t = torch.sigmoid(z_t)
+        r_t = torch.sigmoid(r_t)
+        n_t = torch.tanh(n_t + r_t * F.linear(h_prev, self.W_hh, self.bias))  # Adjusted for the new gate
         
-        # New gate
-        n_t = torch.tanh(
-            torch.mm(x, self.W_in.t()) + self.b_n +
-            r_t * (torch.mm(h_prev, self.W_hn.t()) + self.b_n)
-        )
-        
-        # Next hidden state
+        # Compute next hidden state
         h_next = (1 - z_t) * n_t + z_t * h_prev
         
         return h_next
-
 class GRU(nn.Module):
     def __init__(self, input_size, hidden_size, num_layers=1, 
                  batch_first=False, dropout=0.0, bidirectional=False):
