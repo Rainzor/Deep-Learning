@@ -280,7 +280,7 @@ class TransformerClassifier(nn.Module):
             self.embedding.weight.data.copy_(pretrained)
             self.embedding.weight.requires_grad = True
 
-        self.pos_encoder = PositionalEncoding(config.embedding_dim)
+        self.pos_encoder = PositionalEncoding(self.embedding_dim)
         self.dropout = nn.Dropout(config.dropout)
 
         self.proj = nn.Linear(self.embedding_dim, config.hidden_dim)
