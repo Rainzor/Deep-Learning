@@ -297,7 +297,7 @@ for layer in range(self.num_layers):
 
     # Concatenate forward and backward outputs
     if self.bidirectional:
-        layer_output = torch.cat([torch.ct(forward_output, dim=1), 
+        layer_output = torch.cat([torch.cat(forward_output, dim=1), 
                                   torch.cat(backward_output, dim=1)], dim=2)  
         				# (batch_size, seq_len, hidden_size * 2)
     else:
