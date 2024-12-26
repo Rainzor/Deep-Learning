@@ -24,12 +24,21 @@
 - tqdm
 - tensorboard
 - transformer
+- dataclasses
+- lightning
+
+代码文件包含：
+
+- `train.py` ：采用lightning框架训练
+- `dataloader/data.py`：管理和加载数据
+- `model/*` ：包含实验相关的网络架构 `RNN`, `GRU`, `LSTM`, `Transformer`
+- `*/utils.py`：其他的函数
 
 ### 2.1 Dataset
 
-使用 [Yelp2013]([Yelp-Data-Challenge-2013/yelp_challenge/yelp_phoenix_academic_dataset at master · rekiksab/Yelp-Data-Challenge-2013 · GitHub](https://github.com/rekiksab/Yelp-Data-Challenge-2013/tree/master/yelp_challenge/yelp_phoenix_academic_dataset)) 数据集，将 `test.json` 用作测试集，并从 ` `中手动划分训练集和验证集。仅需使用stars评分和text评论内容。本实验采用 `val_ratio=0.05` 比例划分数据。共有约 $220,000$ 条数据。
+使用 [Yelp2013](https://github.com/rekiksab/Yelp-Data-Challenge-2013/tree/master/yelp_challenge/yelp_phoenix_academic_dataset) 数据集，将 `test.json` 用作测试集，并从 ` yelp_academic_dataset_review.json`中手动划分训练集和验证集。仅需使用stars评分和text评论内容。本实验采用 `val_ratio=0.05` 比例划分数据。共有约 $220,000$ 条数据。
 
-**Note**：训练集的前1000个为 `test.json` 的内容，需要手动剔除。
+> **Note**：训练集的前1000个为 `test.json` 的内容，需要手动剔除。
 
 数据字词长度分布如下：
 
@@ -261,36 +270,39 @@ class LSTMCell(nn.Module):
 <img src="assets/image-20241225172031421.png" alt="image-20241225172031421" style="zoom:50%;" />
 
 ```python
-        for layer in range(self.num_layers):
-            # Extract forward and backward cells for the current layer
-            forward_cell = self.cells[layer * self.num_directions + 0]
-            backward_cell = self.cells[layer * self.num_directions + 1] if self.bidirectional else None
-            
-            # Initialize outputs for forward and backward directions
-            forward_output = []
-            backward_output = []
-            
-            # Forward direction
-            h_forward = h_t[layer][0]
-            for t in range(seq_len):
-                input_t = x[:, t, :] if layer == 0 else outputs[:, t, :]
-                h_forward = forward_cell(input_t, h_forward)
-                forward_output.append(h_forward.unsqueeze(1))  # (batch_size, 1, hidden_size)
-            
-            # Backward direction
-            if self.bidirectional:
-                h_backward = h_t[layer][1]
-                for t in reversed(range(seq_len)):
-                    input_t = x[:, t, :] if layer == 0 else outputs[:, t, :]
-                    h_backward = backward_cell(input_t, h_backward)
-                    backward_output.insert(0, h_backward.unsqueeze(1))  # Prepend to maintain order
-            
-            # Concatenate forward and backward outputs
-            if self.bidirectional:
-                layer_output = torch.cat([torch.cat(forward_output, dim=1), 
-                                          torch.cat(backward_output, dim=1)], dim=2)  # (batch_size, seq_len, hidden_size * 2)
-            else:
-                layer_output = torch.cat(forward_output, dim=1)  #  (batch_size, seq_len, hidden_size)
+for layer in range(self.num_layers):
+    # Extract forward and backward cells for the current layer
+    forward_cell = self.cells[layer * self.num_directions + 0]
+    backward_cell = self.cells[layer * self.num_directions + 1] if self.bidirectional else None
+
+    # Initialize outputs for forward and backward directions
+    forward_output = []
+    backward_output = []
+
+    # Forward direction
+    h_forward = h_t[layer][0]
+    for t in range(seq_len):
+        input_t = x[:, t, :] if layer == 0 else outputs[:, t, :]
+        h_forward = forward_cell(input_t, h_forward)
+        forward_output.append(h_forward.unsqueeze(1))  # (batch_size, 1, hidden_size)
+
+    # Backward direction
+    if self.bidirectional:
+        h_backward = h_t[layer][1]
+        for t in reversed(range(seq_len)):
+            input_t = x[:, t, :] if layer == 0 else outputs[:, t, :]
+             # Prepend to maintain order
+            h_backward = backward_cell(input_t, h_backward)
+            backward_output.insert(0, h_backward.unsqueeze(1)) 
+
+    # Concatenate forward and backward outputs
+    if self.bidirectional:
+        layer_output = torch.cat([torch.ct(forward_output, dim=1), 
+                                  torch.cat(backward_output, dim=1)], dim=2)  
+        				# (batch_size, seq_len, hidden_size * 2)
+    else:
+        layer_output = torch.cat(forward_output, dim=1)  
+        				# (batch_size, seq_len, hidden_size)
 ```
 
 #### 2.2.5 Transformer
