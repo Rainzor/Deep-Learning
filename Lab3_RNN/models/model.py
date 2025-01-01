@@ -196,14 +196,14 @@ class RNNClassifier(nn.Module):
         pooled = self.dropout(pooled)  # Shape: [batch_size_sorted, hidden_dim * num_directions]
 
         # Pass through the decoder
-        output = self.decoder(pooled)  # Shape: [batch_size_sorted, output_dim]
+        logits = self.decoder(pooled)  # Shape: [batch_size_sorted, output_dim]
 
         if attention_mask is not None and self.pack:
             # Unsort to the original order
             _, unsort_idx = sorted_idx.sort(0)
-            output = output[unsort_idx]
+            logits = logits[unsort_idx]
 
-        return output
+        return logits
     
     def _pooling(self, output, mask = None):
         """
