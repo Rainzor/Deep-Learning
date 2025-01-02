@@ -3,7 +3,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 import torch_geometric
-from torch_geometric.nn import MessagePassing
 from .GCN import GCNConv
 from .GAT import GATConv
 
@@ -13,8 +12,8 @@ GNN = {
 }
 
 
-class GNNClassifier(nn.Module):
-    def __init__(self, in_channels, hidden_channels, out_channels, gnn_type='gcn', num_layers=2, dropout=0.5, residual=False,  **kwargs):
+class GNNEnocder(nn.Module):
+    def __init__(self, in_channels, hidden_channels, out_channels=None, gnn_type='gcn', num_layers=2, dropout=0.5, residual=False,  **kwargs):
         """
         Initialize a simple GCN model.
 
@@ -23,7 +22,9 @@ class GNNClassifier(nn.Module):
             hidden_channels (int): Number of hidden features.
             out_channels (int): Number of output features.
         """
-        super(GNNClassifier, self).__init__()
+        super(GNNEnocder, self).__init__()
+        if out_channels is None:
+            out_channels = hidden_channels
         self.dropout = dropout
         self.residual = residual
         gnn_type = gnn_type.lower()

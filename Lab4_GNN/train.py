@@ -10,7 +10,7 @@ import time
 import torch_geometric
 from torch_geometric.loader import DataLoader
 
-from models import GNNClassifier
+from models import GNNEnocder
 from utils.utils import *
 from utils.data import GraphDataset
 
@@ -27,16 +27,16 @@ class NodeClassifier(pl.LightningModule):
 
         self.save_hyperparameters()
 
-        self.model = GNNClassifier(
+        self.encoder = GNNEnocder(
                             in_channels=model_config.num_features, 
                             hidden_channels=model_config.hidden_channels, 
-                            out_channels=model_config.num_classes,
+                            out_channels=model_config.hidden_channels,
                             gnn_type=model_config.name,
                             num_layers=model_config.num_layers,
                             dropout=model_config.dropout,
                             residual=model_config.residual)
+        self.decoder = nn.Linear(model_config.hidden_channels, model_config.num_classes)
         self.config = trainer_config
-
 
         if self.config.dataset in ['cora', 'citeseer']:
             self.criterion = nn.CrossEntropyLoss()
@@ -57,11 +57,13 @@ class NodeClassifier(pl.LightningModule):
 
     
     def forward(self, x, edge_index):
-        return self.model(x, edge_index)
+        x = self.encoder(x, edge_index)
+        x = self.decoder(F.relu(x))
+        return x
     
     def training_step(self, batch, batch_idx):
         x, edge_index, y = batch.x, batch.edge_index, batch.y
-        out = self.model(x, edge_index)
+        out = self(x, edge_index)
         if self.config.dataset in ['cora', 'citeseer']:
             loss = self.criterion(out[batch.train_mask], y[batch.train_mask])
             preds = out[batch.train_mask]
@@ -78,7 +80,7 @@ class NodeClassifier(pl.LightningModule):
     
     def validation_step(self, batch, batch_idx):
         x, edge_index, y = batch.x, batch.edge_index, batch.y
-        out = self.model(x, edge_index)
+        out = self(x, edge_index)
         if self.config.dataset in ['cora', 'citeseer']:
             loss = self.criterion(out[batch.val_mask], y[batch.val_mask])
             preds = out[batch.val_mask]
@@ -99,7 +101,7 @@ class NodeClassifier(pl.LightningModule):
     
     def test_step(self, batch, batch_idx):
         x, edge_index, y = batch.x, batch.edge_index, batch.y
-        out = self.model(x, edge_index)
+        out = self(x, edge_index)
         if self.config.dataset in ['cora', 'citeseer']:
             loss = self.criterion(out[batch.test_mask], y[batch.test_mask])
             preds = out[batch.test_mask]
@@ -115,7 +117,10 @@ class NodeClassifier(pl.LightningModule):
         self.log('hp/test_acc', self.test_acc, on_step=False, on_epoch=True, sync_dist=True, batch_size=batch_size)
     
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.config.lr, weight_decay=self.config.weight_decay)
+
+        params = list(self.encoder.parameters()) + list(self.decoder.parameters())
+
+        optimizer = torch.optim.Adam(params, lr=self.config.lr, weight_decay=self.config.weight_decay)
 
         scheduler = None
         if self.config.scheduler:

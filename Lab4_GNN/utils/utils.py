@@ -69,6 +69,8 @@ def parse_args():
                         help='Model name (default: GCN)')
     parser.add_argument('--output_path','-o', type=str, default='outputs',
                         help='Output directory for the logs and checkpoints (default: outputs)')
+    parser.add_argument('--task','-t', type=str, default='node-cls',
+                        help='Task to perform (default: node-cls)', choices=['node-cls', 'link-pred'])
 
     # Model
     parser.add_argument('--hidden-dim','-hd', type=int, default=64,
@@ -85,8 +87,8 @@ def parse_args():
                         help='Number of training epochs (default: 200)')
     parser.add_argument('--batch-size','-b', type=int, default=1,
                         help='Batch size (default: 1)')
-    parser.add_argument('--patience', type=int, default=20,
-                        help='Number of epochs to wait before early stopping (default: 20)')
+    parser.add_argument('--patience', type=int, default=50,
+                        help='Number of epochs to wait before early stopping (default: 50)')
     parser.add_argument('--learning-rate', '-lr',type=float, default=0.01,
                         help='Learning rate (default: 0.01)')
     parser.add_argument('--weight-decay', type=float, default=5e-4,
@@ -118,3 +120,20 @@ def visualize(h, color):
 
     plt.scatter(z[:, 0], z[:, 1], s=70, c=color, cmap="Set2")
     plt.show()
+
+def negative_sample(train_data):
+    # Sample negative edges
+    neg_edge_index = negative_sampling(
+        edge_index=train_data.edge_index, num_nodes=train_data.num_nodes,
+        num_neg_samples=train_data.edge_label_index.size(1), method='sparse')
+
+    edge_label_index = torch.cat(
+        [train_data.edge_label_index, neg_edge_index],
+        dim=-1,
+    )
+    edge_label = torch.cat([
+        train_data.edge_label,
+        train_data.edge_label.new_zeros(neg_edge_index.size(1))
+    ], dim=0)
+
+    return edge_label, edge_label_index
