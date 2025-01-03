@@ -37,7 +37,8 @@ class NodeClassifier(pl.LightningModule):
                             residual=model_config.residual,
                             edge_dropout=model_config.edge_dropout,
                             pairnorm_mode=model_config.pairnorm_mode,
-                            self_loop=model_config.self_loop)
+                            self_loop=model_config.self_loop,
+                            activation=model_config.activation)
         # self.decoder = nn.Linear(model_config.hidden_channels, model_config.num_classes)
         self.config = trainer_config
 
@@ -150,7 +151,8 @@ class LinkPredictor(pl.LightningModule):
                             residual=model_config.residual,
                             edge_dropout=model_config.edge_dropout,
                             pairnorm_mode=model_config.pairnorm_mode,
-                            self_loop=model_config.self_loop)
+                            self_loop=model_config.self_loop,
+                            activation=model_config.activation)
 
         self.config = trainer_config
 
@@ -262,7 +264,8 @@ def main():
         residual=args.residual,
         edge_dropout=args.edge_dropout,
         pairnorm_mode=args.pairnorm_mode,
-        self_loop=args.self_loop
+        self_loop=args.self_loop,
+        activation=args.activation
     )
 
     if args.task == 'node-cls':
