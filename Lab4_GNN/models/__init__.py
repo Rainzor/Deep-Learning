@@ -50,7 +50,8 @@ class GNNEnocder(nn.Module):
                     edge_dropout = 0.0,
                     self_loop = True,
                     pairnorm_mode = None,
-                    residual = False, 
+                    residual = False,
+                    activation = 'gelu',
                     **kwargs):
         """
         Initialize a simple GCN model.
@@ -70,7 +71,7 @@ class GNNEnocder(nn.Module):
         gnn_type = gnn_type.lower()
         assert num_layers >= 2, "Number of layers must be at least 2."
         assert gnn_type in ['gcn', 'gat'], "GNN type must be 'gcn' or 'gat'."
-
+        assert activation in ['gelu', 'relu'], "Activation must be 'gelu' or 'relu'."
         self.conv_layers = nn.ModuleList()
 
         self.conv_layers.append(GNN[gnn_type](in_channels, hidden_channels, self_loops=self_loop))
@@ -90,6 +91,11 @@ class GNNEnocder(nn.Module):
             for _ in range(num_layers - 1):
                 self.pairnorms.append(PairNorm(mode=self.pairnorm_mode))
         self.dropout = nn.Dropout(p=dropout)
+        if activation == 'gelu':
+            self.activation = F.gelu
+        elif activation == 'relu':
+            self.activation = F.relu
+
         self.reset_parameters()
 
     def reset_parameters(self):
@@ -128,7 +134,7 @@ class GNNEnocder(nn.Module):
             if self.residual:
                 x = x + prev_x
                 prev_x = x
-            x = F.gelu(x)
+            x = self.activation(x)
             x = self.dropout(x)
 
         x = self.conv_layers[-1](x, edge_index)
