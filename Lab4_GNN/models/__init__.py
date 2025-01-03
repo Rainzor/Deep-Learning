@@ -123,8 +123,7 @@ class GNNEnocder(nn.Module):
             Tensor: Output features of shape [N, out_channels].
         """
         if self.training and self.edge_dropout > 0:
-            edge_index, _ = torch_geometric.utils.dropout_adj(edge_index, p=self.edge_dropout, training=self.training)
-
+            edge_index, _ = torch_geometric.utils.dropout_edge(edge_index, p=self.edge_dropout, training=self.training)
         prev_x = self.skip_connections(x) if self.skip_connections is not None else x
 
         for i, conv in enumerate(self.conv_layers[:-1]):
