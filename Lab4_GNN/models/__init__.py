@@ -20,6 +20,7 @@ class PairNorm(nn.Module):
             mode (str): normlization mode
         """
         super(PairNorm, self).__init__()
+        mode = mode.upper()
         assert mode in ['PN', 'PN-SI', 'PN-SCS'], "Invalid PairNorm mode."
         self.mode = mode
 

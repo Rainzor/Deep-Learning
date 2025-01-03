@@ -53,6 +53,9 @@ class ModelConfig:
     dropout: float = 0.5
     num_layers: int = 2
     residual: bool = False
+    edge_dropout: float = 0.0
+    pairnorm_mode: str = None
+    self_loop: bool = False
 
 def parse_args():
     """
@@ -83,6 +86,13 @@ def parse_args():
                         help='Number of layers (default: 2)')
     parser.add_argument('--residual','-res', action='store_true',
                         help='Use residual connection')
+    parser.add_argument('--edge-dropout','-ed', type=float, default=0.0,
+                        help='Edge dropout rate (default: 0.0)')
+    parser.add_argument('--pairnorm-mode','-pn', type=str, default=None,
+                        help='PairNorm mode (default: None)')
+    parser.add_argument('--self-loop', '-sl', type=bool, default=True,
+                        help='Add self-loop to the adjacency matrix (default: True)')
+
 
     # Trainer
     parser.add_argument('--epochs','-n', type=int, default=200,
