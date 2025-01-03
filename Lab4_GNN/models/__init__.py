@@ -13,7 +13,7 @@ GNN = {
 
 
 class GNNEnocder(nn.Module):
-    def __init__(self, in_channels, hidden_channels, out_channels=None, gnn_type='gcn', num_layers=2, dropout=0.5, residual=False,  **kwargs):
+    def __init__(self, in_channels, hidden_channels, out_channels=None, gnn_type='gcn', num_layers=2, dropout=0.5, residual=False, **kwargs):
         """
         Initialize a simple GCN model.
 
@@ -32,10 +32,12 @@ class GNNEnocder(nn.Module):
         assert gnn_type in ['gcn', 'gat'], "GNN type must be 'gcn' or 'gat'."
 
         self.conv_layers = nn.ModuleList()
-        self.skip_layers = nn.ModuleList()
 
         self.conv_layers.append(GNN[gnn_type](in_channels, hidden_channels))
-        self.skip_connections = nn.Linear(in_channels, hidden_channels) if in_channels != hidden_channels else None
+        if in_channels != hidden_channels and residual:
+            self.skip_connections = nn.Linear(in_channels, hidden_channels) 
+        else: 
+            self.skip_connections = None
 
         for _ in range(num_layers - 2):
             self.conv_layers.append(GNN[gnn_type](hidden_channels, hidden_channels))

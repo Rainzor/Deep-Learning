@@ -30,12 +30,12 @@ class NodeClassifier(pl.LightningModule):
         self.encoder = GNNEnocder(
                             in_channels=model_config.num_features, 
                             hidden_channels=model_config.hidden_channels, 
-                            out_channels=model_config.hidden_channels,
+                            out_channels=model_config.num_classes,
                             gnn_type=model_config.name,
                             num_layers=model_config.num_layers,
                             dropout=model_config.dropout,
                             residual=model_config.residual)
-        self.decoder = nn.Linear(model_config.hidden_channels, model_config.num_classes)
+        # self.decoder = nn.Linear(model_config.hidden_channels, model_config.num_classes)
         self.config = trainer_config
 
         if self.config.dataset in ['cora', 'citeseer']:
@@ -55,7 +55,7 @@ class NodeClassifier(pl.LightningModule):
     
     def forward(self, x, edge_index):
         x = self.encoder(x, edge_index)
-        x = self.decoder(F.relu(x))
+        # x = self.decoder(F.relu(x))
         return x
     
     def training_step(self, batch, batch_idx):
@@ -110,8 +110,8 @@ class NodeClassifier(pl.LightningModule):
     
     def configure_optimizers(self):
 
-        params = list(self.encoder.parameters()) + list(self.decoder.parameters())
-
+        # params = list(self.encoder.parameters()) + list(self.decoder.parameters())
+        params = self.encoder.parameters()
         optimizer = torch.optim.Adam(params, lr=self.config.lr, weight_decay=self.config.weight_decay)
 
         scheduler = None
