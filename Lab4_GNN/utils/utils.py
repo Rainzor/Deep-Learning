@@ -93,11 +93,11 @@ def parse_args():
                         help='Number of epochs to wait before early stopping (default: 50)')
     parser.add_argument('--learning-rate', '-lr',type=float, default=0.01,
                         help='Learning rate (default: 0.01)')
-    parser.add_argument('--weight-decay', type=float, default=5e-4,
+    parser.add_argument('--weight-decay', '-wd', type=float, default=5e-4,
                         help='L2 regularization weight (default: 5e-4)')
     parser.add_argument('--scheduler', type=str, default=None,
                         help='Learning rate scheduler (default: None)')     
-    parser.add_argument('--warmup-steps', type=int, default=0,
+    parser.add_argument('--warmup-steps','-ws', type=int, default=0,
                         help='Number of warm-up steps for the learning rate scheduler (default: 0)')
 
     # Misc
