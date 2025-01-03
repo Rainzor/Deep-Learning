@@ -34,7 +34,7 @@ class GraphDataset:
                                     num_val=0.05, 
                                     num_test=0.1, is_undirected=True, add_negative_train_samples=False)]
                                 )
-
+        print(f"Loading dataset {dataset_name}...")
         self.load_dataset()
 
     def load_dataset(self):
@@ -57,7 +57,8 @@ class GraphDataset:
 
         print(f"Loaded {dataset_name_cap} dataset:")
         self.dataset = Planetoid(root=self.root, name=dataset_name_cap, transform=self.transform)
-        
+        self.num_features = self.dataset.num_node_features
+
         # Set attributes
         sample_data = self.dataset[0]
         if self.task == 'link-pred':
@@ -67,15 +68,16 @@ class GraphDataset:
             self.train_dataset = [self.train_dataset]
             self.val_dataset = [self.val_dataset]
             self.test_dataset = [self.test_dataset]
+            self.num_classes = 2 # binary classification
         else:
             self.train_dataset = self.dataset
             self.val_dataset = self.dataset
             self.test_dataset = self.dataset
 
-            self.num_features = self.dataset.num_node_features
             self.num_classes = self.dataset.num_classes
-            print(f" - Number of features: {self.num_features}")
-            print(f" - Number of classes: {self.num_classes}")
+
+        print(f" - Number of features: {self.num_features}")
+        print(f" - Number of classes: {self.num_classes}")
 
         print(f" - Number of training nodes: {sample_data.train_mask.sum()}")
         print(f" - Number of validation nodes: {sample_data.val_mask.sum()}")
@@ -93,6 +95,7 @@ class GraphDataset:
         self.train_dataset = PPI(root=dir_path, split='train', transform=self.transform)
         self.val_dataset = PPI(root=dir_path, split='val', transform=self.transform)
         self.test_dataset = PPI(root=dir_path, split='test', transform=self.transform)
+        self.num_features = self.train_dataset.num_features
 
         if self.task == 'link-pred':
             train_dataset = []
@@ -117,12 +120,13 @@ class GraphDataset:
             self.train_dataset = train_dataset
             self.val_dataset = val_dataset
             self.test_dataset = test_dataset
+            self.num_classes = 2
 
         else:
-            self.num_features = self.train_dataset.num_features
             self.num_classes = self.train_dataset.num_classes
-            print(f'Number of features: {self.train_dataset.num_features}')
-            print(f'Number of classes: {self.train_dataset.num_classes}')
+        
+        print(f'Number of features: {self.num_features}')
+        print(f'Number of classes: {self.num_classes}')
 
         data = self.train_dataset[0]
 

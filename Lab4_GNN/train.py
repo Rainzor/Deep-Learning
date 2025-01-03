@@ -40,8 +40,6 @@ class NodeClassifier(pl.LightningModule):
 
         if self.config.dataset in ['cora', 'citeseer']:
             self.criterion = nn.CrossEntropyLoss()
-            
-            self.train_acc = torchmetrics.Accuracy(task='multiclass', num_classes=model_config.num_classes)
 
             self.val_acc = torchmetrics.Accuracy(task='multiclass', num_classes=model_config.num_classes)
 
@@ -49,7 +47,6 @@ class NodeClassifier(pl.LightningModule):
         else:
             self.criterion = nn.BCEWithLogitsLoss()
 
-            self.train_acc = torchmetrics.Accuracy(task='multilabel', num_labels=model_config.num_classes)
 
             self.val_acc = torchmetrics.Accuracy(task='multilabel', num_labels=model_config.num_classes)
 
@@ -72,28 +69,24 @@ class NodeClassifier(pl.LightningModule):
             loss = self.criterion(out, y)
             preds = out
             targets = y
-        self.train_acc(preds, targets)
+
         batch_size = preds.size(0)
         self.log('train/loss', loss, on_step=False, on_epoch=True, prog_bar=True, batch_size=batch_size)
-        self.log('train/acc', self.train_acc, on_step=False, on_epoch=True, prog_bar=True, batch_size=batch_size)
         return loss
     
     def validation_step(self, batch, batch_idx):
         x, edge_index, y = batch.x, batch.edge_index, batch.y
         out = self(x, edge_index)
         if self.config.dataset in ['cora', 'citeseer']:
-            loss = self.criterion(out[batch.val_mask], y[batch.val_mask])
             preds = out[batch.val_mask]
             targets = y[batch.val_mask]
         else:
-            loss = self.criterion(out, y)
             preds = out
             targets = y
         self.val_acc(preds, targets)
         batch_size = preds.size(0)
-        self.log('val/loss', loss, on_step=False, on_epoch=True, batch_size=batch_size)
-        self.log('val/acc', self.val_acc, on_step=False, on_epoch=True, batch_size=batch_size)
-        return loss
+
+        self.log('val/acc', self.val_acc, on_step=False, on_epoch=True, prog_bar=True, batch_size=batch_size)
 
     def on_train_start(self):
         self.print("Start training...")
@@ -103,17 +96,16 @@ class NodeClassifier(pl.LightningModule):
         x, edge_index, y = batch.x, batch.edge_index, batch.y
         out = self(x, edge_index)
         if self.config.dataset in ['cora', 'citeseer']:
-            loss = self.criterion(out[batch.test_mask], y[batch.test_mask])
+
             preds = out[batch.test_mask]
             targets = y[batch.test_mask]
         else:
-            loss = self.criterion(out, y)
             preds = out
             targets = y
 
         self.test_acc(preds, targets)
         batch_size = preds.size(0)
-        self.log('hp/test_loss', loss, on_step=False, on_epoch=True, sync_dist=True, batch_size=batch_size)
+
         self.log('hp/test_acc', self.test_acc, on_step=False, on_epoch=True, sync_dist=True, batch_size=batch_size)
     
     def configure_optimizers(self):
@@ -138,11 +130,101 @@ class NodeClassifier(pl.LightningModule):
         else:
             return optimizer
 
+
+class LinkPredictor(pl.LightningModule):
+    def __init__(self, model_config, trainer_config):
+        super(LinkPredictor, self).__init__()
+
+        self.save_hyperparameters()
+
+        self.encoder = GNNEnocder(
+                            in_channels=model_config.num_features, 
+                            hidden_channels=model_config.hidden_channels, 
+                            out_channels=model_config.hidden_channels//2,
+                            gnn_type=model_config.name,
+                            num_layers=model_config.num_layers,
+                            dropout=model_config.dropout,
+                            residual=model_config.residual)
+
+        self.config = trainer_config
+
+        self.criterion = nn.BCEWithLogitsLoss()
+
+        self.val_acc = torchmetrics.Accuracy(task='binary')
+
+        self.test_acc = torchmetrics.Accuracy(task='binary')
+    
+    def decoder(self, z, edge_index):
+        return (z[edge_index[0]] * z[edge_index[1]]).sum(dim=-1)
+    
+    def forward(self, x, edge_index, edge_label_index):
+        z = self.encoder(x, edge_index)
+        out = self.decoder(z, edge_label_index)
+        return out
+    
+    def training_step(self, batch, batch_idx):
+        x = batch.x
+        edge_index = batch.edge_index
+        edge_label, edge_label_index = negative_sample(batch)
+        logits = self(x, edge_index, edge_label_index)
+        loss = self.criterion(logits, edge_label)
+
+        batch_size = logits.size(0)
+        self.log('train/loss', loss, on_step=False, on_epoch=True, prog_bar=True, batch_size=batch_size)
+        return loss
+    
+    def validation_step(self, batch, batch_idx):
+        x = batch.x
+        edge_index = batch.edge_index
+        edge_label_index = batch.edge_label_index
+        logits = self(x, edge_index, edge_label_index)
+        preds = torch.sigmoid(logits)
+
+        self.val_acc(preds, batch.edge_label)
+        batch_size = preds.size(0)
+        self.log('val/acc', self.val_acc, on_step=False, on_epoch=True,prog_bar=True, batch_size=batch_size)
+
+
+    def on_train_start(self):
+        self.print("Start training...")
+        self.logger.log_hyperparams(self.hparams, {"hp/test_acc": 0})
+    
+    def test_step(self, batch, batch_idx):
+        x = batch.x
+        edge_index = batch.edge_index
+        edge_label_index = batch.edge_label_index
+        logits = self(x, edge_index, edge_label_index)
+        preds = torch.sigmoid(logits)
+
+        self.test_acc(preds, batch.edge_label)
+        batch_size = preds.size(0)
+        self.log('hp/test_acc', self.test_acc, on_step=False, on_epoch=True, sync_dist=True, batch_size=batch_size)
+    
+    def configure_optimizers(self):
+
+        optimizer = torch.optim.Adam(self.encoder.parameters(), lr=self.config.lr, weight_decay=self.config.weight_decay)
+
+        scheduler = None
+        if self.config.scheduler:
+            assert self.config.num_training_steps > 0, "num_training_steps must be specified for LR scheduler"
+            scheduler = get_scheduler(
+                self.config.scheduler,
+                optimizer,
+                num_warmup_steps=self.config.num_warmup_steps,
+                num_training_steps=self.config.num_training_steps,
+            )
+
+        if scheduler:
+            scheduler_config = {"scheduler": scheduler, "interval": "step"}
+            return [optimizer], [scheduler_config]
+        else:
+            return optimizer            
+
 def main():
     args = parse_args()
     pl.seed_everything(args.seed)
 
-    graph_dataset = GraphDataset(dataset_name=args.dataset, root=args.root)
+    graph_dataset = GraphDataset(dataset_name=args.dataset, root=args.root, task=args.task)
 
     datasets = graph_dataset.get_datasets()
 
@@ -154,6 +236,7 @@ def main():
     
     train_config = TrainerConfig(
         dataset=args.dataset,
+        task=args.task,
         epochs=args.epochs,
         lr=args.learning_rate,
         weight_decay=args.weight_decay,
@@ -164,7 +247,7 @@ def main():
     )
 
     model_config = ModelConfig(
-        name=args.model,
+        name=args.model.lower(),
         num_features=graph_dataset.num_features,
         num_classes=graph_dataset.num_classes,
         hidden_channels=args.hidden_dim,
@@ -173,16 +256,22 @@ def main():
         residual=args.residual
     )
 
-    model = NodeClassifier(model_config, train_config)
+    if args.task == 'node-cls':
+        model = NodeClassifier(model_config, train_config)
+    elif args.task == 'link-pred':
+        model = LinkPredictor(model_config, train_config)
+    else:
+        raise ValueError(f"Task {args.task} not supported.")
+        
     print(train_config)
     print(model_config)
 
-    timenow = time.strftime("%Y%m%d-%H-%M")
+    timenow = time.strftime("%Y-%m%d-%H%M")
     if args.tag:
-        output_dir = os.path.join(args.output_path, args.dataset, 
+        output_dir = os.path.join(args.output_path, args.task, args.dataset, 
         f"{model_config.name}-{args.tag}")
     else:
-        output_dir = os.path.join(args.output_path, args.dataset, model_config.name)
+        output_dir = os.path.join(args.output_path, args.task, args.dataset, model_config.name)
     
     os.makedirs(output_dir, exist_ok=True)
     logger = pl.loggers.TensorBoardLogger(output_dir, 
@@ -222,7 +311,14 @@ def main():
 
     best_checkpoint = checkpoint_callback.best_model_path
     print(f"Best checkpoint: {best_checkpoint}")
-    checkpoint_model = NodeClassifier.load_from_checkpoint(
+    if args.task == 'node-cls':
+        checkpoint_model = NodeClassifier.load_from_checkpoint(
+                                    best_checkpoint,
+                                    model_config=model_config,
+                                    trainer_config=train_config
+                                )
+    elif args.task == 'link-pred':
+        checkpoint_model = LinkPredictor.load_from_checkpoint(
                                     best_checkpoint,
                                     model_config=model_config,
                                     trainer_config=train_config

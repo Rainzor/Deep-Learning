@@ -3,6 +3,7 @@ from dataclasses import dataclass
 import argparse
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
+from torch_geometric.utils import negative_sampling
 
 
 def accuracy(output: torch.Tensor, labels: torch.Tensor) -> float:
@@ -27,6 +28,7 @@ class TrainerConfig:
     Configuration class for the trainer.
     """
     dataset: str = 'cora'
+    task: str = 'node-cls'
     epochs: int = 1000
     lr: float = 0.01
     weight_decay: float = 5e-4
