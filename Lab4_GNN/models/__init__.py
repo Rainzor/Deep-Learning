@@ -11,9 +11,46 @@ GNN = {
     'gat': GATConv
 }
 
+class PairNorm(nn.Module):
+    def __init__(self, mode='PN'):
+        """
+        PairNorm 
+
+        Args:
+            mode (str): normlization mode
+        """
+        super(PairNorm, self).__init__()
+        assert mode in ['PN', 'PN-SI', 'PN-SCS'], "Invalid PairNorm mode."
+        self.mode = mode
+
+    def forward(self, x):
+        if self.mode == 'PN':
+            # L2 Norm
+            norm = torch.norm(x, p=2, dim=1, keepdim=True) + 1e-8
+            x = x / norm
+        elif self.mode == 'PN-SI':
+            # Scale-Invariant PairNorm
+            mean = x.mean(dim=0, keepdim=True)
+            x = x - mean
+            norm = torch.norm(x, p=2, dim=1, keepdim=True) + 1e-8
+            x = x / norm
+        elif self.mode == 'PN-SCS':
+            # Scale and Center Scale PairNorm
+            mean = x.mean(dim=0, keepdim=True)
+            x = x - mean
+            std = x.std(dim=0, keepdim=True) + 1e-8
+            x = x / std
+        return x
 
 class GNNEnocder(nn.Module):
-    def __init__(self, in_channels, hidden_channels, out_channels=None, gnn_type='gcn', num_layers=2, dropout=0.5, residual=False, **kwargs):
+    def __init__(self, in_channels, hidden_channels, out_channels=None, gnn_type='gcn', 
+                    num_layers=2, 
+                    dropout=0.5, 
+                    edge_dropout = 0.0,
+                    self_loop = True,
+                    pairnorm_mode = None,
+                    residual = False, 
+                    **kwargs):
         """
         Initialize a simple GCN model.
 
@@ -26,6 +63,8 @@ class GNNEnocder(nn.Module):
         if out_channels is None:
             out_channels = hidden_channels
         self.dropout = dropout
+        self.edge_dropout = edge_dropout
+        self.pairnorm_mode = pairnorm_mode
         self.residual = residual
         gnn_type = gnn_type.lower()
         assert num_layers >= 2, "Number of layers must be at least 2."
@@ -44,6 +83,12 @@ class GNNEnocder(nn.Module):
         
         self.conv_layers.append(GNN[gnn_type](hidden_channels, out_channels))
 
+        self.pairnorms = None
+        if pairnorm_mode:
+            self.pairnorms = nn.ModuleList()
+            for _ in range(num_layers - 1):
+                self.pairnorms.append(PairNorm(mode=self.pairnorm_mode))
+        self.dropout = nn.Dropout(p=dropout)
         self.reset_parameters()
 
     def reset_parameters(self):
@@ -70,12 +115,20 @@ class GNNEnocder(nn.Module):
         Returns:
             Tensor: Output features of shape [N, out_channels].
         """
+        if self.training and self.edge_dropout > 0:
+            edge_index, _ = torch_geometric.utils.dropout_adj(edge_index, p=self.edge_dropout, training=self.training)
+
         prev_x = self.skip_connections(x) if self.skip_connections is not None else x
-        for i, conv in enumerate(self.conv_layers):
-            if i > 0:
-                if self.residual:
-                    x = x + prev_x
-                    prev_x = x
-                x = F.dropout(F.gelu(x), p=self.dropout, training=self.training)
+
+        for i, conv in enumerate(self.conv_layers[:-1]):
             x = conv(x, edge_index)
+            if self.pairnorms:
+                x = self.pairnorms[i](x)
+            if self.residual:
+                x = x + prev_x
+                prev_x = x
+            x = F.relu(x)
+            x = self.dropout(x)
+
+        x = self.conv_layers[-1](x, edge_index)
         return x
