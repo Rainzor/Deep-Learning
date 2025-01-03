@@ -94,7 +94,7 @@ class NodeClassifier(pl.LightningModule):
 
     def on_train_start(self):
         self.print("Start training...")
-        self.logger.log_hyperparams(self.hparams, { "hp/test_loss": 0, "hp/test_acc": 0})
+        self.logger.log_hyperparams(self.hparams, { "hp/test_acc": 0})
     
     def test_step(self, batch, batch_idx):
         x, edge_index, y = batch.x, batch.edge_index, batch.y
