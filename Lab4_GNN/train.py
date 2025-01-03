@@ -288,10 +288,10 @@ def main():
         # verbose=True,
         save_last=True
     )
-
+    patience = args.patience if args.patience>0 else args.epochs
     early_stopping = EarlyStopping(
         monitor='val/acc',
-        patience=args.patience,
+        patience=patience,
         mode='max',
         divergence_threshold=0.05,
         # verbose=True  # Print when early stopping happens
