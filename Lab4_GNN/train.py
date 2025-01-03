@@ -288,7 +288,8 @@ def main():
     os.makedirs(output_dir, exist_ok=True)
     logger = pl.loggers.TensorBoardLogger(output_dir, 
                             name=timenow,
-                            version='')
+                            version='',
+                            default_hp_metric=False)
     checkpoint_dir = os.path.join(output_dir, timenow, 'checkpoints')
     checkpoint_callback = ModelCheckpoint(
         monitor='val/acc',
