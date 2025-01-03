@@ -15,7 +15,7 @@ done
 echo "=== Node Classification ==="
 
 # Cora Node Classification: 0.810
-train.py -r /data2/wrz/Datasets/ --dataset cora --task node-cls -lr 0.01 -n 200 --patience 50 --hidden-dim 128 -nl 2
+python train.py -r /data2/wrz/Datasets/ --dataset cora --task node-cls -lr 0.01 -n 200 --patience 50 --hidden-dim 128 -nl 2
 
 # Citeseer Node Classification: 0.7230
 python train.py -r /data2/wrz/Datasets/ --dataset citeseer --task node-cls -lr 0.01 -n 200 --patience 50 --hidden-dim 128 -nl 2
@@ -24,11 +24,11 @@ python train.py -r /data2/wrz/Datasets/ --dataset citeseer --task node-cls -lr 0
 python train.py -r /data2/wrz/Datasets/ --dataset ppi --task node-cls -lr 0.02 -n 200 --patience 100 --hidden-dim 64 -nl 2
 
 echo "=== Link Prediction ==="
-# Cora Link Prediction: 0.697
-python train.py -r $root --dataset cora --task link-pred -lr 0.03 -n 200 -ws 10 --patience 100 --scheduler cosine --hidden-dim 256 -nl 3
+# Cora Link Prediction: 0.6973
+python train.py -r $root --dataset cora --task link-pred -lr 0.01 -n 200 -ws 10 --patience -1 --scheduler cosine --hidden-dim 128 -nl 2
 
-# Citeseer Link Prediction: 0.713
-python train.py -r $root --dataset citeseer --task link-pred -lr 0.03 -n 200 -ws 10 --patience 100 --scheduler cosine --hidden-dim 512 -nl 3
+# Citeseer Link Prediction: 0.7077
+python train.py -r $root --dataset citeseer --task link-pred -lr 0.01 -n 200 -ws 10 --patience -1 --scheduler cosine --hidden-dim 128 -nl 2
 
-# PPI Link Prediction:  0.699
-python train.py -r $root --dataset ppi --task link-pred -lr 0.03 -n 200 -ws 10 --patience 100 --scheduler cosine --hidden-dim 512 -nl 3
+# PPI Link Prediction:  0.6598
+python train.py -r $root --dataset ppi --task link-pred -lr 0.02 -n 200 -ws 10 --patience -1 --scheduler cosine --hidden-dim 256 -nl 3
