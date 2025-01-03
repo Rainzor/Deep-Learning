@@ -72,7 +72,7 @@ class GNNEnocder(nn.Module):
 
         self.conv_layers = nn.ModuleList()
 
-        self.conv_layers.append(GNN[gnn_type](hidden_channels, hidden_channels, self_loops=self_loop))
+        self.conv_layers.append(GNN[gnn_type](in_channels, hidden_channels, self_loops=self_loop))
         if in_channels != hidden_channels and residual:
             self.skip_connections = nn.Linear(in_channels, hidden_channels) 
         else: 
@@ -81,7 +81,7 @@ class GNNEnocder(nn.Module):
         for _ in range(num_layers - 2):
             self.conv_layers.append(GNN[gnn_type](hidden_channels, hidden_channels, self_loops=self_loop))
         
-        self.conv_layers.append(GNN[gnn_type](hidden_channels, hidden_channels, self_loops=self_loop))
+        self.conv_layers.append(GNN[gnn_type](hidden_channels, out_channels, self_loops=self_loop))
 
         self.pairnorms = None
         if pairnorm_mode:
