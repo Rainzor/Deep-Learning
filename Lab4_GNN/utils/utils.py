@@ -91,8 +91,8 @@ def parse_args():
                         help='Edge dropout rate (default: 0.0)')
     parser.add_argument('--pairnorm-mode','-pn', type=str, default=None,
                         help='PairNorm mode (default: None)')
-    parser.add_argument('--self-loop', '-sl', type=bool, default=True,
-                        help='Add self-loop to the adjacency matrix (default: True)')
+    parser.add_argument('--self-loop', '-sl', action='store_false',
+                        help='Add self-loop to the adjacency matrix')
     parser.add_argument('--activation', type=str, default='gelu',
                         help='Activation function (default: gelu)')
 
