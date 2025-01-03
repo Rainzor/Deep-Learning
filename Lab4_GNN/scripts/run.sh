@@ -14,8 +14,14 @@ done
 
 echo "=== Node Classification ==="
 
-# PPi Node Classification: 0.7489
-python train.py -r /data2/wrz/Datasets/ --dataset ppi --task node-cls -lr 0.01 -n 200 --patience 100 --hidden-dim 64 -nl 2
+# Cora Node Classification: 0.810
+train.py -r /data2/wrz/Datasets/ --dataset cora --task node-cls -lr 0.01 -n 200 --patience 50 --hidden-dim 128 -nl 2
+
+# Citeseer Node Classification: 0.7230
+python train.py -r /data2/wrz/Datasets/ --dataset citeseer --task node-cls -lr 0.01 -n 200 --patience 50 --hidden-dim 128 -nl 2
+
+# PPi Node Classification: 0.7438
+python train.py -r /data2/wrz/Datasets/ --dataset ppi --task node-cls -lr 0.02 -n 200 --patience 100 --hidden-dim 64 -nl 2
 
 echo "=== Link Prediction ==="
 # Cora Link Prediction: 0.697
