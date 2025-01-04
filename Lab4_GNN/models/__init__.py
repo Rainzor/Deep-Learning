@@ -25,22 +25,26 @@ class PairNorm(nn.Module):
         self.mode = mode
 
     def forward(self, x):
+        """
+        Args:
+            x (Tensor): Input tensor of shape [N, F].
+        """
+
+        mean = x.mean(dim=0, keepdim=True) # [1, F] 
         if self.mode == 'PN':
             # L2 Norm
-            norm = torch.norm(x, p=2, dim=1, keepdim=True) + 1e-8
-            x = x / norm
+            x = x - mean # [N, F]
+            rownorm_mean = ((x*x).sum(dim=1).mean()).sqrt() + 1e-8 # [N]
+            x = x / rownorm_mean
         elif self.mode == 'PN-SI':
             # Scale-Invariant PairNorm
-            mean = x.mean(dim=0, keepdim=True)
             x = x - mean
-            norm = torch.norm(x, p=2, dim=1, keepdim=True) + 1e-8
-            x = x / norm
+            rownorm_individual = torch.norm(x, p=2, dim=1, keepdim=True) + 1e-8 # [N, 1]
+            x = x / rownorm_individual
         elif self.mode == 'PN-SCS':
             # Scale and Center Scale PairNorm
-            mean = x.mean(dim=0, keepdim=True)
-            x = x - mean
-            std = x.std(dim=0, keepdim=True) + 1e-8
-            x = x / std
+            rownorm_individual = torch.norm(x, p=2, dim=1, keepdim=True) + 1e-8 # [N, 1]
+            x = x / rownorm_individual - mean
         return x
 
 class GNNEnocder(nn.Module):
