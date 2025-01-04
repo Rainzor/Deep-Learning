@@ -44,6 +44,7 @@ class GATConv(MessagePassing):
         add_self_loops: bool = True,
         bias: bool = True,
         residual: bool = False,
+        self_loop: bool = False,
         **kwargs,
     ):
         kwargs.setdefault('aggr', 'add')
