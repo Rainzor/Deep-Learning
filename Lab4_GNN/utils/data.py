@@ -27,7 +27,7 @@ class GraphDataset:
         self.task = task
         if task == 'node-cls':
             self.transform = T.NormalizeFeatures()
-        else:
+        elif task == 'link-pred':
             self.transform = T.Compose([
                                 T.NormalizeFeatures(),
                                 T.RandomLinkSplit(

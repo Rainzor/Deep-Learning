@@ -161,7 +161,11 @@ class LinkPredictor(pl.LightningModule):
         self.test_acc = torchmetrics.Accuracy(task='binary')
     
     def decoder(self, z, edge_index):
-        return (z[edge_index[0]] * z[edge_index[1]]).sum(dim=-1)
+        norm1 = torch.norm(z[edge_index[0]], dim=-1, keepdim=True)
+        norm2 = torch.norm(z[edge_index[1]], dim=-1, keepdim=True)
+        norm = norm1 * norm2
+        cos = (z[edge_index[0]] * z[edge_index[1]]).sum(dim=-1) / (norm + 1e-8)
+        return cos
     
     def forward(self, x, edge_index, edge_label_index):
         z = self.encoder(x, edge_index)
