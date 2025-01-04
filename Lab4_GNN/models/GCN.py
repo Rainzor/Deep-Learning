@@ -5,7 +5,7 @@ from torch_geometric.nn import MessagePassing
 import torch_geometric.utils as utils
 
 class GCNConv(MessagePassing):
-    def __init__(self, in_channels, out_channels, self_loops=True):
+    def __init__(self, in_channels, out_channels, self_loop=True):
         """
         Initialize the GCN convolution layer.
 
@@ -16,7 +16,7 @@ class GCNConv(MessagePassing):
         # Initialize the MessagePassing class with 'add' aggregation
         super(GCNConv, self).__init__(aggr='add')
 
-        self.self_loops = self_loops
+        self.self_loop = self_loop
 
         # Define a linear transformation (weight matrix)
         self.linear = nn.Linear(in_channels, out_channels, bias=True)
@@ -35,7 +35,7 @@ class GCNConv(MessagePassing):
             Tensor: Output node features of shape [N, out_channels].
         """
         # Add self-loops to the adjacency matrix
-        if self.self_loops:
+        if self.self_loop:
             edge_index, _ = utils.add_self_loops(edge_index, num_nodes=x.size(0))
 
         # Compute normalization coefficients
