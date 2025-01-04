@@ -54,7 +54,7 @@ class GNNEnocder(nn.Module):
                     edge_dropout = 0.0,
                     self_loop = True,
                     pairnorm_mode = None,
-                    residual = False,
+                    # residual = False,
                     activation = 'gelu',
                     **kwargs):
         """
@@ -71,7 +71,7 @@ class GNNEnocder(nn.Module):
         self.dropout = dropout
         self.edge_dropout = edge_dropout
         self.pairnorm_mode = pairnorm_mode
-        self.residual = residual
+        # self.residual = residual
         gnn_type = gnn_type.lower()
         assert num_layers >= 2, "Number of layers must be at least 2."
         assert gnn_type in ['gcn', 'gat'], "GNN type must be 'gcn' or 'gat'."
@@ -79,10 +79,10 @@ class GNNEnocder(nn.Module):
         self.conv_layers = nn.ModuleList()
 
         self.conv_layers.append(GNN[gnn_type](in_channels, hidden_channels, self_loop=self_loop))
-        if in_channels != hidden_channels and residual:
-            self.skip_connections = nn.Linear(in_channels, hidden_channels) 
-        else: 
-            self.skip_connections = None
+        # if in_channels != hidden_channels and residual:
+        #     self.skip_connections = nn.Linear(in_channels, hidden_channels) 
+        # else: 
+        #     self.skip_connections = None
 
         for _ in range(num_layers - 2):
             self.conv_layers.append(GNN[gnn_type](hidden_channels, hidden_channels, self_loop=self_loop))
@@ -106,10 +106,6 @@ class GNNEnocder(nn.Module):
         """
         Reinitialize model parameters.
         """
-        if self.skip_connections is not None:
-            nn.init.xavier_uniform_(self.skip_connections.weight)
-            nn.init.zeros_(self.skip_connections.bias)
-
         for layer in self.conv_layers:
             layer.reset_parameters()
         
@@ -128,15 +124,15 @@ class GNNEnocder(nn.Module):
         """
         if self.training and self.edge_dropout > 0:
             edge_index, _ = torch_geometric.utils.dropout_edge(edge_index, p=self.edge_dropout, training=self.training)
-        prev_x = self.skip_connections(x) if self.skip_connections is not None else x
+        # prev_x = self.skip_connections(x) if self.skip_connections is not None else x
 
         for i, conv in enumerate(self.conv_layers[:-1]):
             x = conv(x, edge_index)
             if self.pairnorms:
                 x = self.pairnorms[i](x)
-            if self.residual:
-                x = x + prev_x
-                prev_x = x
+            # if self.residual:
+            #     x = x + prev_x
+            #     prev_x = x
             x = self.activation(x)
             x = self.dropout(x)
 

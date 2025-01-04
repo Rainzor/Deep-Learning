@@ -41,10 +41,9 @@ class GATConv(MessagePassing):
         concat: bool = True,
         negative_slope: float = 0.2,
         dropout: float = 0.0,
-        add_self_loops: bool = True,
+        self_loop: bool = True,
         bias: bool = True,
         residual: bool = False,
-        self_loop: bool = False,
         **kwargs,
     ):
         kwargs.setdefault('aggr', 'add')
@@ -56,7 +55,7 @@ class GATConv(MessagePassing):
         self.concat = concat
         self.negative_slope = negative_slope
         self.dropout = dropout
-        self.add_self_loops = add_self_loops
+        self.add_self_loops = self_loop
         self.residual = residual
 
         # In case we are operating in bipartite graphs, apply separate transformations:
