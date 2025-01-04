@@ -35,7 +35,7 @@
 - `PairNorm` ：对每层GNN的节点特征进行归一化处理
 - `activation`：`relu`、`gelu`
 
-## 2. GNN
+## 2. Graph Neural Network
 
 ### 2.1 GNN
 
@@ -306,4 +306,33 @@ Data(x=[2708, 1433], edge_index=[2, 8448], edge_label=[4224], edge_label_index=[
 
 ##### Loss
 
-当我们获取 `GNNEncoder` 的输出结果后，需要针对样本边的进行处理。具体来说，采用 
+当我们获取 `GNNEncoder` 的输出结果后，需要针对样本边的进行处理。具体来说，采用余弦相似度的形式判断节点的相似度:
+$$
+\text{sim}(\mathbf x_i,\mathbf x_j) = \mathbf x_i\cdot\mathbf x_j
+$$
+接着由 `nn.BCEWithLogitsLoss()` 计算损失函数：
+
+```python
+# x = gnn_encoder(x, edge_index)
+def loss(x, edge_label_index, edge_label):
+	sim = (x[edge_label_index[0]] * x[edge_label_index[1]]).sum(dim=-1)
+	return nn.BCEWithLogitsLoss(sim, edge_label)
+```
+
+## 4. Results
+
+##### Node Classification:
+
+
+
+##### Link Prediction:
+
+| Method                        | Citeseer   | Cora       | PPI        |
+| ----------------------------- | ---------- | ---------- | ---------- |
+| gcn                           | 0.7077     | 0.6973     | 0.6598     |
+| gcn (W/O Self-loop)           | 0.6407     | 0.4782     | 0.6320     |
+| gcn (relu)                    | 0.7011     | 0.7021     | 0.6615     |
+| gcn-L4                        | 0.6912     | 0.6594     | 0.6595     |
+| gcn-L4 + PairNorm             | 0.7143     | 0.7287     | 0.6804     |
+| gcn-L4 + PairNorm + Edge Drop | **0.7681** | **0.7306** | **0.6882** |
+
