@@ -52,7 +52,7 @@ class ModelConfig:
     hidden_channels: int = 32
     dropout: float = 0.5
     num_layers: int = 2
-    residual: bool = False
+    # residual: bool = False
     edge_dropout: float = 0.0
     pairnorm_mode: str = None
     self_loop: bool = False
