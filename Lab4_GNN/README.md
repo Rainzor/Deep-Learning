@@ -71,6 +71,68 @@ $$
 - $\frac{1}{\sqrt{\text{deg}(i)}\sqrt{\text{deg}(j)}}$ : 表示了节点之间的权重关系，为度 (degree) 较少的节点给予较多的权重 ;
 - $\mathcal N(i)\and \{i\}$ : 通过自连接(**Self-loop**)，节点在更新时不仅依赖邻居节点的特征，还能保留自身的原始特征信息，避免在特征传递过程中信息的丢失。
 
+**Code:**
+
+实验在 `torch_geometric` 框架下完成自定义的 `GCNConv`:
+
+```python
+class GCNConv(MessagePassing):
+    def __init__(self, in_channels, out_channels, self_loop=True):
+        """
+        Initialize the GCN convolution layer.
+        """
+        # Initialize the MessagePassing class with 'add' aggregation
+        super(GCNConv, self).__init__(aggr='add')
+
+        self.self_loop = self_loop
+
+        # Define a linear transformation (weight matrix)
+        self.linear = nn.Linear(in_channels, out_channels, bias=True)
+
+    def forward(self, x, edge_index):
+        """
+        Forward pass of the GCN layer.
+        """
+        # Add self-loops to the adjacency matrix
+        if self.self_loop:
+            edge_index, _ = utils.add_self_loops(edge_index, num_nodes=x.size(0))
+
+        # Compute normalization coefficients
+        row, col = edge_index
+        deg = utils.degree(row, x.size(0), dtype=x.dtype)  # Degree of each node
+        deg_inv_sqrt = deg.pow(-0.5)
+        deg_inv_sqrt[deg_inv_sqrt == float('inf')] = 0  # Handle division by zero
+
+        # Apply linear transformation
+        x = self.linear(x)  # [N, out_channels]
+
+        # Initiate message passing
+        return self.propagate(edge_index, x=x, norm=(deg_inv_sqrt, row, col))
+
+    def message(self, x_j, norm):
+        """
+        Define the message computation.
+        """
+        deg_inv_sqrt, row, col = norm
+
+        # Source node degree (j)
+        D_j = deg_inv_sqrt[col]
+        # Target node degree (i)
+        D_i = deg_inv_sqrt[row]
+
+        # Compute normalization factor for each edge
+        alpha = D_i * D_j
+
+        # Scale the messages
+        return alpha.view(-1, 1) * x_j  # [E, out_channels]
+
+    def update(self, aggr_out):
+        """
+        Update node embeddings after aggregation.
+        """
+        return aggr_out
+```
+
 **Advantages**:
 
 - **简单高效：** GCN通过简单的线性变换和特征聚合，能够高效地处理大规模图数据。 
@@ -321,26 +383,59 @@ def loss(x, edge_label_index, edge_label):
 
 ## 4. Results
 
-##### Node Classification:
+### 4.1 Hyper Parameter
 
-| Method                        | Cora  | Citeseer | PPI    |
-| ----------------------------- | ----- | -------- | ------ |
-| gcn                           | **0.810** | **0.723** | 0.7434 |
-| gcn (W/O Self-loop)           | 0.799 | 0.675   | 0.7429 |
-| gcn (relu)                    | 0.808 | 0.718   | 0.7436 |
-| gcn-L4                        | 0.618 | 0.457   | 0.7433 |
-| gcn-L4 + PairNorm             | 0.747 | 0.656   | 0.7463 |
-| gcn-L4 + PairNorm + EdgeDrop | 0.738 | 0.684   | **0.7464** |
+**Baseline:**
 
+- Epoch: **200**
+- Batch size: **1**
+- Learning rate: 
+  - Cora, Citeseer: **0.01**
+  - PPI: **0.02**
+- Hidden dim:
+  - Cora, Citeseer: **128**
+  - PPI: **256**
+- Dropout: **0.1**
+- Layers: **2**
+- Activation: `relu`
+- Self-loop: `True`
+- Edge drop: **0.0**
+- PairNorm: `None`
 
-##### Link Prediction:
+---
 
-| Method                       | Cora      | Citeseer  | PPI        |
-| ---------------------------- | --------- | --------- | ---------- |
-| gcn                          | 0.697     | 0.708     | 0.6598     |
-| gcn (W/O Self-loop)          | 0.478     | 0.641     | 0.6320     |
-| gcn (relu)                   | 0.702     | 0.701     | 0.6615     |
-| gcn-L4                       | 0.659     | 0.691     | 0.6595     |
-| gcn-L4 + PairNorm            | 0.729     | 0.714     | 0.6804     |
-| gcn-L4 + PairNorm + EdgeDrop | **0.731** | **0.768** | **0.6882** |
+**Node Classification (Test Dataset Accuracy):**
+
+| Method                                | Cora  | Citeseer | PPI    |
+| -------------------------------------| ------| -------- | ------ |
+| gcn **(baseline)**                | 0.806 | 0.718    | 0.7436 |
+| gcn **(gelu)**               | **0.81** | **0.723** | 0.7434 |
+| gcn **(W/O Self-loop)**              | 0.806 | 0.686    | 0.7429 |
+| gcn-L4                               | 0.768 | 0.456    | 0.7436 |
+| gcn-L4 + **EdgeDrop** | 0.73 | 0.511 | 0.7433 |
+| gcn-L4 + **PairNorm**                | 0.741 | 0.66     | **0.7465** |
+| gcn-L4 + **PairNorm** + **EdgeDrop** | 0.747 | 0.673    | 0.7464 |
+
+---
+
+**Link Prediction (Test Dataset Accuracy):**
+
+| Method                        | Cora   | Citeseer | PPI    |
+| ----------------------------- | ------ | -------- | ------ |
+| gcn **(baseline)**	    | 0.7021 | 0.7011   | 0.6615 |
+| gcn **(gelu)**             | 0.6973 | 0.7077   | 0.6598 |
+| gcn **(W/O Self-loop)**     | 0.6480 | 0.6396   | 0.6364 |
+| gcn-L4                      | 0.7011 | 0.6879   | 0.6597 |
+| gcn-L4 + **EdgeDrop** | 0.6746 | 0.6857 | 0.6616 |
+| gcn-L4 + **PairNorm**       | 0.7827 | **0.8066** | 0.6596 |
+| gcn-L4 + **PairNorm** + **EdgeDrop** | **0.7932** | 0.7736   | **0.6804** |
+
+### 4.2 Analysis
+
+#### 4.2.1 Activation
+
+对于激活函数，本实验主要对比了两类激活函数：
+
+- `relu`
+- `gelu`
 

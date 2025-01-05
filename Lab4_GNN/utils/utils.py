@@ -56,7 +56,7 @@ class ModelConfig:
     edge_dropout: float = 0.0
     pairnorm_mode: str = None
     self_loop: bool = False
-    activation: str = 'gelu'
+    activation: str = 'relu'
 
 def parse_args():
     """
@@ -93,8 +93,8 @@ def parse_args():
                         help='PairNorm mode (default: None)')
     parser.add_argument('--self-loop', '-sl', action='store_false',
                         help='Add self-loop to the adjacency matrix')
-    parser.add_argument('--activation', type=str, default='gelu',
-                        help='Activation function (default: gelu)')
+    parser.add_argument('--activation', type=str, default='relu',
+                        help='Activation function (default: relu)')
 
     # Trainer
     parser.add_argument('--epochs','-n', type=int, default=200,
