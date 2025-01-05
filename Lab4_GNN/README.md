@@ -63,13 +63,13 @@ GCN 通过图卷积操作将节点的特征与其邻居的特征进行聚合，�
 
 在 Message Passing GNN 的框架下，我们定义 GCN 的迭代方式如下：
 $$
-\mathbf x_i^{(k)}=\sum_{j\in\mathcal N(i)\and \{i\}} \frac{1}{\sqrt{\text{deg}(i)}\sqrt{\text{deg}(j)}}\cdot\left(\mathbf W^T\cdot\mathbf x_j^{(k-1)}+\mathbf b\right)
+\mathbf x_i^{(k)}=\sum_{j\in\mathcal N(i)\cup \{i\}} \frac{1}{\sqrt{\text{deg}(i)}\sqrt{\text{deg}(j)}}\cdot\left(\mathbf W^T\cdot\mathbf x_j^{(k-1)}+\mathbf b\right)
 $$
 其中：
 
 - $\mathbf W^T\cdot\mathbf x_j^{(k-1)}+\mathbf b$ : 表示节点经过一个 `MLP` 的线性变换结果;
 - $\frac{1}{\sqrt{\text{deg}(i)}\sqrt{\text{deg}(j)}}$ : 表示了节点之间的权重关系，为度 (degree) 较少的节点给予较多的权重 ;
-- $\mathcal N(i)\and \{i\}$ : 通过自连接(**Self-loop**)，节点在更新时不仅依赖邻居节点的特征，还能保留自身的原始特征信息，避免在特征传递过程中信息的丢失。
+- $\mathcal N(i)\cup \{i\}$ : 通过自连接(**Self-loop**)，节点在更新时不仅依赖邻居节点的特征，还能保留自身的原始特征信息，避免在特征传递过程中信息的丢失。
 
 **Code:**
 
