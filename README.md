@@ -9,16 +9,9 @@
         src = "assets/MLP.png" 
         width = "50%">
     <br>
-    <div style = "
-        color: orange;
-        border-bottom: 1px solid #d9d9d9;
-        display: inline-block;
-        color: #999;
-        padding: 2px;">
-        MLP
-    </div>
     <p> </p>
 </center>
+
 
 ## 2. [CNN](Lab2_CNN)
 
@@ -31,16 +24,9 @@
         src = "assets/CNN.png" 
         width = "80%">
     <br>
-    <div style = "
-        color: orange;
-        border-bottom: 1px solid #d9d9d9;
-        display: inline-block;
-        color: #999;
-        padding: 2px;">
-        CNN
-    </div>
     <p> </p>
 </center>
+
 
 ## 3. [RNN](Lab3_RNN)
 
@@ -71,16 +57,9 @@ Word Embedding + RNN+ FC
         src = "assets/RNN.png" 
         width = "80%">
     <br>
-    <div style = "
-        color: orange;
-        border-bottom: 1px solid #d9d9d9;
-        display: inline-block;
-        color: #999;
-        padding: 2px;">
-        RNN
-    </div>
     <p> </p>
 </center>
+
 
 ## 4. [GNN](./Lab4_GNN)
 
@@ -93,16 +72,9 @@ Word Embedding + RNN+ FC
         src = "assets/GNN-NodeCLS.png" 
         width = "80%">
     <br>
-    <div style = "
-        color: orange;
-        border-bottom: 1px solid #d9d9d9;
-        display: inline-block;
-        color: #999;
-        padding: 2px;">
-        GNN: Node Classification
-    </div>
     <p> </p>
 </center>
+
 
 ##### Link Prediction
 
@@ -113,13 +85,5 @@ Word Embedding + RNN+ FC
         src = "assets/GNN-LinkPred.png" 
         width = "80%">
     <br>
-    <div style = "
-        color: orange;
-        border-bottom: 1px solid #d9d9d9;
-        display: inline-block;
-        color: #999;
-        padding: 2px;">
-        GNN: Link Prediction
-    </div>
     <p> </p>
 </center>
