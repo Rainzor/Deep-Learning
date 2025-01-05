@@ -33,7 +33,7 @@
 - `Layers Number`：GNN的层数
 - `Drop edge`：训练时随机丢弃一些边
 - `PairNorm` ：对每层GNN的节点特征进行归一化处理
-- `activation`：`relu`、`gelu`
+- `activation`：`relu`、`tanh`
 
 ## 2. Graph Neural Network
 
@@ -290,7 +290,7 @@ class GNNEnocder(nn.Module):
                     edge_dropout = 0.0,
                     self_loop = True,
                     pairnorm_mode = None,
-                    activation = 'gelu'):
+                    activation = 'relu'):
 		...
 
     def forward(self, x, edge_index):
@@ -413,10 +413,12 @@ def loss(x, edge_label_index, edge_label):
 | gcn **(W/O Self-loop)**              | 0.799 | 0.686    | 0.7429 |
 | gcn-L4                               | 0.768 | 0.456    | 0.7436 |
 | gcn-L4 + **EdgeDrop** | 0.73 | 0.511 | 0.7433 |
-| gcn-L4 + **PairNorm**                | 0.741 | 0.66     | **0.7465** |
+| gcn-L4 + **PairNorm**                | 0.741 | 0.66     | **0.7468** |
 | gcn-L4 + **PairNorm** + **EdgeDrop** | 0.747 | 0.673    | 0.7464 |
 
 ---
+
+<div STYLE="page-break-after: always;"></div>
 
 **Link Prediction (Test Dataset Accuracy):**
 
@@ -427,8 +429,8 @@ def loss(x, edge_label_index, edge_label):
 | gcn **(W/O Self-loop)**     | 0.6480 | 0.6396   | 0.6364 |
 | gcn-L4                      | 0.7011 | 0.6879   | 0.6597 |
 | gcn-L4 + **EdgeDrop** | 0.6746 | 0.6857 | 0.6616 |
-| gcn-L4 + **PairNorm**       | 0.7827 | **0.8066** | 0.6596 |
-| gcn-L4 + **PairNorm** + **EdgeDrop** | **0.7932** | 0.7736   | **0.6804** |
+| gcn-L4 + **PairNorm**       | 0.7827 | **0.7934** | 0.6596 |
+| gcn-L4 + **PairNorm** + **EdgeDrop** | **0.7922** | 0.7736   | **0.6800** |
 
 ### 4.2 Analysis
 
@@ -564,3 +566,56 @@ $$
 
 最优超参数下的训练集、验证集损失曲线，测试集上的实验结果。
 
+### 6.1 Node Classification
+
+<center>
+    <img style = "
+        border-radius: 0.3125em;
+        box-shadow: 0 2px 4px 0 rgba(34,36,38,.12),0 2px 10px 0 rgba(34,36,38,.08);" 
+        src = "assets/nc-loss.png" 
+        width = "100%">
+    <br>
+    <div style = "
+        color: orange;
+        border-bottom: 1px solid #d9d9d9;
+        display: inline-block;
+        color: #999;
+        padding: 2px;">
+        Figure4. Node Classification Loss
+    </div>
+    <p> </p>
+</center>
+
+
+|          | Cora  | CiteSeer | PPI   |
+| -------- | ----- | -------- | ----- |
+| Accuracy | 0.808 | 0.718    | 0.747 |
+
+- Cora, CiteSeer: 采用 `multi-class` accuracy
+- PPI: 采用 `multi-label` accuarcy
+
+### 6.2 Link Prediction
+
+<center>
+    <img style = "
+        border-radius: 0.3125em;
+        box-shadow: 0 2px 4px 0 rgba(34,36,38,.12),0 2px 10px 0 rgba(34,36,38,.08);" 
+        src = "assets/lp-loss.png" 
+        width = "100%">
+    <br>
+    <div style = "
+        color: orange;
+        border-bottom: 1px solid #d9d9d9;
+        display: inline-block;
+        color: #999;
+        padding: 2px;">
+        Figure5. Link Prediction Loss
+    </div>
+    <p> </p>
+</center>
+
+|          | Cora  | CiteSeer | PPI   |
+| -------- | ----- | -------- | ----- |
+| Accuracy | 0.792 | 0.793    | 0.680 |
+
+- 都采用 `binary` accuracy

@@ -137,7 +137,6 @@ class NodeClassifier(pl.LightningModule):
         else:
             return optimizer
 
-
 class LinkPredictor(pl.LightningModule):
     def __init__(self, model_config, trainer_config):
         super(LinkPredictor, self).__init__()
@@ -342,11 +341,6 @@ def main():
                                     trainer_config=train_config
                                 )
     trainer.test(checkpoint_model, test_loader)              
-
-    if args.visualize:
-        data = datasets['test'][0]
-        out = checkpoint_model(data.x, data.edge_index)
-        visualize(out, data.y)
 
 
 if __name__ == '__main__':

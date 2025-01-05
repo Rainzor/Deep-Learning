@@ -1,16 +1,48 @@
 # Deep Learning
 
-## 1. MLP
+## 1. [MLP](./Lab1_MLP)
 
-<img src="assets/MLP.png" alt="MLP" style="zoom:67%;" />
+<center>
+    <img style = "
+        border-radius: 0.3125em;
+        box-shadow: 0 2px 4px 0 rgba(34,36,38,.12),0 2px 10px 0 rgba(34,36,38,.08);" 
+        src = "assets/MLP.png" 
+        width = "50%">
+    <br>
+    <div style = "
+        color: orange;
+        border-bottom: 1px solid #d9d9d9;
+        display: inline-block;
+        color: #999;
+        padding: 2px;">
+        MLP
+    </div>
+    <p> </p>
+</center>
 
-## 2. CNN
+## 2. [CNN](Lab2_CNN)
 
 **Tiny ImageNet**
 
-![cnn](assets/cnn.png)
+<center>
+    <img style = "
+        border-radius: 0.3125em;
+        box-shadow: 0 2px 4px 0 rgba(34,36,38,.12),0 2px 10px 0 rgba(34,36,38,.08);" 
+        src = "assets/CNN.png" 
+        width = "80%">
+    <br>
+    <div style = "
+        color: orange;
+        border-bottom: 1px solid #d9d9d9;
+        display: inline-block;
+        color: #999;
+        padding: 2px;">
+        CNN
+    </div>
+    <p> </p>
+</center>
 
-## 3. RNN
+## 3. [RNN](Lab3_RNN)
 
 Word Embedding + RNN+ FC
 
@@ -31,3 +63,63 @@ Word Embedding + RNN+ FC
 | transformer | cls  | 256      | 0             | 0.596    |
 | rnn         | last | 256      | 0             | 0.569    |
 | rnn         | last | 256      | 1             | 0.544    |
+
+<center>
+    <img style = "
+        border-radius: 0.3125em;
+        box-shadow: 0 2px 4px 0 rgba(34,36,38,.12),0 2px 10px 0 rgba(34,36,38,.08);" 
+        src = "assets/RNN.png" 
+        width = "80%">
+    <br>
+    <div style = "
+        color: orange;
+        border-bottom: 1px solid #d9d9d9;
+        display: inline-block;
+        color: #999;
+        padding: 2px;">
+        RNN
+    </div>
+    <p> </p>
+</center>
+
+## 4. [GNN](./Lab4_GNN)
+
+##### Node Classification
+
+<center>
+    <img style = "
+        border-radius: 0.3125em;
+        box-shadow: 0 2px 4px 0 rgba(34,36,38,.12),0 2px 10px 0 rgba(34,36,38,.08);" 
+        src = "assets/GNN-NodeCLS.png" 
+        width = "80%">
+    <br>
+    <div style = "
+        color: orange;
+        border-bottom: 1px solid #d9d9d9;
+        display: inline-block;
+        color: #999;
+        padding: 2px;">
+        GNN: Node Classification
+    </div>
+    <p> </p>
+</center>
+
+##### Link Prediction
+
+<center>
+    <img style = "
+        border-radius: 0.3125em;
+        box-shadow: 0 2px 4px 0 rgba(34,36,38,.12),0 2px 10px 0 rgba(34,36,38,.08);" 
+        src = "assets/GNN-LinkPred.png" 
+        width = "80%">
+    <br>
+    <div style = "
+        color: orange;
+        border-bottom: 1px solid #d9d9d9;
+        display: inline-block;
+        color: #999;
+        padding: 2px;">
+        GNN: Link Prediction
+    </div>
+    <p> </p>
+</center>

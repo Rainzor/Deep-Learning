@@ -25,10 +25,10 @@ python train.py -r /data2/wrz/Datasets/ --dataset ppi --task node-cls -lr 0.02 -
 
 echo "=== Link Prediction ==="
 # Cora Link Prediction: 0.6973
-python train.py -r $root --dataset cora --task link-pred -lr 0.01 -n 200 -ws 10 --patience -1 --scheduler cosine --hidden-dim 128 -nl 8 -pn PN-SI --edge-drop 0.1 --tag l8-pn-ed-relu --activation relu
+python train.py -r /data2/wrz/Datasets/ --dataset cora --task link-pred -lr 0.01 -n 200 -ws 10 --patience -1 --scheduler cosine --hidden-dim 128 -nl 8 -pn PN-SI --edge-drop 0.1 --tag l8-pn-ed-relu --activation relu
 
 # Citeseer Link Prediction: 0.7077
-python train.py -r $root --dataset citeseer --task link-pred -lr 0.01 -n 200 -ws 10 --patience -1 --scheduler cosine --hidden-dim 128 -nl 8 -pn PN-SI --edge-drop 0.1 --tag l8-pn-ed-relu --activation relu
+python train.py -r /data2/wrz/Datasets/ --dataset citeseer --task link-pred -lr 0.01 -n 200 -ws 10 --patience -1 --scheduler cosine --hidden-dim 128 -nl 8 -pn PN-SI --edge-drop 0.1 --tag l8-pn-ed-relu --activation relu
 
 # PPI Link Prediction:  0.6598
-python train.py -r $root --dataset ppi --task link-pred -lr 0.02 -n 200 -ws 10 --patience -1 --scheduler cosine --hidden-dim 256 -nl 8 -pn PN-SI --edge-drop 0.1 --tag l8-pn-ed-relu --activation relu
+python train.py -r /data2/wrz/Datasets/ --dataset ppi --task link-pred -lr 0.02 -n 200 -ws 10 --patience -1 --scheduler cosine --hidden-dim 256 -nl 8 -pn PN-SI --edge-drop 0.1 --tag l8-pn-ed-relu --activation relu
