@@ -408,9 +408,9 @@ def loss(x, edge_label_index, edge_label):
 
 | Method                                | Cora  | Citeseer | PPI    |
 | -------------------------------------| ------| -------- | ------ |
-| gcn **(baseline)**                | 0.806 | 0.718    | 0.7436 |
-| gcn **(gelu)**               | **0.81** | **0.723** | 0.7434 |
-| gcn **(W/O Self-loop)**              | 0.806 | 0.686    | 0.7429 |
+| gcn **(baseline)**                | **0.806** | **0.718** | 0.7436 |
+| gcn **(tanh)**            | 0.801 | 0.711 | 0.7438 |
+| gcn **(W/O Self-loop)**              | 0.799 | 0.686    | 0.7429 |
 | gcn-L4                               | 0.768 | 0.456    | 0.7436 |
 | gcn-L4 + **EdgeDrop** | 0.73 | 0.511 | 0.7433 |
 | gcn-L4 + **PairNorm**                | 0.741 | 0.66     | **0.7465** |
@@ -423,7 +423,7 @@ def loss(x, edge_label_index, edge_label):
 | Method                        | Cora   | Citeseer | PPI    |
 | ----------------------------- | ------ | -------- | ------ |
 | gcn **(baseline)**	    | 0.7021 | 0.7011   | 0.6615 |
-| gcn **(gelu)**             | 0.6973 | 0.7077   | 0.6598 |
+| gcn **(tanh)**          | 0.6973 | 0.7033 | 0.5028 |
 | gcn **(W/O Self-loop)**     | 0.6480 | 0.6396   | 0.6364 |
 | gcn-L4                      | 0.7011 | 0.6879   | 0.6597 |
 | gcn-L4 + **EdgeDrop** | 0.6746 | 0.6857 | 0.6616 |
@@ -437,9 +437,9 @@ def loss(x, edge_label_index, edge_label):
 对于激活函数，本实验主要对比了两类激活函数：
 
 - `relu`
-- `gelu`
+- `tanh`
 
-
+根据
 
 后续实验无特殊说明，都为 `relu` 为激活函数作为对比
 
@@ -453,3 +453,4 @@ $$
 \mathbf{h}_i^{(k+1)} = \sigma \left( \sum_{j \in \mathcal{N}(i) \cup \{i\}} \frac{1}{\sqrt{\text{deg}(i)} \sqrt{\text{deg}(j)}} \mathbf{W}^{(k)} \mathbf{h}_j^{(k)} \right)
 $$
 
+![image-20250105140255442](assets/image-20250105140255442.png)

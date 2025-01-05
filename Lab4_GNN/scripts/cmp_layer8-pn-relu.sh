@@ -15,7 +15,7 @@ done
 echo "=== Node Classification ==="
 
 # Cora Node Classification: 0.810
-python train.py -r /data2/wrz/Datasets/ --dataset cora --task no de-cls -lr 0.01 -n 200 --patience 50 --hidden-dim 128 -nl 8 -pn PN-SI --tag l8-pn-relu --activation relu
+python train.py -r /data2/wrz/Datasets/ --dataset cora --task node-cls -lr 0.01 -n 200 --patience 50 --hidden-dim 128 -nl 8 -pn PN-SI --tag l8-pn-relu --activation relu
 
 # Citeseer Node Classification: 0.7230
 python train.py -r /data2/wrz/Datasets/ --dataset citeseer --task node-cls -lr 0.01 -n 200 --patience 50 --hidden-dim 128 -nl 8 -pn PN-SI --tag l8-pn-relu --activation relu
