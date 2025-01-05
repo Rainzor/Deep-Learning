@@ -439,13 +439,30 @@ def loss(x, edge_label_index, edge_label):
 - `relu`
 - `tanh`
 
-根据
+根据图1中数据可以看到，**`relu` 作为激活函数，在各个任务和数据集表现更优**。后续实验无特殊说明，都为 `relu` 为激活函数作为对比。
 
-后续实验无特殊说明，都为 `relu` 为激活函数作为对比
+<center>
+    <img style = "
+        border-radius: 0.3125em;
+        box-shadow: 0 2px 4px 0 rgba(34,36,38,.12),0 2px 10px 0 rgba(34,36,38,.08);" 
+        src = "assets/activate_self-loop.png" 
+        width = "100%">
+    <br>
+    <div style = "
+        color: orange;
+        border-bottom: 1px solid #d9d9d9;
+        display: inline-block;
+        color: #999;
+        padding: 2px;">
+        Figure1. GCN Accuracy(%): baseline, tanh, W/O self-loop
+    </div>
+    <p> </p>
+</center>
+
 
 #### 4.2.2 Self Loop
 
-Self Loop 指的是在图的邻接矩阵中为每个节点添加一条从自身到自身的边。这一操作在GNN的特征聚合和更新过程中具有多方面的作用和优势。
+self-loop 指的是在图的邻接矩阵中为每个节点添加一条从自身到自身的边。这一操作在GNN的特征聚合和更新过程中具有多方面的作用和优势。
 
 在GNN的消息传递过程中，节点 \( $v_i$ \) 的新表示不仅依赖于其邻居节点的信息，还需要包含自身的特征信息。通过添加自连接，节点 \( $v_i$ \) 在聚合邻居信息时也会将自身的特征纳入考虑，从而确保自身信息不被完全淹没。    
 
@@ -453,4 +470,62 @@ $$
 \mathbf{h}_i^{(k+1)} = \sigma \left( \sum_{j \in \mathcal{N}(i) \cup \{i\}} \frac{1}{\sqrt{\text{deg}(i)} \sqrt{\text{deg}(j)}} \mathbf{W}^{(k)} \mathbf{h}_j^{(k)} \right)
 $$
 
-![image-20250105140255442](assets/image-20250105140255442.png)
+从图1中结果表面，**在添加 self-loop 的情况下，各个任务和数据集表现都更好。**后续实验无特殊说明，都添加了 self-loop。
+
+#### 4.3.3 Over smoothing
+
+由于GCN在网络层数加深后会遇到 over smoothing 的问题，在实验中分别对比了 **Edge Drop**  和 **Pair Norm** 对于 over smoothing 问题的改善。
+
+- Baseline: 2 layers
+- L4: 4 layers
+- EdgeDrop: 0.1
+- PairNorm: PN-SI 
+
+##### **节点分类**
+
+从图中可以看到，对于 **Cora、CiteSeer** 这类比较少量的数据上，添加更多的层不一定会带来更好的结果，原因可能是数据集本身数据量较少，不需要较大的网络规模。
+
+对于 **PPI** 数据集，训练数据包含了 20 个 Graph，在添加了层数后，并通过 **PairNorm**, **EdgeDrop** 等方式对最终 Accuracy 有所改善。
+
+<center>
+    <img style = "
+        border-radius: 0.3125em;
+        box-shadow: 0 2px 4px 0 rgba(34,36,38,.12),0 2px 10px 0 rgba(34,36,38,.08);" 
+        src = "assets/ncls-l4.png" 
+        width = "100%">
+    <br>
+    <div style = "
+        color: orange;
+        border-bottom: 1px solid #d9d9d9;
+        display: inline-block;
+        color: #999;
+        padding: 2px;">
+        Figure2. Node Classification Over-smothing
+    </div>
+    <p> </p>
+</center>
+
+##### **链路预测**
+
+在链路预测问题上，由于图中存在的边数目较多，提供了较多的数据，更加适合用于对比 **over smoothing** 问题。
+
+从图中可以看到，在只添加了层数后
+
+<center>
+    <img style = "
+        border-radius: 0.3125em;
+        box-shadow: 0 2px 4px 0 rgba(34,36,38,.12),0 2px 10px 0 rgba(34,36,38,.08);" 
+        src = "assets/lpred-l4.png" 
+        width = "100%">
+    <br>
+    <div style = "
+        color: orange;
+        border-bottom: 1px solid #d9d9d9;
+        display: inline-block;
+        color: #999;
+        padding: 2px;">
+        Figure3. Link Prediction Over-smothing
+    </div>
+    <p> </p>
+</center>
+
