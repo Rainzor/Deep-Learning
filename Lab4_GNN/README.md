@@ -439,3 +439,17 @@ def loss(x, edge_label_index, edge_label):
 - `relu`
 - `gelu`
 
+
+
+后续实验无特殊说明，都为 `relu` 为激活函数作为对比
+
+#### 4.2.2 Self Loop
+
+Self Loop 指的是在图的邻接矩阵中为每个节点添加一条从自身到自身的边。这一操作在GNN的特征聚合和更新过程中具有多方面的作用和优势。
+
+在GNN的消息传递过程中，节点 \( $v_i$ \) 的新表示不仅依赖于其邻居节点的信息，还需要包含自身的特征信息。通过添加自连接，节点 \( $v_i$ \) 在聚合邻居信息时也会将自身的特征纳入考虑，从而确保自身信息不被完全淹没。    
+
+$$
+\mathbf{h}_i^{(k+1)} = \sigma \left( \sum_{j \in \mathcal{N}(i) \cup \{i\}} \frac{1}{\sqrt{\text{deg}(i)} \sqrt{\text{deg}(j)}} \mathbf{W}^{(k)} \mathbf{h}_j^{(k)} \right)
+$$
+
