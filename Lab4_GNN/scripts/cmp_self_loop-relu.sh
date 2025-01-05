@@ -33,4 +33,4 @@ python train.py -r $root --dataset cora --task link-pred -lr 0.01 -n 200 -ws 10 
 python train.py -r $root --dataset citeseer --task link-pred -lr 0.01 -n 200 -ws 10 --patience -1 --scheduler cosine --hidden-dim 128 -nl 2 --self-loop --tag self-loop-relu --activation relu
 
 # PPI Link Prediction:  0.6598
-python train.py -r $root --dataset ppi --task link-pred -lr 0.02 -n 200 -ws 10 --patience -1 --scheduler cosine --hidden-dim 256 -nl 3  --self-loop --tag self-loop-relu --activation relu
+python train.py -r $root --dataset ppi --task link-pred -lr 0.02 -n 200 -ws 10 --patience -1 --scheduler cosine --hidden-dim 256 -nl 2  --self-loop --tag self-loop-relu --activation relu
