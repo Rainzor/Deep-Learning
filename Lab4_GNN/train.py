@@ -86,9 +86,13 @@ class NodeClassifier(pl.LightningModule):
         else:
             preds = out
             targets = y
+
+        loss = self.criterion(preds, targets)
+
         self.val_acc(preds, targets)
         batch_size = preds.size(0)
 
+        self.log('val/loss', loss, on_step=False, on_epoch=True, batch_size=batch_size)
         self.log('val/acc', self.val_acc, on_step=False, on_epoch=True, prog_bar=True, batch_size=batch_size)
 
     def on_train_start(self):
@@ -186,8 +190,12 @@ class LinkPredictor(pl.LightningModule):
         logits = self(x, edge_index, edge_label_index)
         preds = torch.sigmoid(logits)
 
+        loss = self.criterion(logits, batch.edge_label)
+
         self.val_acc(preds, batch.edge_label)
         batch_size = preds.size(0)
+        
+        self.log('val/loss', loss, on_step=False, on_epoch=True, batch_size=batch_size)
         self.log('val/acc', self.val_acc, on_step=False, on_epoch=True,prog_bar=True, batch_size=batch_size)
 
 
